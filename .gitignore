@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+.next/
+
+# Environment variables
+.env.local
+
+# MacOS
+.DS_Store
+
+# IDE
+.vscode/
+*.swp
