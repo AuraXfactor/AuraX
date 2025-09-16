@@ -9,14 +9,25 @@
 }
 
 html, body {
-  background: radial-gradient(1200px 600px at 10% 10%, rgba(155, 92, 255, 0.12), transparent 60%),
-              radial-gradient(1000px 500px at 90% 20%, rgba(0, 229, 255, 0.10), transparent 60%),
-              #0a0a0f;
+  background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(155, 92, 255, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 90% 15%, rgba(0, 229, 255, 0.16), transparent 60%),
+    radial-gradient(1100px 550px at 50% 100%, rgba(255, 77, 157, 0.12), transparent 60%),
+    #0a0a0f;
 }
 
 .glass {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.animate-pop {
+  animation: pop 300ms ease-out both;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 

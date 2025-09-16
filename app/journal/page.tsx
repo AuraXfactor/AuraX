@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { addDoc, collection, serverTimestamp, query, orderBy, onSnapshot, Timestamp, DocumentData } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
@@ -30,6 +30,20 @@ export default function JournalPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const prompts = useMemo(() => {
+    const today = new Date();
+    const idx = today.getDate() % 7;
+    const list = [
+      'What energized you today?',
+      'Name one small win you had.',
+      'What’s one thing you can let go of?',
+      'Who supported you this week?',
+      'What would make tomorrow 1% better?',
+      'What emotion is most present right now?',
+      'Write a note of kindness to yourself.',
+    ];
+    return { today: list[idx], list };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -123,6 +137,10 @@ export default function JournalPage() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-8">
       <h1 className="text-2xl font-bold">Journal</h1>
+      <div className="glass rounded-xl p-4">
+        <div className="text-sm uppercase tracking-wider text-[rgba(230,230,255,0.75)]">Today9;s prompt</div>
+        <div className="mt-1 text-sm">{prompts.today}</div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <textarea
