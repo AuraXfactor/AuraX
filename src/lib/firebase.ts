@@ -1,6 +1,10 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG FROM FIREBASE CONSOLE
@@ -16,6 +20,13 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Enable offline persistence for Firestore with multi-tab support
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
+
 export const storage = getStorage(app);
 export default app;

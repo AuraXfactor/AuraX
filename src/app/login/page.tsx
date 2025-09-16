@@ -20,8 +20,25 @@ export default function Login() {
       await signInWithEmail(email, password);
       router.push('/');
     } catch (error: unknown) {
-  const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-  setError(errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      await signInWithGoogle();
+      router.push('/');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,12 +88,19 @@ export default function Login() {
           Sign in with Google
         </button>
 
-        <p className="text-center text-sm">
-          Don&apos;t have an account?
-          <Link href="/signup" className="text-blue-500">
-            Sign up
-          </Link>
-        </p>
+        <div className="text-center text-sm space-y-2">
+          <p>
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="text-blue-500">
+              Sign up
+            </Link>
+          </p>
+          <p>
+            <Link href="/forgot-password" className="text-blue-500">
+              Forgot your password?
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
