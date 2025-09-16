@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ring-purple: 155 92 255;
+  --ring-pink: 255 77 157;
+  --ring-cyan: 0 229 255;
+}
+
+html, body {
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(155, 92, 255, 0.12), transparent 60%),
+              radial-gradient(1000px 500px at 90% 20%, rgba(0, 229, 255, 0.10), transparent 60%),
+              #0a0a0f;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
