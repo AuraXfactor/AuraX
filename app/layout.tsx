@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { PointsHeader } from '@/components/PointsHeader';
 
 export const metadata: Metadata = {
   title: 'Aura',
@@ -13,10 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="h-full">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <AuthProvider>
-          <div className="mx-auto max-w-3xl px-4 py-6">
-            <PointsHeader />
-            {children}
-          </div>
+          {children}
         </AuthProvider>
       </body>
     </html>

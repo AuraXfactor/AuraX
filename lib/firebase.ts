@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { 
   initializeFirestore,
   persistentLocalCache,
@@ -29,13 +29,9 @@ export const db = initializeFirestore(app, {
 
 export const storage = getStorage(app);
 
-// Auto sign-in anonymously
+// Ensure session persists locally (so refresh keeps session)
 if (typeof window !== 'undefined') {
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      signInAnonymously(auth).catch(console.error);
-    }
-  });
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
 }
 
 export default app;
