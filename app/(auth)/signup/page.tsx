@@ -1,10 +1,12 @@
 'use client';
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signUpWithEmail } from '@/lib/firebaseAuth';
 import Link from 'next/link';
 
-export default function Signup() {
+export const dynamic = 'force-dynamic';
+
+function SignupInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -74,6 +76,14 @@ export default function Signup() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function Signup() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <SignupInner />
+    </Suspense>
   );
 }
 

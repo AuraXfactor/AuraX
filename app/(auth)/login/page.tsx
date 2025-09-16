@@ -1,10 +1,12 @@
-'use client';
-import React, { useState } from 'react';
+"use client";
+import React, { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmail, signInWithGoogle } from '@/lib/firebaseAuth';
 import Link from 'next/link';
 
-export default function Login() {
+export const dynamic = 'force-dynamic';
+
+function LoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -103,6 +105,14 @@ export default function Login() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <LoginInner />
+    </Suspense>
   );
 }
 
