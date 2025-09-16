@@ -19,25 +19,9 @@ export default function Login() {
     try {
       await signInWithEmail(email, password);
       router.push('/');
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      await signInWithGoogle();
-      router.push('/');
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+  setError(errorMessage);
   };
 
   return (
