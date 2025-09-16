@@ -1,6 +1,5 @@
-import type { Config } from 'tailwindcss';
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+const config = {
   darkMode: 'class',
   content: [
     './app/**/*.{ts,tsx}',
@@ -16,11 +15,11 @@ const config: Config = {
           purple: '#9b5cff',
           pink: '#ff4d9d',
           cyan: '#00e5ff',
-          yellow: '#ffd166'
+          yellow: '#ffd166',
         },
       },
       boxShadow: {
-        glow: '0 0 25px rgba(155, 92, 255, 0.6), 0 0 40px rgba(0, 229, 255, 0.35)'
+        glow: '0 0 25px rgba(155, 92, 255, 0.6), 0 0 40px rgba(0, 229, 255, 0.35)',
       },
       fontFamily: {
         sans: ['ui-sans-serif', 'system-ui', 'Inter', 'sans-serif'],

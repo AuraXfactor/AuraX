@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
+import type { Route } from 'next';
 
-const links = [
-  { href: '/', label: 'Dashboard' },
+const links: { href: Route; label: string }[] = [
+  { href: '/dashboard', label: 'Dashboard' },
   { href: '/journal', label: 'Journal' },
   { href: '/toolkit', label: 'Toolkit' },
   { href: '/friends', label: 'Friends' },
