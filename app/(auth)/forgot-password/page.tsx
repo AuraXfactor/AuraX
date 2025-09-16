@@ -27,8 +27,8 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="max-w-md w-full space-y-8 p-8 glass rounded-2xl">
         <h2 className="text-2xl font-bold text-center">Reset Password</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -38,18 +38,18 @@ export default function ForgotPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 rounded-md bg-transparent border border-white/20"
               placeholder="Email"
             />
           </div>
 
-          {error && <div className="text-red-500 text-sm">{error}</div>}
-          {message && <div className="text-green-600 text-sm">{message}</div>}
+          {error && <div className="text-red-400 text-sm">{error}</div>}
+          {message && <div className="text-green-400 text-sm">{message}</div>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-blue-500 text-white rounded-md disabled:opacity-50"
+            className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-neon-purple via-neon-pink to-neon-cyan text-black font-semibold disabled:opacity-50"
           >
             {loading ? 'Sending...' : 'Send Reset Email'}
           </button>
@@ -57,7 +57,7 @@ export default function ForgotPassword() {
 
         <p className="text-center text-sm">
           Remembered it?{' '}
-          <Link href="/login" className="text-blue-500">Back to Login</Link>
+          <Link href="/login" className="underline">Back to Login</Link>
         </p>
       </div>
     </div>

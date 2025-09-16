@@ -27,11 +27,11 @@ export function PointsHeader() {
 
   return (
     <div className="mb-6 flex items-center justify-between">
-      <Link href="/" className="text-lg font-semibold">✨ Aura</Link>
+      <Link href="/app" className="text-lg font-semibold">✨ Aura</Link>
       <div className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm">
         <SparklesIcon className="h-5 w-5 text-neon-yellow" />
         <span className="font-medium">{points}</span>
-        <Link href="/boosts" className="ml-3 text-[rgba(230,230,255,0.8)] underline-offset-4 hover:underline">Boosts</Link>
+        <Link href="/app/boosts" className="ml-3 text-[rgba(230,230,255,0.8)] underline-offset-4 hover:underline">Boosts</Link>
       </div>
     </div>
   );
