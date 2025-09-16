@@ -104,6 +104,22 @@ export default function JournalPage() {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="max-w-md w-full text-center space-y-4 p-8 rounded-2xl border border-white/20 bg-white/60 dark:bg-white/5 backdrop-blur">
+          <div className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-2xl bg-gradient-to-br from-rose-400 to-orange-400 text-white animate-pop">📔</div>
+          <h1 className="text-2xl font-bold">Journal requires login</h1>
+          <p className="text-gray-600 dark:text-gray-300">Sign in to write entries, tag moods, and add voice memos.</p>
+          <div className="flex items-center justify-center gap-3">
+            <a href="/login" className="px-5 py-2.5 rounded-full border border-white/30 hover:bg-white/10 transition">Login</a>
+            <a href="/signup" className="px-5 py-2.5 rounded-full text-white bg-gradient-to-r from-indigo-500 to-blue-500 hover:scale-105 transition">Create account</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-8">
       <h1 className="text-2xl font-bold">Journal</h1>

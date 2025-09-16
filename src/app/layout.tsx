@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 export const metadata = {
   title: "AuraX - Your Vibe, Your Tribe",
@@ -18,8 +19,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-fun">
         <AuthProvider>
+          <Navbar />
           {children}
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
