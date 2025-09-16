@@ -21,8 +21,9 @@ export default function Signup() {
       router.push('/');
     } catch (error: any) {
       setError(error.message);
-    } finally {
-      setLoading(false);
+    } catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+  setError(errorMessage);
     }
   };
 
