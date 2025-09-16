@@ -1,31 +1,42 @@
-import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { initializeApp, getApp, getApps } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDEZFb364IcgkpY2GavElR3QPhqpw60BRs",
+  authDomain: "aura-app-prod-4dc34.firebaseapp.com",
+  projectId: "aura-app-prod-4dc34",
+  storageBucket: "aura-app-prod-4dc34.firebasestorage.app",
+  messagingSenderId: "978006775981",
+  appId: "1:978006775981:web:0c97e9e4fd1d27c58fce24",
 };
 
-let app: FirebaseApp | undefined;
-let authInstance: Auth | undefined;
-let dbInstance: Firestore | undefined;
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const auth = getAuth(app);
 
+// Enable offline persistence for Firestore with multi-tab support
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
+
+export const storage = getStorage(app);
+
+// Auto sign-in anonymously
 if (typeof window !== 'undefined') {
-  app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
-  authInstance = getAuth(app);
-  dbInstance = getFirestore(app);
-  onAuthStateChanged(authInstance, (user) => {
+  onAuthStateChanged(auth, (user) => {
     if (!user) {
-      signInAnonymously(authInstance!).catch(console.error);
+      signInAnonymously(auth).catch(console.error);
     }
   });
 }
 
-export const auth = authInstance as unknown as Auth;
-export const db = dbInstance as unknown as Firestore;
+export default app;
 

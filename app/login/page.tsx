@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmail, signInWithGoogle } from '../../lib/firebaseAuth';
+import { signInWithEmail, signInWithGoogle } from '@/lib/firebaseAuth';
 import Link from 'next/link';
 
 export default function Login() {
