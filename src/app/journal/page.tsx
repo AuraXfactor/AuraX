@@ -2,9 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  addDoc,
   collection,
-  serverTimestamp,
   query,
   orderBy,
   onSnapshot,
@@ -13,10 +11,10 @@ import {
   doc,
   setDoc,
   getDoc,
-  increment,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addJournalEntry, incrementAuraPoints, updateJournalStreak } from '@/lib/dataOps';
 
 const defaultActivities: { key: string; label: string }[] = [
   { key: 'talk_friend', label: 'Talking to a friend/loved one' },
@@ -44,13 +42,13 @@ const moods = [
 
 type JournalEntry = {
   id: string;
-  entryText: string; // notes
+  notes: string; // notes
   moodTag: string;
   createdAt?: Timestamp | null;
   voiceMemoUrl?: string | null;
   activities?: string[];
   affirmation?: string | null;
-  auraScore?: number | null;
+  auraPoints?: number | null;
   dateKey?: string | null; // YYYY-MM-DD
 };
 
@@ -98,7 +96,7 @@ export default function JournalPage() {
     })();
 
     const q = query(
-      collection(db, 'journals', user.uid, 'entries'),
+      collection(db, 'users', user.uid, 'entries'),
       orderBy('createdAt', 'desc')
     );
     const unsub = onSnapshot(q, (snap) => {
@@ -106,13 +104,13 @@ export default function JournalPage() {
         const data = d.data() as DocumentData;
         return {
           id: d.id,
-          entryText: (data.entryText as string) ?? '',
+          notes: (data.notes as string) ?? (data.entryText as string) ?? '',
           moodTag: (data.moodTag as string) ?? 'neutral',
           createdAt: (data.createdAt as Timestamp | null) ?? null,
           voiceMemoUrl: (data.voiceMemoUrl as string | null) ?? null,
           activities: (data.activities as string[] | undefined) ?? [],
           affirmation: (data.affirmation as string | null) ?? null,
-          auraScore: (data.auraScore as number | null) ?? null,
+          auraPoints: (data.auraPoints as number | null) ?? (data.auraScore as number | null) ?? null,
           dateKey: (data.dateKey as string | null) ?? null,
         } satisfies JournalEntry;
       });
@@ -193,7 +191,7 @@ export default function JournalPage() {
     setRecording(false);
   };
 
-  const computeAuraScore = useCallback(
+  const computeAuraPoints = useCallback(
     (hasVoice: boolean) => {
       const base = 10;
       const perActivity = 5 * selectedActivities.length;
@@ -220,28 +218,28 @@ export default function JournalPage() {
       }
 
       const hasVoice = Boolean(voiceMemoUrl);
-      const auraScore = computeAuraScore(hasVoice);
+      const auraPoints = computeAuraPoints(hasVoice);
       const dateKey = formatDateKey(new Date());
 
-      await addDoc(collection(db, 'journals', user.uid, 'entries'), {
-        entryText: notes,
-        moodTag,
+      await addJournalEntry({
+        uid: user.uid,
+        mood: moodTag,
         activities: selectedActivities,
+        notes,
         affirmation: affirmation.trim() || null,
-        auraScore,
-        dateKey,
-        createdAt: serverTimestamp(),
         voiceMemoUrl: voiceMemoUrl ?? null,
+        auraPoints,
       });
+
+      await incrementAuraPoints(user.uid, auraPoints);
+      await updateJournalStreak(user.uid, dateKey);
 
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(
         userDocRef,
         {
-          auraTotal: increment(auraScore),
           journalReminderEnabled: reminderEnabled,
           journalReminderTime: reminderTime,
-          updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
@@ -549,9 +547,9 @@ export default function JournalPage() {
                   })}
                 </div>
               )}
-              <p className="whitespace-pre-wrap">{e.entryText}</p>
-              {typeof e.auraScore === 'number' && (
-                <div className="mt-2 text-sm opacity-80">Aura: +{e.auraScore}</div>
+              <p className="whitespace-pre-wrap">{e.notes}</p>
+              {typeof e.auraPoints === 'number' && (
+                <div className="mt-2 text-sm opacity-80">Aura: +{e.auraPoints}</div>
               )}
               {e.voiceMemoUrl && (
                 <audio src={e.voiceMemoUrl} controls className="mt-2 w-full" />

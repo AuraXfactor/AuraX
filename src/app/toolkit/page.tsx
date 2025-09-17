@@ -2,11 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { incrementAuraPoints, logToolkitUsage } from '@/lib/dataOps';
 
 export default function ToolkitPage() {
   const { user } = useAuth();
   const [phase, setPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [count, setCount] = useState(0);
+  const [sessionStart, setSessionStart] = useState<number | null>(null);
+  const [reliefLevel, setReliefLevel] = useState<number>(3);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const vibrate = () => navigator.vibrate?.(20);
@@ -79,6 +83,56 @@ export default function ToolkitPage() {
       </div>
       <p className="text-gray-600 dark:text-gray-300">Count: {count}</p>
       <div className="text-xs text-gray-500">Phone users feel subtle haptics between phases.</div>
+
+      <div className="w-full max-w-sm mt-2 p-4 rounded-xl border border-white/20">
+        <div className="mb-3 text-sm font-medium">Session logging</div>
+        <div className="flex items-center gap-3">
+          {sessionStart == null ? (
+            <button
+              onClick={() => setSessionStart(Date.now())}
+              className="px-4 py-2 rounded-md text-white bg-gradient-to-r from-cyan-400 to-blue-500"
+            >
+              Start session
+            </button>
+          ) : (
+            <button
+              disabled={saving}
+              onClick={async () => {
+                if (!user || sessionStart == null) return;
+                setSaving(true);
+                try {
+                  const durationSec = Math.max(1, Math.round((Date.now() - sessionStart) / 1000));
+                  const auraPoints = Math.max(5, Math.round(durationSec / 60));
+                  await logToolkitUsage({
+                    uid: user.uid,
+                    toolName: 'breath_478',
+                    durationSec,
+                    reliefLevel,
+                    auraPoints,
+                  });
+                  await incrementAuraPoints(user.uid, auraPoints);
+                } finally {
+                  setSaving(false);
+                  setSessionStart(null);
+                }
+              }}
+              className="px-4 py-2 rounded-md text-white bg-gradient-to-r from-emerald-500 to-teal-500 disabled:opacity-60"
+            >
+              {saving ? 'Logging…' : 'Finish & log'}
+            </button>
+          )}
+          <div className="flex-1" />
+          <label className="text-sm opacity-80">Relief</label>
+          <input
+            type="range"
+            min={1}
+            max={5}
+            value={reliefLevel}
+            onChange={(e) => setReliefLevel(parseInt(e.target.value, 10))}
+          />
+          <div className="text-sm w-6 text-center">{reliefLevel}</div>
+        </div>
+      </div>
     </div>
   );
 }
