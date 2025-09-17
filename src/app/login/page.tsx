@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmail, signInWithGoogle } from '../../lib/firebaseAuth';
+import { getUserProfile, updateLastLogin } from '@/lib/userProfile';
+import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 
 export default function Login() {
@@ -17,8 +19,17 @@ export default function Login() {
     setError('');
 
     try {
-      await signInWithEmail(email, password);
-      router.push('/');
+      const userCredential = await signInWithEmail(email, password);
+      const user = userCredential.user;
+      
+      // Check if user has completed onboarding
+      const profile = await getUserProfile(user.uid);
+      if (profile && profile.name) {
+        await updateLastLogin(user.uid);
+        router.push('/');
+      } else {
+        router.push('/onboarding');
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       setError(errorMessage);
@@ -31,8 +42,17 @@ export default function Login() {
     try {
       setLoading(true);
       setError('');
-      await signInWithGoogle();
-      router.push('/');
+      const userCredential = await signInWithGoogle();
+      const user = userCredential.user;
+      
+      // Check if user has completed onboarding
+      const profile = await getUserProfile(user.uid);
+      if (profile && profile.name) {
+        await updateLastLogin(user.uid);
+        router.push('/');
+      } else {
+        router.push('/onboarding');
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       setError(errorMessage);

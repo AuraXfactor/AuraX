@@ -1,13 +1,63 @@
 {
-  "name": "AuraX",
-  "short_name": "AuraX",
+  "name": "Aura X - Your Vibe, Your Tribe",
+  "short_name": "Aura X",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#0ea5e9",
-  "description": "A gamified lifestyle app for mental wellness",
+  "description": "A gamified lifestyle app for mental wellness with journals, breathwork, and streaks",
+  "categories": ["health", "lifestyle", "wellness"],
+  "lang": "en",
+  "scope": "/",
   "icons": [
-    { "src": "/favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" }
+    { 
+      "src": "/favicon.ico", 
+      "sizes": "64x64 32x32 24x24 16x16", 
+      "type": "image/x-icon" 
+    },
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg", 
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png", 
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Write Journal",
+      "short_name": "Journal",
+      "description": "Quick access to mood journaling",
+      "url": "/journal",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    },
+    {
+      "name": "Breathing Toolkit", 
+      "short_name": "Breathe",
+      "description": "Quick access to breathing exercises",
+      "url": "/toolkit",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    }
   ]
 }
 

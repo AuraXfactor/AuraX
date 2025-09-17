@@ -1,11 +1,33 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { getUserProfile, UserProfile } from "@/lib/userProfile";
 import Link from "next/link";
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (user) {
+        try {
+          const userProfile = await getUserProfile(user.uid);
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        }
+      }
+      setProfileLoading(false);
+    };
+
+    if (!loading) {
+      loadProfile();
+    }
+  }, [user, loading]);
+
+  if (loading || profileLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
@@ -23,7 +45,10 @@ export default function Home() {
 
         {user ? (
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
-            <span>Welcome back, {user.email} 🎉</span>
+            <span>
+              Welcome back, {profile?.name || user.email} 
+              {profile?.avatar && <span className="ml-1">{profile.avatar}</span>} 🎉
+            </span>
             <Link href="/journal" className="px-3 py-1.5 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
               Write a journal ➜
             </Link>

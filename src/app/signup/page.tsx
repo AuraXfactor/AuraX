@@ -18,7 +18,7 @@ export default function Signup() {
 
     try {
       await signUpWithEmail(email, password);
-      router.push('/');
+      router.push('/onboarding');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       setError(errorMessage);
