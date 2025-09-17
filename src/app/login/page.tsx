@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmail, signInWithGoogle } from '../../lib/firebaseAuth';
 import { getUserProfile, updateLastLogin } from '@/lib/userProfile';
-import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 
 export default function Login() {

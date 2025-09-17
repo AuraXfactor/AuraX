@@ -161,7 +161,7 @@ export default function Onboarding() {
                 <span className="text-3xl">👋</span>
               </div>
               <h2 className="text-2xl font-bold mb-2">Welcome to Aura X!</h2>
-              <p className="text-gray-600 mb-6">Let's get to know you better</p>
+              <p className="text-gray-600 mb-6">Let&apos;s get to know you better</p>
               
               <div className="space-y-4">
                 <input
@@ -238,7 +238,7 @@ export default function Onboarding() {
                 <span className="text-3xl">🎯</span>
               </div>
               <h2 className="text-2xl font-bold mb-2">Your Wellness Focus</h2>
-              <p className="text-gray-600 mb-6">Choose 2-3 areas you'd like to focus on</p>
+              <p className="text-gray-600 mb-6">Choose 2-3 areas you&apos;d like to focus on</p>
               
               <div className="space-y-3">
                 {focusAreaOptions.map((option) => (

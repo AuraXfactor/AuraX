@@ -191,7 +191,7 @@ export default function ProfileSummary() {
         {/* Motivational Footer */}
         <div className="text-center mt-8 animate-pop" style={{ animationDelay: '1.2s' }}>
           <p className="text-sm text-gray-500">
-            You're all set! Let's make today amazing 🚀
+            You&apos;re all set! Let&apos;s make today amazing 🚀
           </p>
         </div>
       </div>
