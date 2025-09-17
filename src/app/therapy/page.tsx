@@ -43,7 +43,7 @@ export default function TherapyPage() {
           <div className="text-2xl">📅</div>
           <h3 className="font-semibold mt-2">Book a Session</h3>
           <p className="text-sm opacity-80 mt-1">Pick a time that works for you. Video and chat options.</p>
-          <button className="mt-4 px-4 py-2 rounded-full border border-white/25 hover:bg-white/10 transition">Open scheduler</button>
+          <Link href="/therapy/book" className="mt-4 inline-block px-4 py-2 rounded-full border border-white/25 hover:bg-white/10 transition">Open scheduler</Link>
         </div>
         <div className="rounded-2xl border border-white/15 bg-white/5 p-5">
           <div className="text-2xl">📚</div>
