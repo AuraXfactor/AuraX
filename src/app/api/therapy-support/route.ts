@@ -49,8 +49,9 @@ export async function POST(req: NextRequest) {
     }
 
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || 'Server error' }), { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Server error';
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
   }
 }
 

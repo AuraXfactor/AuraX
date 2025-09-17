@@ -63,8 +63,8 @@ export default function TherapySupportPage() {
   const [error, setError] = useState<string | null>(null);
   React.useEffect(() => {
     if (user) {
-      if (!name) setName(user.displayName || '');
-      if (!email) setEmail(user.email || '');
+      setName((prev) => prev || user.displayName || '');
+      setEmail((prev) => prev || user.email || '');
     }
   }, [user]);
 
@@ -91,8 +91,9 @@ export default function TherapySupportPage() {
       });
       if (!res.ok) throw new Error('Failed to send request');
       setSubmitted(true);
-    } catch (err: any) {
-      setError(err?.message || 'Something went wrong');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +108,7 @@ export default function TherapySupportPage() {
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-cyan-500">Therapy Support</h1>
         <p className="mt-3 text-lg text-gray-700">
-          Sometimes self-help tools aren\'t enough. Talking to a professional can bring clarity, healing, and new perspective. Our trusted therapists are here to walk with you.
+          Sometimes self-help tools aren&amp;#39;t enough. Talking to a professional can bring clarity, healing, and new perspective. Our trusted therapists are here to walk with you.
         </p>
         <div className="mt-6">
           <button onClick={handleScrollToForm} className="pressable inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-3 font-semibold text-white shadow-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-400">
@@ -217,7 +218,7 @@ export default function TherapySupportPage() {
             )}
 
             <div className="mt-2 flex items-center justify-between">
-              <div className="text-sm text-gray-500">We\'ll reach out within 24-48 hours.</div>
+              <div className="text-sm text-gray-500">We&amp;#39;ll reach out within 24-48 hours.</div>
               <button type="submit" disabled={submitting} className="pressable inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-5 py-2 font-semibold text-white shadow hover:bg-cyan-700 disabled:opacity-60">
                 <Icon.clock />
                 {submitting ? 'Sending...' : 'Request Support'}
