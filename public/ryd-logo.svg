@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 32" role="img" aria-label="RYD Mental Health">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="32" rx="6" fill="#ffffff"/>
+  <g transform="translate(8,8)" fill="url(#g)">
+    <circle cx="8" cy="8" r="6"/>
+    <rect x="20" y="2" width="8" height="12" rx="2"/>
+    <path d="M40 2h6l6 10h-6z"/>
+  </g>
+  <text x="56" y="21" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">RYD Mental Health</text>
+</svg>
+
