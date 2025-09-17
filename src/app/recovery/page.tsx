@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState, type ReactNode, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, addDoc, serverTimestamp, doc, setDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import type { QuerySnapshot, DocumentData, QueryDocumentSnapshot, Timestamp } from 'firebase/firestore';
@@ -158,7 +158,7 @@ export default function RecoveryHubPage() {
   useEffect(() => {
     if (!user) return;
     const already = new Set(badges.map((b) => b.id));
-    const ops: Promise<any>[] = [];
+    const ops: Promise<void>[] = [];
     if (milestones.has7 && !already.has('badge_7_days')) {
       ops.push(setDoc(doc(db, 'users', user.uid, 'recovery_badges', 'badge_7_days'), { unlockedAt: serverTimestamp(), label: '🌱 7 Days' }));
     }
@@ -393,18 +393,19 @@ export default function RecoveryHubPage() {
 
 // UI Components
 function Badge({ active, share, children }: { active?: boolean; share?: string; children: React.ReactNode }) {
-  const canShare = typeof navigator !== 'undefined' && !!(navigator as any).share;
+  const navAny = typeof navigator !== 'undefined' ? (navigator as unknown as { share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>; clipboard?: { writeText: (text: string) => Promise<void> } }) : undefined;
+  const canShare = !!navAny?.share;
   const onShare = async () => {
     if (!active) return;
     try {
-      if (canShare) {
-        await (navigator as any).share({ title: 'AuraX Recovery', text: share ?? 'Proud of my recovery progress on AuraX.', url: typeof window !== 'undefined' ? window.location.origin : undefined });
-      } else if (typeof navigator !== 'undefined' && (navigator as any).clipboard) {
-        await (navigator as any).clipboard.writeText(share ?? 'Proud of my recovery progress on AuraX.');
+      if (canShare && navAny?.share) {
+        await navAny.share({ title: 'AuraX Recovery', text: share ?? 'Proud of my recovery progress on AuraX.', url: typeof window !== 'undefined' ? window.location.origin : undefined });
+      } else if (navAny?.clipboard?.writeText) {
+        await navAny.clipboard.writeText(share ?? 'Proud of my recovery progress on AuraX.');
         alert('Copied to clipboard!');
       }
-    } catch (e) {
-      // no-op
+    } catch {
+      // swallow share errors
     }
   };
   return (
@@ -430,13 +431,13 @@ function MilestonePath({ daysLogged }: { daysLogged: number }) {
 
 function MiniPuzzle() {
   const [order, setOrder] = useState([0,1,2,3]);
-  const shuffle = () => setOrder((o) => o.slice().sort(() => Math.random() - 0.5));
+  const shuffle = () => setOrder((o: number[]) => o.slice().sort(() => Math.random() - 0.5));
   const isWin = order.join(',') === '0,1,2,3';
   return (
     <div className="rounded-lg border border-white/10 p-3">
       <div className="text-xs opacity-70 mb-2">Mini Puzzle</div>
       <div className="grid grid-cols-2 gap-1">
-        {order.map((n, i) => (
+        {order.map((n: number, i: number) => (
           <button key={i} onClick={shuffle} className={`h-10 rounded bg-white/10 ${n===i?'ring-2 ring-emerald-400/60':''}`}>{n+1}</button>
         ))}
       </div>
@@ -485,7 +486,7 @@ function CallAFriend() {
 function ThirtySecondSnippet() {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => { return () => { if (audioRef.current) audioRef.current.pause(); }; }, []);
+  useEffect(() => { const a = audioRef.current; return () => { if (a) a.pause(); }; }, []);
   const toggle = () => {
     if (!audioRef.current) return;
     if (playing) { audioRef.current.pause(); } else { audioRef.current.currentTime = 0; audioRef.current.play(); }
@@ -538,7 +539,7 @@ function SOSBlock() {
   );
 }
 
-function HeatmapCalendar({ logs }: { logs: { state: CompassState; createdAt?: any }[] }) {
+function HeatmapCalendar({ logs }: { logs: { state: CompassState; createdAt?: Timestamp }[] }) {
   const today = new Date();
   const days = Array.from({ length: 30 }).map((_, i) => {
     const d = new Date();
@@ -547,7 +548,7 @@ function HeatmapCalendar({ logs }: { logs: { state: CompassState; createdAt?: an
   });
   const intensityForDay = (d: Date) => {
     const key = d.toDateString();
-    const items = logs.filter((l) => l.createdAt?.toDate && l.createdAt.toDate().toDateString() === key);
+    const items = logs.filter((l) => l.createdAt && typeof l.createdAt.toDate === 'function' && l.createdAt.toDate().toDateString() === key);
     const score = items.reduce((acc, it) => {
       const val = it.state === 'Calm' ? 0 : it.state === 'Tempted' ? 1 : it.state === 'Struggling' ? 2 : 3;
       return Math.max(acc, val);
