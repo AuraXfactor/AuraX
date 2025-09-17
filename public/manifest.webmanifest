@@ -1,13 +1,17 @@
 {
-  "name": "AuraX",
+  "name": "Aura X",
   "short_name": "AuraX",
+  "description": "A gamified lifestyle app for mental wellness",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone"],
   "background_color": "#ffffff",
   "theme_color": "#0ea5e9",
-  "description": "A gamified lifestyle app for mental wellness",
   "icons": [
-    { "src": "/favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" }
-  ]
+    { "src": "/favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" },
+    { "src": "/ryd-logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "prefer_related_applications": false
 }
 
