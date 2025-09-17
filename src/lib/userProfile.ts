@@ -1,5 +1,5 @@
 import { User } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from './firebase';
 
 export async function ensureUserProfile(user: User) {
@@ -52,5 +52,48 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
     createdAt: serverTimestamp(),
     lastLogin: serverTimestamp(),
   }, { merge: true });
+}
+
+// Recovery Hub types and helpers
+export type RecoveryEntry = {
+  createdAt: Date | null;
+  level: 'Calm' | 'Tempted' | 'Struggling' | 'Urgent';
+};
+
+export type ShadowBoxEntry = {
+  createdAt: Date | null;
+  thought: string;
+  reframed: string;
+};
+
+export type WhisperEntry = {
+  createdAt: Date | null;
+  note: string;
+};
+
+export async function setUserAddiction(user: User, addiction: string) {
+  const userDocRef = doc(db, 'users', user.uid);
+  await setDoc(userDocRef, { recovery: { addiction } }, { merge: true });
+}
+
+export async function logCraving(user: User, level: RecoveryEntry['level']) {
+  const userDocRef = doc(db, 'users', user.uid);
+  await updateDoc(userDocRef, {
+    'recovery.cravings': arrayUnion({ level, at: serverTimestamp() }),
+  });
+}
+
+export async function addShadowBox(user: User, thought: string, reframed: string) {
+  const userDocRef = doc(db, 'users', user.uid);
+  await updateDoc(userDocRef, {
+    'recovery.shadowBox': arrayUnion({ thought, reframed, at: serverTimestamp() }),
+  });
+}
+
+export async function addWhisper(user: User, note: string) {
+  const userDocRef = doc(db, 'users', user.uid);
+  await updateDoc(userDocRef, {
+    'recovery.whispers': arrayUnion({ note, at: serverTimestamp() }),
+  });
 }
 
