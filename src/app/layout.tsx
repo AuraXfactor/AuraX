@@ -45,6 +45,7 @@ export default function RootLayout({
               var banner = document.getElementById('install-banner');
               if (!banner) return;
               banner.style.display = 'flex';
+              wireInstallButtons();
             }
             function hideInstallBanner(){
               var banner = document.getElementById('install-banner');
@@ -68,13 +69,28 @@ export default function RootLayout({
               });
             }
             window.dismissInstall = function(){ hideInstallBanner(); }
+            function wireInstallButtons(){
+              var acceptBtn = document.getElementById('install-accept');
+              var dismissBtn = document.getElementById('install-dismiss');
+              if (acceptBtn && !acceptBtn.getAttribute('data-wired')) {
+                acceptBtn.addEventListener('click', function(){ if (window.acceptInstall) window.acceptInstall(); });
+                acceptBtn.setAttribute('data-wired','1');
+              }
+              if (dismissBtn && !dismissBtn.getAttribute('data-wired')) {
+                dismissBtn.addEventListener('click', function(){ if (window.dismissInstall) window.dismissInstall(); });
+                dismissBtn.setAttribute('data-wired','1');
+              }
+            }
             // Fallback: if already installable but no event fired (some browsers), try showing after delay
             setTimeout(function(){
               if (!window.matchMedia('(display-mode: standalone)').matches) {
                 var banner = document.getElementById('install-banner');
                 if (banner && banner.dataset.autoshow === 'true') banner.style.display = 'flex';
+                wireInstallButtons();
               }
             }, 2000);
+            // Wire immediately in case the banner is pre-rendered
+            wireInstallButtons();
           })();
         `}} />
         <div id="install-banner" data-autoshow="true" style={{display:'none',position:'fixed',bottom:16,left:16,right:16,zIndex:50,background:'rgba(255,255,255,0.9)',backdropFilter:'blur(8px)',border:'1px solid rgba(14,165,233,0.3)',boxShadow:'0 10px 30px rgba(14,165,233,0.25)',borderRadius:16,padding:12,alignItems:'center',justifyContent:'space-between'}}>
@@ -86,8 +102,8 @@ export default function RootLayout({
             </div>
           </div>
           <div style={{display:'flex',gap:8}}>
-            <button onClick={()=>{ if (window.dismissInstall) window.dismissInstall(); }} style={{padding:'8px 12px',borderRadius:999,border:'1px solid rgba(14,165,233,0.2)',background:'transparent'}}>Not now</button>
-            <button onClick={()=>{ if (window.acceptInstall) window.acceptInstall(); }} style={{padding:'8px 14px',borderRadius:999,background:'#0ea5e9',color:'#fff',boxShadow:'0 4px 12px rgba(14,165,233,0.5)'}}>Install</button>
+            <button id="install-dismiss" style={{padding:'8px 12px',borderRadius:999,border:'1px solid rgba(14,165,233,0.2)',background:'transparent'}}>Not now</button>
+            <button id="install-accept" style={{padding:'8px 14px',borderRadius:999,background:'#0ea5e9',color:'#fff',boxShadow:'0 4px 12px rgba(14,165,233,0.5)'}}>Install</button>
           </div>
         </div>
       </body>
