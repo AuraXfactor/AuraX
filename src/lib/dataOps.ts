@@ -1,10 +1,6 @@
-import { collection, doc, addDoc, setDoc, serverTimestamp, increment, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, doc, addDoc, setDoc, serverTimestamp, increment, runTransaction, CollectionReference, WithFieldValue } from 'firebase/firestore';
 import { db } from './firebase';
 import { AuraStats, JournalEntryData, ToolkitUsageLog, formatDateKeyFromDate } from './dataModels';
-
-function getUserDocRef(uid: string) {
-  return doc(db, 'users', uid);
-}
 
 function getUserEntriesCollection(uid: string) {
   return collection(db, 'users', uid, 'entries');
@@ -37,8 +33,8 @@ export async function addJournalEntry(params: {
     dateKey,
     createdAt,
   };
-  const col = getUserEntriesCollection(uid);
-  const ref = await addDoc(col, data as any);
+  const col = getUserEntriesCollection(uid) as CollectionReference<JournalEntryData, JournalEntryData>;
+  const ref = await addDoc<JournalEntryData, JournalEntryData>(col, data);
   return { ref, dateKey };
 }
 
@@ -46,7 +42,7 @@ export async function incrementAuraPoints(uid: string, points: number) {
   const auraStatsRef = doc(db, 'users', uid, 'auraStats', 'current');
   await setDoc(
     auraStatsRef,
-    { totalAuraPoints: increment(points), updatedAt: serverTimestamp() } as Partial<AuraStats>,
+    { totalAuraPoints: increment(points), updatedAt: serverTimestamp() } as WithFieldValue<Partial<AuraStats>>,
     { merge: true }
   );
 }
@@ -77,7 +73,7 @@ export async function updateJournalStreak(uid: string, dateKey: string) {
     }
     tx.set(
       auraStatsRef,
-      { lastJournalDateKey: dateKey, journalStreakDays: nextStreak, updatedAt: serverTimestamp() } as Partial<AuraStats>,
+      { lastJournalDateKey: dateKey, journalStreakDays: nextStreak, updatedAt: serverTimestamp() } as WithFieldValue<Partial<AuraStats>>,
       { merge: true }
     );
   });
@@ -98,7 +94,7 @@ export async function logToolkitUsage(params: {
     auraPoints,
     createdAt: serverTimestamp(),
   };
-  const col = getUserToolkitUsageCollection(uid);
+  const col = getUserToolkitUsageCollection(uid) as CollectionReference<ToolkitUsageLog, ToolkitUsageLog>;
   const id = `${toolName}_${Date.now()}`;
-  await setDoc(doc(col, id), log as any, { merge: true });
+  await setDoc(doc(col, id), log, { merge: true });
 }

@@ -1,10 +1,12 @@
+import { FieldValue, Timestamp } from 'firebase/firestore';
+
 export interface JournalEntryData {
   mood: string;
   activities: string[];
   notes: string;
   affirmation?: string | null;
   voiceMemoUrl?: string | null;
-  createdAt?: any; // Firestore serverTimestamp
+  createdAt?: Timestamp | FieldValue;
   dateKey: string; // YYYY-MM-DD
   auraPoints: number;
 }
@@ -13,7 +15,7 @@ export interface ToolkitUsageLog {
   toolName: string; // e.g., "breath_478"
   durationSec: number;
   reliefLevel?: number | null; // 1-5 optional
-  createdAt?: any; // Firestore serverTimestamp
+  createdAt?: Timestamp | FieldValue;
   auraPoints: number;
 }
 
@@ -22,7 +24,7 @@ export interface AuraStats {
   journalStreakDays?: number;
   lastJournalDateKey?: string | null; // YYYY-MM-DD
   milestones?: string[];
-  updatedAt?: any;
+  updatedAt?: Timestamp | FieldValue;
 }
 
 export function formatDateKeyFromDate(d: Date) {

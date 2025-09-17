@@ -11,6 +11,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -311,7 +312,7 @@ export default function JournalPage() {
       for (const a of e.activities ?? []) {
         activityCounts[a] = (activityCounts[a] ?? 0) + 1;
       }
-      auraSum += e.auraScore ?? 0;
+      auraSum += e.auraPoints ?? 0;
     }
     return { moodCounts, activityCounts, auraSum, days: inWindow.length };
   }, [entries]);
