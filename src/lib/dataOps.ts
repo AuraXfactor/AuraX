@@ -3,11 +3,11 @@ import { db } from './firebase';
 import { AuraStats, JournalEntryData, ToolkitUsageLog, formatDateKeyFromDate } from './dataModels';
 
 function getUserEntriesCollection(uid: string) {
-  return collection(db, 'users', uid, 'entries');
+  return collection(db, 'journals', uid, 'entries');
 }
 
 function getUserToolkitUsageCollection(uid: string) {
-  return collection(db, 'users', uid, 'toolkitUsage');
+  return collection(db, 'userBoosts', uid);
 }
 
 export async function addJournalEntry(params: {
@@ -85,14 +85,16 @@ export async function logToolkitUsage(params: {
   durationSec: number;
   reliefLevel?: number | null;
   auraPoints: number;
+  details?: Record<string, string | number | boolean | null>;
 }) {
-  const { uid, toolName, durationSec, reliefLevel, auraPoints } = params;
+  const { uid, toolName, durationSec, reliefLevel, auraPoints, details } = params;
   const log: ToolkitUsageLog = {
     toolName,
     durationSec,
     reliefLevel: reliefLevel ?? null,
     auraPoints,
     createdAt: serverTimestamp(),
+    details: details ?? undefined,
   };
   const col = getUserToolkitUsageCollection(uid) as CollectionReference<ToolkitUsageLog, ToolkitUsageLog>;
   const id = `${toolName}_${Date.now()}`;

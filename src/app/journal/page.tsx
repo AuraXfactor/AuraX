@@ -97,7 +97,7 @@ export default function JournalPage() {
     })();
 
     const q = query(
-      collection(db, 'users', user.uid, 'entries'),
+      collection(db, 'journals', user.uid, 'entries'),
       orderBy('createdAt', 'desc')
     );
     const unsub = onSnapshot(q, (snap) => {

@@ -17,6 +17,7 @@ export interface ToolkitUsageLog {
   reliefLevel?: number | null; // 1-5 optional
   createdAt?: Timestamp | FieldValue;
   auraPoints: number;
+  details?: Record<string, string | number | boolean | null>;
 }
 
 export interface AuraStats {
