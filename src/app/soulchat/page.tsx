@@ -1,16 +1,15 @@
-// @ts-nocheck
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 type ChatMeta = {
   chatId: string;
   otherUid: string;
   lastMessage: string | null;
-  lastAt: any;
+  lastAt: Timestamp | null;
   unreadCount: number;
 };
 
@@ -22,7 +21,10 @@ export default function SoulChatListPage() {
     if (!user) return;
     const q = query(collection(db, 'users', user.uid, 'chatMeta'), orderBy('lastAt', 'desc'));
     const off = onSnapshot(q, (snap) => {
-      const rows: ChatMeta[] = snap.docs.map((d) => ({ chatId: d.id, ...(d.data() as any) }));
+      const rows: ChatMeta[] = snap.docs.map((d) => {
+        const data = d.data() as Omit<ChatMeta, 'chatId'>;
+        return { chatId: d.id, ...data };
+      });
       setChats(rows);
     });
     return () => off();

@@ -1,6 +1,6 @@
-// Minimal Cloud Functions scaffolding (Node 18)
-import functions = require('firebase-functions');
-import admin = require('firebase-admin');
+// Minimal Cloud Functions scaffolding (Node 18) - ESM style imports for repo type-check
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 
 admin.initializeApp();
 const db = admin.firestore();

@@ -1,10 +1,9 @@
-// @ts-nocheck
 'use client';
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { AiPersonality, ChatMessage, getDeterministicChatId, listenToMessages, markMessagesRead, saveChatExcerptToJournal, sendMoodSticker, sendTextMessage, setTyping, typingDocRef } from '@/lib/chat';
+import { ChatMessage, getDeterministicChatId, listenToMessages, markMessagesRead, saveChatExcerptToJournal, sendMoodSticker, sendTextMessage, setTyping, typingDocRef } from '@/lib/chat';
 import { onSnapshot } from 'firebase/firestore';
 import VoiceInput from '@/components/VoiceInput';
 import MoodPicker from '@/app/soulchat/components/MoodPicker';

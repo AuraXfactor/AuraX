@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { User } from 'firebase/auth';
 import {
   addDoc,
@@ -15,6 +14,8 @@ import {
   startAfter,
   getDocs,
   Timestamp,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -175,12 +176,15 @@ export function listenToMessages(params: {
   uid: string;
   chatId: string;
   pageSize?: number;
-  onChange: (messages: ChatMessage[], last?: unknown) => void;
+  onChange: (messages: ChatMessage[], last?: QueryDocumentSnapshot<DocumentData> | undefined) => void;
 }) {
   const { uid, chatId, pageSize = 50, onChange } = params;
   const q = query(getMessagesColRef(uid, chatId), orderBy('createdAt', 'desc'), limit(pageSize));
   return onSnapshot(q, (snap) => {
-    const messages: ChatMessage[] = snap.docs.map((d) => ({ messageId: d.id, ...(d.data() as any) }));
+    const messages: ChatMessage[] = snap.docs.map((d) => {
+      const data = d.data() as Omit<ChatMessage, 'messageId'>;
+      return { messageId: d.id, ...data };
+    });
     const last = snap.docs.at(-1);
     onChange(messages.reverse(), last);
   });
@@ -189,14 +193,18 @@ export function listenToMessages(params: {
 export async function loadMoreMessages(params: {
   uid: string;
   chatId: string;
-  after: unknown;
+  after: QueryDocumentSnapshot<DocumentData> | null | undefined;
   pageSize?: number;
-}): Promise<{ messages: ChatMessage[]; last?: unknown }>
+}): Promise<{ messages: ChatMessage[]; last?: QueryDocumentSnapshot<DocumentData> | undefined }>
 {
   const { uid, chatId, after, pageSize = 50 } = params;
-  const q = query(getMessagesColRef(uid, chatId), orderBy('createdAt', 'desc'), startAfter(after as any), limit(pageSize));
+  const base = query(getMessagesColRef(uid, chatId), orderBy('createdAt', 'desc'));
+  const q = after ? query(base, startAfter(after), limit(pageSize)) : query(base, limit(pageSize));
   const snap = await getDocs(q);
-  const messages: ChatMessage[] = snap.docs.map((d) => ({ messageId: d.id, ...(d.data() as any) }));
+  const messages: ChatMessage[] = snap.docs.map((d) => {
+    const data = d.data() as Omit<ChatMessage, 'messageId'>;
+    return { messageId: d.id, ...data };
+  });
   const last = snap.docs.at(-1);
   return { messages: messages.reverse(), last };
 }
