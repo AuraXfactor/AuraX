@@ -1,12 +1,12 @@
 import { User } from 'firebase/auth';
-import { addDoc, collection, doc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, increment, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type Cheer = {
   fromUid: string;
   emoji: string;
   message?: string;
-  timestamp: any;
+  timestamp: Timestamp;
 };
 
 export async function sendCheer(currentUser: User, targetUid: string, emoji: string, message?: string) {

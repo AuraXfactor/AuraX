@@ -1,5 +1,5 @@
 import { User } from 'firebase/auth';
-import { arrayUnion, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type CircleStatus = 'active' | 'completed' | 'paused';
@@ -28,8 +28,8 @@ export async function createSupportCircle(currentUser: User, circleId: string, m
 export async function updateCircleProgress(currentUser: User, circleId: string, delta: number = 1) {
   const circleRef = doc(db, 'users', currentUser.uid, 'supportCircles', circleId);
   const snap = await getDoc(circleRef);
-  const existing = (snap.exists() ? (snap.data() as any) : {}) as SupportCircle;
-  const prev = (existing.progress?.[currentUser.uid] ?? 0) as number;
+  const existing = (snap.exists() ? (snap.data() as Partial<SupportCircle>) : {});
+  const prev = Number(existing.progress?.[currentUser.uid] ?? 0);
   const next = prev + delta;
   await setDoc(circleRef, { progress: { ...(existing.progress ?? {}), [currentUser.uid]: next }, updatedAt: serverTimestamp() }, { merge: true });
 }

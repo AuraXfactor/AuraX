@@ -1,23 +1,32 @@
 "use client";
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createSupportCircle, updateCircleProgress } from '@/lib/circles';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logStreakActivity } from '@/lib/streaks';
 
+type CircleDoc = {
+  id: string;
+  circleId?: string;
+  members?: string[];
+  challengeName?: string;
+  progress?: Record<string, number>;
+  status?: 'active' | 'completed' | 'paused';
+};
+
 export default function CirclesPage() {
   const { user } = useAuth();
   const [circleId, setCircleId] = useState('');
   const [challengeName, setChallengeName] = useState('7-day Gratitude');
   const [members, setMembers] = useState('');
-  const [circles, setCircles] = useState<any[]>([]);
+  const [circles, setCircles] = useState<CircleDoc[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const col = collection(db, 'users', user.uid, 'supportCircles');
     const unsub = onSnapshot(col, (snap) => {
-      setCircles(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setCircles(snap.docs.map((d) => ({ id: d.id, ...(d.data() as unknown as Omit<CircleDoc, 'id'>) })));
     });
     return () => unsub();
   }, [user]);

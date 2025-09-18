@@ -7,7 +7,6 @@ import {
   query,
   serverTimestamp,
   setDoc,
-  updateDoc,
   where,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -39,14 +38,14 @@ export async function searchUsers(term: string): Promise<PublicUser[]> {
   const map = new Map<string, PublicUser>();
   for (const snap of results) {
     snap.forEach((d) => {
-      const data = d.data() as any;
+      const data = d.data() as Partial<PublicUser> & { email?: string; username?: string; phone?: string; name?: string; avatar?: string };
       map.set(d.id, {
         uid: d.id,
-        username: (data.username as string | null) ?? null,
-        email: (data.email as string | null) ?? null,
-        phone: (data.phone as string | null) ?? null,
-        name: (data.name as string | null) ?? null,
-        avatar: (data.avatar as string | null) ?? null,
+        username: data.username ?? null,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        name: data.name ?? null,
+        avatar: data.avatar ?? null,
       });
     });
   }
@@ -75,7 +74,7 @@ export async function getFriendStatus(currentUser: User, friendUid: string): Pro
   const ref = doc(db, 'users', currentUser.uid, 'friends', friendUid);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  const data = snap.data() as any;
-  return (data.status as FriendStatus) ?? null;
+  const data = snap.data() as { status?: FriendStatus } | undefined;
+  return data?.status ?? null;
 }
 

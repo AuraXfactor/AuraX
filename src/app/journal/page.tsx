@@ -250,7 +250,7 @@ export default function JournalPage() {
 
       // Update streak for completing a journal activity today
       try {
-        const res = await logStreakActivity(user, 'journal');
+        await logStreakActivity(user, 'journal');
         setCelebrate(true);
         window.setTimeout(() => setCelebrate(false), 1500);
       } catch {}

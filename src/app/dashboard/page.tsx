@@ -5,21 +5,34 @@ import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendCheer } from '@/lib/cheers';
 
+interface FriendDoc { id: string; friendUid: string; status: 'pending' | 'accepted'; since?: unknown }
+interface UserAggregate { currentStreak?: number; auraTotal?: number; streakShields?: number; lastStreakKey?: string }
+interface CircleRow { id: string; challengeName?: string; progress?: Record<string, number> }
+interface CheerRow { id: string; fromUid: string; emoji: string; message?: string }
+
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [userData, setUserData] = useState<any | null>(null);
-  const [friends, setFriends] = useState<any[]>([]);
-  const [friendProfiles, setFriendProfiles] = useState<Record<string, any>>({});
-  const [cheers, setCheers] = useState<any[]>([]);
-  const [circles, setCircles] = useState<any[]>([]);
+  const [userData, setUserData] = useState<UserAggregate | null>(null);
+  const [friends, setFriends] = useState<FriendDoc[]>([]);
+  const [friendProfiles, setFriendProfiles] = useState<Record<string, UserAggregate>>({});
+  const [cheers, setCheers] = useState<CheerRow[]>([]);
+  const [circles, setCircles] = useState<CircleRow[]>([]);
+
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
 
   useEffect(() => {
     if (!user) return;
     const ref = doc(db, 'users', user.uid);
-    const unsubUser = onSnapshot(ref, (snap) => setUserData(snap.data() ?? null));
-    const unsubFriends = onSnapshot(collection(ref, 'friends'), (snap) => setFriends(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
-    const unsubCheers = onSnapshot(collection(ref, 'cheers'), (snap) => setCheers(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
-    const unsubCircles = onSnapshot(collection(ref, 'supportCircles'), (snap) => setCircles(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const unsubUser = onSnapshot(ref, (snap) => setUserData((snap.data() as UserAggregate) ?? null));
+    const unsubFriends = onSnapshot(collection(ref, 'friends'), (snap) => setFriends(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FriendDoc, 'id'>) }))));
+    const unsubCheers = onSnapshot(collection(ref, 'cheers'), (snap) => setCheers(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CheerRow, 'id'>) }))));
+    const unsubCircles = onSnapshot(collection(ref, 'supportCircles'), (snap) => setCircles(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CircleRow, 'id'>) }))));
     return () => { unsubUser(); unsubFriends(); unsubCheers(); unsubCircles(); };
   }, [user]);
 
@@ -30,7 +43,7 @@ export default function DashboardPage() {
     accepted.forEach((f) => {
       const friendRef = doc(db, 'users', f.friendUid);
       const unsub = onSnapshot(friendRef, (snap) => {
-        setFriendProfiles((prev) => ({ ...prev, [f.friendUid]: snap.data() ?? {} }));
+        setFriendProfiles((prev) => ({ ...prev, [f.friendUid]: (snap.data() as UserAggregate) ?? {} }));
       });
       unsubs.push(unsub);
     });
@@ -40,13 +53,6 @@ export default function DashboardPage() {
   if (!user) return <div className="min-h-screen flex items-center justify-center">Login required</div>;
 
   const acceptedFriends = friends.filter((f) => f.status === 'accepted');
-  const todayKey = useMemo(() => {
-    const d = new Date();
-    const y = d.getUTCFullYear();
-    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }, []);
 
   return (
     <main className="min-h-screen p-6 md:p-10 space-y-8 max-w-6xl mx-auto">
@@ -61,7 +67,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-5 rounded-2xl border md:col-span-2">
-          <div className="font-semibold mb-2">Friends' streaks</div>
+          <div className="font-semibold mb-2">Friends&apos; streaks</div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {acceptedFriends.length === 0 && <div className="text-sm opacity-70">No friends yet</div>}
             {acceptedFriends.map((f) => (

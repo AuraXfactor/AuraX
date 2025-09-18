@@ -1,21 +1,5 @@
 import { User } from 'firebase/auth';
-import {
-  addDoc,
-  arrayUnion,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  increment,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  Timestamp,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
+import { collection, doc, getDoc, increment, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type StreakActivity = 'journal' | 'toolkit' | 'recover';
@@ -41,13 +25,19 @@ export async function getTodayStreakDocRef(user: User) {
   return dayDocRef;
 }
 
+type UserStreakAggregate = {
+  lastStreakKey?: string | null;
+  currentStreak?: number;
+  streakShields?: number;
+};
+
 export async function getLatestStreak(user: User): Promise<{ lastKey: string | null; count: number; shieldBank: number; }> {
   const userDocRef = doc(db, 'users', user.uid);
   const snap = await getDoc(userDocRef);
-  const data = snap.exists() ? (snap.data() as any) : {};
-  const lastKey = (data.lastStreakKey as string) ?? null;
-  const count = (data.currentStreak as number) ?? 0;
-  const shieldBank = (data.streakShields as number) ?? 0;
+  const data = (snap.exists() ? (snap.data() as UserStreakAggregate) : {});
+  const lastKey = data.lastStreakKey ?? null;
+  const count = data.currentStreak ?? 0;
+  const shieldBank = data.streakShields ?? 0;
   return { lastKey, count, shieldBank };
 }
 
@@ -74,7 +64,7 @@ export async function logStreakActivity(user: User, activity: StreakActivity, ex
 
   let auraDelta = 0;
   if (todaySnap.exists()) {
-    const data = todaySnap.data() as any;
+    const data = todaySnap.data() as Partial<StreakEntry>;
     const existing: StreakActivity[] = Array.isArray(data.activitiesCompleted) ? data.activitiesCompleted : [];
     if (!existing.includes(activity)) {
       newActivities = Array.from(new Set([...existing, activity]));
@@ -83,7 +73,7 @@ export async function logStreakActivity(user: User, activity: StreakActivity, ex
       newActivities = existing;
       auraDelta = 0;
     }
-    newCount = (data.streakCount as number) ?? count;
+    newCount = typeof data.streakCount === 'number' ? data.streakCount : count;
     shieldUsed = Boolean(data.shieldUsed);
   } else {
     // Determine if this continues streak

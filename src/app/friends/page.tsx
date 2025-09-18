@@ -1,22 +1,25 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { acceptFriendRequest, getFriendStatus, searchUsers, sendFriendRequest } from '@/lib/friends';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { acceptFriendRequest, searchUsers, sendFriendRequest } from '@/lib/friends';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+interface FriendRow { id: string; friendUid: string; status: 'pending' | 'accepted' }
+interface SearchUser { uid: string; username?: string | null; name?: string | null; email?: string | null }
 
 export default function FriendsPage() {
   const { user } = useAuth();
   const [term, setTerm] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [pending, setPending] = useState<any[]>([]);
-  const [accepted, setAccepted] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchUser[]>([]);
+  const [pending, setPending] = useState<FriendRow[]>([]);
+  const [accepted, setAccepted] = useState<FriendRow[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const friendsCol = collection(db, 'users', user.uid, 'friends');
     const unsub = onSnapshot(friendsCol, (snap) => {
-      const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const all = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FriendRow, 'id'>) }));
       setPending(all.filter((f) => f.status === 'pending'));
       setAccepted(all.filter((f) => f.status === 'accepted'));
     });
