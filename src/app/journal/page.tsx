@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  addDoc,
   collection,
   serverTimestamp,
   query,
@@ -13,10 +12,10 @@ import {
   doc,
   setDoc,
   getDoc,
-  increment,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { saveJournalEntry, updateUserAuraPoints } from '@/lib/firestoreCollections';
 
 const defaultActivities: { key: string; label: string }[] = [
   { key: 'talk_friend', label: 'Talking to a friend/loved one' },
@@ -98,21 +97,21 @@ export default function JournalPage() {
     })();
 
     const q = query(
-      collection(db, 'journals', user.uid, 'entries'),
-      orderBy('createdAt', 'desc')
+      collection(db, 'users', user.uid, 'journalEntries'),
+      orderBy('timestamp', 'desc')
     );
     const unsub = onSnapshot(q, (snap) => {
       const items = snap.docs.map((d) => {
         const data = d.data() as DocumentData;
         return {
           id: d.id,
-          entryText: (data.entryText as string) ?? '',
-          moodTag: (data.moodTag as string) ?? 'neutral',
-          createdAt: (data.createdAt as Timestamp | null) ?? null,
+          entryText: (data.notes as string) ?? '',
+          moodTag: (data.mood as string) ?? 'neutral',
+          createdAt: (data.timestamp as Timestamp | null) ?? null,
           voiceMemoUrl: (data.voiceMemoUrl as string | null) ?? null,
-          activities: (data.activities as string[] | undefined) ?? [],
+          activities: (data.selfCareActivities as string[] | undefined) ?? [],
           affirmation: (data.affirmation as string | null) ?? null,
-          auraScore: (data.auraScore as number | null) ?? null,
+          auraScore: (data.auraPoints as number | null) ?? null,
           dateKey: (data.dateKey as string | null) ?? null,
         } satisfies JournalEntry;
       });
@@ -221,24 +220,25 @@ export default function JournalPage() {
 
       const hasVoice = Boolean(voiceMemoUrl);
       const auraScore = computeAuraScore(hasVoice);
-      const dateKey = formatDateKey(new Date());
 
-      await addDoc(collection(db, 'journals', user.uid, 'entries'), {
-        entryText: notes,
-        moodTag,
-        activities: selectedActivities,
-        affirmation: affirmation.trim() || null,
-        auraScore,
-        dateKey,
-        createdAt: serverTimestamp(),
-        voiceMemoUrl: voiceMemoUrl ?? null,
+      // Save using the new standardized structure
+      await saveJournalEntry(user.uid, {
+        date: new Date(),
+        mood: `${moods.find(m => m.value === moodTag)?.label || '😐'} ${moodTag}`,
+        selfCareActivities: selectedActivities,
+        affirmation: affirmation.trim() || '',
+        notes: notes,
+        auraPoints: auraScore,
       });
 
+      // Update user's total aura points
+      await updateUserAuraPoints(user.uid);
+
+      // Save user preferences
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(
         userDocRef,
         {
-          auraTotal: increment(auraScore),
           journalReminderEnabled: reminderEnabled,
           journalReminderTime: reminderTime,
           updatedAt: serverTimestamp(),

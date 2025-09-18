@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { saveTherapyRequest } from '@/lib/firestoreCollections';
 
 type Provider = {
   id: string;
@@ -31,6 +32,11 @@ export default function TherapyBookingPage() {
   const [time, setTime] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  
+  // New therapy request fields
+  const [preferredLanguage, setPreferredLanguage] = useState('English');
+  const [preferredGender, setPreferredGender] = useState('No preference');
+  const [preferredTime, setPreferredTime] = useState('Morning');
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const timeslots = useMemo(() => ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00'], []);
@@ -55,7 +61,18 @@ export default function TherapyBookingPage() {
     if (!date || !time || !providerId) return;
     try {
       setSaving(true);
-      const docRef = await addDoc(collection(db, 'users', user.uid, 'therapy_bookings'), {
+      
+      // Save using new standardized structure
+      const requestId = await saveTherapyRequest(user.uid, {
+        preferredLanguage,
+        preferredGender,
+        preferredTime,
+        mode: sessionType.toLowerCase(),
+        status: 'pending',
+      });
+      
+      // Also save the original booking for backward compatibility
+      await addDoc(collection(db, 'users', user.uid, 'therapy_bookings'), {
         providerId,
         sessionType,
         date,
@@ -63,7 +80,8 @@ export default function TherapyBookingPage() {
         timezone: tz,
         createdAt: serverTimestamp(),
       });
-      setSavedId(docRef.id);
+      
+      setSavedId(requestId);
     } finally {
       setSaving(false);
     }
@@ -100,6 +118,56 @@ export default function TherapyBookingPage() {
               {SESSION_TYPES.map((t) => (
                 <button key={t} onClick={() => setSessionType(t)} className={`px-3 py-1.5 rounded-full border ${sessionType===t?'bg-emerald-500/20 border-emerald-400/60':'bg-white/5 border-white/15'}`}>{t}</button>
               ))}
+            </div>
+
+            {/* New preference fields */}
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="block text-xs opacity-70 mb-1">Preferred Language</label>
+                <select 
+                  value={preferredLanguage} 
+                  onChange={(e) => setPreferredLanguage(e.target.value)}
+                  className="w-full rounded-lg bg-black/20 p-2 border border-white/15 text-sm"
+                >
+                  <option value="English">English</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs opacity-70 mb-1">Therapist Gender Preference</label>
+                <select 
+                  value={preferredGender} 
+                  onChange={(e) => setPreferredGender(e.target.value)}
+                  className="w-full rounded-lg bg-black/20 p-2 border border-white/15 text-sm"
+                >
+                  <option value="No preference">No preference</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Non-binary">Non-binary</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs opacity-70 mb-1">Preferred Time</label>
+                <div className="flex gap-2 flex-wrap">
+                  {['Morning', 'Afternoon', 'Evening', 'Weekend'].map((timeSlot) => (
+                    <button 
+                      key={timeSlot} 
+                      onClick={() => setPreferredTime(timeSlot)} 
+                      className={`px-3 py-1.5 rounded-full border text-sm ${
+                        preferredTime === timeSlot
+                          ? 'bg-emerald-500/20 border-emerald-400/60'
+                          : 'bg-white/5 border-white/15'
+                      }`}
+                    >
+                      {timeSlot}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 text-sm">

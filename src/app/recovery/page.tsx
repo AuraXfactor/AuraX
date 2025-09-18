@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp, doc, setDoc, onSnapshot, query, or
 import type { QuerySnapshot, DocumentData, QueryDocumentSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { saveRecoveryLog, updateUserAuraPoints } from '@/lib/firestoreCollections';
 import Link from 'next/link';
 
 // Local helpers
@@ -31,6 +32,14 @@ export default function RecoveryHubPage() {
   const [shadowInput, setShadowInput] = useState('');
   const [reframe, setReframe] = useState('');
   const [whisper, setWhisper] = useState('');
+  
+  // Recovery log form state
+  const [showRecoveryLog, setShowRecoveryLog] = useState(false);
+  const [trigger, setTrigger] = useState('');
+  const [cravingLevel, setCravingLevel] = useState(1);
+  const [copingTool, setCopingTool] = useState('');
+  const [relapse, setRelapse] = useState(false);
+  const [notes, setNotes] = useState('');
   type WhisperDoc = { text: string; createdAt?: Timestamp };
   type CravingDoc = { state: CompassState; createdAt?: Timestamp };
   type BadgeDoc = { unlockedAt?: Timestamp; label?: string };
@@ -141,6 +150,32 @@ export default function RecoveryHubPage() {
       createdAt: serverTimestamp(),
     });
     setWhisper('');
+  };
+
+  const handleSaveRecoveryLog = async () => {
+    if (!user) return;
+    
+    try {
+      await saveRecoveryLog(user.uid, {
+        trigger: trigger.trim() || undefined,
+        cravingLevel,
+        copingToolUsed: copingTool.trim(),
+        relapse,
+        notes: notes.trim(),
+      });
+      
+      await updateUserAuraPoints(user.uid);
+      
+      // Reset form
+      setTrigger('');
+      setCravingLevel(1);
+      setCopingTool('');
+      setRelapse(false);
+      setNotes('');
+      setShowRecoveryLog(false);
+    } catch (error) {
+      console.error('Error saving recovery log:', error);
+    }
   };
 
   // Simple milestone calc
@@ -365,7 +400,123 @@ export default function RecoveryHubPage() {
         </div>
       </section>
 
-      {/* 6. Recovery Map */}
+      {/* 6. Recovery Log */}
+      <section className="mt-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg">Recovery Log</h3>
+          <button
+            onClick={() => setShowRecoveryLog(true)}
+            className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm hover:scale-105 transition"
+          >
+            + Log Entry
+          </button>
+        </div>
+        <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+          <p className="text-sm opacity-80">
+            Track your recovery journey with detailed logs. Each entry helps build your aura and provides insights into your progress.
+          </p>
+        </div>
+      </section>
+
+      {/* Recovery Log Modal */}
+      {showRecoveryLog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold">Recovery Log Entry</h3>
+              <button
+                onClick={() => setShowRecoveryLog(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Trigger (optional)</label>
+                <input
+                  type="text"
+                  value={trigger}
+                  onChange={(e) => setTrigger(e.target.value)}
+                  placeholder="What triggered the craving?"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Craving Level (1-10)</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setCravingLevel(level)}
+                      className={`w-8 h-8 rounded-full text-sm transition ${
+                        cravingLevel === level
+                          ? 'bg-purple-500 text-white'
+                          : 'border border-gray-300 hover:border-purple-300'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Coping Tool Used</label>
+                <input
+                  type="text"
+                  value={copingTool}
+                  onChange={(e) => setCopingTool(e.target.value)}
+                  placeholder="e.g., Breathing exercise, Called friend, Went for walk"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={relapse}
+                    onChange={(e) => setRelapse(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm">This was a relapse</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Notes</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Additional thoughts, feelings, or observations..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSaveRecoveryLog}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-2 px-4 rounded-lg font-medium hover:scale-105 transition"
+                >
+                  Save Entry (+10 Aura Points)
+                </button>
+                <button
+                  onClick={() => setShowRecoveryLog(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Recovery Map */}
       <section className="mt-10">
         <h3 className="font-semibold text-lg mb-2">Recovery Map</h3>
         <div className="rounded-2xl border border-white/15 bg-white/5 p-4">

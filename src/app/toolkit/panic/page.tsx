@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useState } from 'react';
+import { saveToolkitLog, updateUserAuraPoints } from '@/lib/firestoreCollections';
 
 export default function PanicButtonPage() {
   const { user } = useAuth();
@@ -33,7 +34,20 @@ export default function PanicButtonPage() {
   const runSequence = useCallback(async () => {
     navigator.vibrate?.([50, 30, 50]);
     chime();
-  }, [chime]);
+    
+    // Log panic button usage
+    if (user) {
+      try {
+        await saveToolkitLog(user.uid, {
+          toolName: 'Panic Button',
+          duration: 1, // 1 minute session
+        });
+        await updateUserAuraPoints(user.uid);
+      } catch (error) {
+        console.error('Error logging panic button usage:', error);
+      }
+    }
+  }, [chime, user]);
 
   if (!user) {
     return (

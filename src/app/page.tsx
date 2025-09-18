@@ -44,14 +44,25 @@ export default function Home() {
         </p>
 
         {user ? (
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
-            <span>
-              Welcome back, {profile?.name || user.email} 
-              {profile?.avatar && <span className="ml-1">{profile.avatar}</span>} 🎉
-            </span>
-            <Link href="/journal" className="px-3 py-1.5 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
-              Write a journal ➜
-            </Link>
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
+              <span>
+                Welcome back, {profile?.name || user.email} 
+                {profile?.avatar && <span className="ml-1">{profile.avatar}</span>} 🎉
+              </span>
+              <Link href="/journal" className="px-3 py-1.5 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
+                Write a journal ➜
+              </Link>
+            </div>
+            
+            {profile && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                <span className="text-2xl">✨</span>
+                <span className="font-semibold text-amber-700 dark:text-amber-300">
+                  {profile.auraPoints} Aura Points
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-center gap-4">
