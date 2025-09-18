@@ -24,6 +24,15 @@ export default function Navbar() {
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">AuraX</span>
         </Link>
         <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform border border-white/20">
+            🏠 Dashboard
+          </Link>
+          <Link href="/friends" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform border border-white/20">
+            👯 Friends
+          </Link>
+          <Link href="/circles" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform border border-white/20">
+            🔄 Circles
+          </Link>
           <Link href="/therapy-support" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow">
             🫂 Therapy
           </Link>

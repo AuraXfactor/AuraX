@@ -16,6 +16,7 @@ import {
   increment,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+  import { logStreakActivity } from '@/lib/streaks';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const defaultActivities: { key: string; label: string }[] = [
@@ -73,6 +74,7 @@ export default function JournalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
   const [reminderTime, setReminderTime] = useState('20:00');
   const [customActivities, setCustomActivities] = useState<string[]>([]);
   const [newActivity, setNewActivity] = useState('');
@@ -246,6 +248,13 @@ export default function JournalPage() {
         { merge: true }
       );
 
+      // Update streak for completing a journal activity today
+      try {
+        const res = await logStreakActivity(user, 'journal');
+        setCelebrate(true);
+        window.setTimeout(() => setCelebrate(false), 1500);
+      } catch {}
+
       setNotes('');
       setAffirmation('');
       setSelectedActivities([]);
@@ -379,7 +388,12 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-8">
+    <div className="max-w-2xl mx-auto p-6 space-y-8 relative">
+      {celebrate && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-5xl animate-pop">🎉</div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Journal</h1>
         <div className="px-3 py-1 rounded-full border border-white/20 text-sm">
