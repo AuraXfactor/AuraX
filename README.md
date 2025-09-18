@@ -24,6 +24,27 @@ The `pages/api` directory is mapped to `/api/*`. Files in this directory are tre
 
 This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## SoulChat & Aura Coach (Demo Steps)
+
+1. Sign up or log in.
+2. Navigate to SoulChat from the header.
+3. Open a conversation by navigating to `/soulchat/{otherUid}` where `{otherUid}` is another test account UID.
+4. Send a text, a mood sticker (picker next to input), or use voice input.
+5. Tap Aura to request a compassionate reply suggestion. If `AURA_COACH_URL` is unset, a local fallback is returned.
+6. If using Cloud Function, set env `AURA_COACH_URL` to your deployed function URL. The server reads `x-auth-uid` for logging.
+7. Save excerpt to Journal using the footer button; verify `/users/{uid}/journalEntries` in Firestore.
+8. SOS menu in header offers escalation actions.
+
+### Firestore Structure
+- `/users/{uid}/chats/{chatId}/messages/{messageId}`
+- `/users/{uid}/chatMeta/{chatId}`
+- `/users/{uid}/aiChatLogs/{logId}` (server)
+- `/users/{uid}/journalEntries/{entryId}`
+- `/analytics/chatStats/{day}` (server)
+
+### Cloud Functions
+- Implemented minimal `functions/index.ts` with `auraCoach` placeholder. Replace with provider SDK + moderation.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

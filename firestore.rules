@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read/write their own documents
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Chat metadata minimal read by participants only
+    match /users/{userId}/chatMeta/{chatId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Typing indicator docs under chats are readable by the two participants only
+    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /analytics/{collection=**} {
+      allow read, write: if false; // server-only
+    }
+  }
+}
+
