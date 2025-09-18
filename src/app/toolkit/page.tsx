@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import { logStreakActivity } from '@/lib/streaks';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -51,7 +52,9 @@ export default function ToolkitPage() {
 
       <section className="max-w-5xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {cards.map((c, i) => (
-          <ToolCard key={c.title} href={c.href} title={c.title} desc={c.desc} emoji={c.emoji} colors={c.colors} delay={i * 0.03} />
+          <div key={c.title} onClick={async ()=>{ try { if (user) await logStreakActivity(user, 'toolkit'); } catch {} }}>
+            <ToolCard href={c.href} title={c.title} desc={c.desc} emoji={c.emoji} colors={c.colors} delay={i * 0.03} />
+          </div>
         ))}
       </section>
     </motion.div>

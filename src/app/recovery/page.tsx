@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { addShadowBox, addWhisper, logCraving, setUserAddiction } from '@/lib/userProfile';
+import { logStreakActivity } from '@/lib/streaks';
 
 const affirmations = [
   'I am stronger than my cravings.',
@@ -49,6 +50,7 @@ export default function RecoveryHub() {
   const onPickLevel = async (level: LevelKey) => {
     if (!user) return;
     await logCraving(user, level);
+    try { await logStreakActivity(user, 'recover'); } catch {}
     // Quick feedback via alert for now; could use modal/animation
     alert(levelMeta[level].action);
   };
