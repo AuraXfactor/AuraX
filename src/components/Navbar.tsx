@@ -37,13 +37,21 @@ export default function Navbar() {
             📔 Journal
           </Link>
           {user ? (
-            <button
-              onClick={handleSignOut}
-              disabled={loading}
-              className="px-3 py-1.5 rounded-full border border-white/30 hover:bg-white/10 transition disabled:opacity-50"
-            >
-              {loading ? 'Signing out…' : 'Sign out'}
-            </button>
+            <div className="flex items-center gap-2">
+              <Link href="/profile" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow">
+                👤 Profile
+              </Link>
+              <Link href="/settings" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-gray-500 to-slate-500 text-white shadow">
+                ⚙️ Settings
+              </Link>
+              <button
+                onClick={handleSignOut}
+                disabled={loading}
+                className="px-3 py-1.5 rounded-full border border-white/30 hover:bg-white/10 transition disabled:opacity-50"
+              >
+                {loading ? 'Signing out…' : 'Sign out'}
+              </button>
+            </div>
           ) : (
             <Link href="/login" className="px-3 py-1.5 rounded-full border border-white/30 hover:bg-white/10 transition">
               Login

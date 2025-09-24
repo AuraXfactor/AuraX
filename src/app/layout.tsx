@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import type { ReactNode } from 'react';
@@ -29,8 +30,10 @@ export default function RootLayout({
       </head>
       <body className="bg-fun">
         <AuthProvider>
-          <Navbar />
-          {children}
+          <ThemeProvider>
+            <Navbar />
+            {children}
+          </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
           (function(){
