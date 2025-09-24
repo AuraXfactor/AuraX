@@ -252,7 +252,7 @@ export default function PointsHubPage() {
     <div className="space-y-6">
       {/* Daily Progress */}
       <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-2xl border border-white/20 p-6">
-        <h2 className="text-lg font-bold mb-4">Today's Progress</h2>
+        <h2 className="text-lg font-bold mb-4">Today&apos;s Progress</h2>
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-2">
             <span>Daily Points</span>

@@ -147,7 +147,7 @@ export default function ConnectHubPage() {
           id: group.id,
           name: group.name,
           lastMessage: 'Recent activity...',
-          lastActivity: group.lastActivity?.toDate(),
+          lastActivity: (group.lastActivity as any)?.toDate ? (group.lastActivity as any).toDate() : undefined,
           unreadCount: Math.floor(Math.random() * 5),
           members: group.members?.length || 0,
         })) as GroupChat[];
