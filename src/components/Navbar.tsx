@@ -23,18 +23,24 @@ export default function Navbar() {
         <Link href="/" className="font-extrabold text-xl tracking-tight">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">AuraX</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link href="/aura" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow">
+            ✨ Aura
+          </Link>
+          <Link href="/friends" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow">
+            👥 Friends
+          </Link>
+          <Link href="/groups" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow">
+            💬 Groups
+          </Link>
           <Link href="/soulchat" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow">
-            💬 SoulChat
-          </Link>
-          <Link href="/therapy-support" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow">
-            🫂 Therapy
-          </Link>
-          <Link href="/toolkit" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow">
-            🧰 Toolkit
+            💭 Chat
           </Link>
           <Link href="/journal" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow">
             📔 Journal
+          </Link>
+          <Link href="/toolkit" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow">
+            🧰 Toolkit
           </Link>
           {user ? (
             <div className="flex items-center gap-2">

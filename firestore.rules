@@ -5,6 +5,11 @@ service cloud.firestore {
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    
+    // Allow reading basic user info for friend discovery
+    match /users/{userId} {
+      allow read: if request.auth != null;
+    }
 
     // Chat metadata minimal read by participants only
     match /users/{userId}/chatMeta/{chatId} {
@@ -15,6 +20,42 @@ service cloud.firestore {
     // Typing indicator docs under chats are readable by the two participants only
     match /users/{userId}/chats/{chatId}/typing/{otherUid} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Aura Posts - can be read by friends, written by author
+    match /auraPosts/{postId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == resource.data.authorUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorUid;
+    }
+    
+    // Aura Reactions
+    match /auraPosts/{postId}/reactions/{reactionId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+    }
+    
+    // Aura Replies
+    match /auraPosts/{postId}/replies/{replyId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+    }
+    
+    // Group Chats - members can read/write
+    match /groupChats/{groupId} {
+      allow read, write: if request.auth != null && request.auth.uid in resource.data.members;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.createdBy;
+    }
+    
+    // Group Messages - members can read/write
+    match /groupChats/{groupId}/messages/{messageId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members;
+      allow create: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members &&
+        request.auth.uid == request.resource.data.fromUid;
     }
 
     match /analytics/{collection=**} {

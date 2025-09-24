@@ -1,6 +1,6 @@
 'use client';
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatMessage, getDeterministicChatId, listenToMessages, markMessagesRead, saveChatExcerptToJournal, sendMoodSticker, sendTextMessage, setTyping, typingDocRef } from '@/lib/chat';
@@ -27,6 +27,7 @@ function SOSMenu() {
 export default function ConversationPage() {
   const { user } = useAuth();
   const params = useParams<{ otherUid: string }>();
+  const searchParams = useSearchParams();
   const otherUid = decodeURIComponent(params.otherUid);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -34,6 +35,7 @@ export default function ConversationPage() {
   const [showJournal, setShowJournal] = useState(false);
   const [journalText, setJournalText] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
+  const [replyToPost, setReplyToPost] = useState<{ id: string; content: string } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [otherTyping, setOtherTyping] = useState(false);
 
@@ -49,6 +51,15 @@ export default function ConversationPage() {
     return () => { off(); offTyping(); };
   }, [user, chatId, otherUid]);
 
+  // Check for Aura post reply context
+  useEffect(() => {
+    const postId = searchParams.get('replyToPost');
+    const postContent = searchParams.get('postContent');
+    if (postId && postContent) {
+      setReplyToPost({ id: postId, content: decodeURIComponent(postContent) });
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     if (!user || !chatId) return;
     markMessagesRead({ uid: user.uid, chatId }).catch(() => {});
@@ -61,7 +72,17 @@ export default function ConversationPage() {
   async function onSend(e?: FormEvent) {
     e?.preventDefault();
     if (!user || !input.trim()) return;
-    const text = input.trim();
+    
+    let text = input.trim();
+    
+    // Add context if replying to an Aura post
+    if (replyToPost) {
+      const truncatedContent = replyToPost.content.slice(0, 50);
+      const ellipsis = replyToPost.content.length > 50 ? '...' : '';
+      text = `💫 Replying to Aura: "${truncatedContent}${ellipsis}"\n\n${text}`;
+      setReplyToPost(null);
+    }
+    
     setInput('');
     await sendTextMessage({ fromUser: user, toUid: otherUid, text }).catch(console.error);
     await setTyping({ uid: user.uid, otherUid, chatId, typing: false }).catch(() => {});
@@ -138,6 +159,23 @@ export default function ConversationPage() {
       </div>
 
       <footer className="border-t border-white/10 p-2">
+        {replyToPost && (
+          <div className="mb-3 p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-300 mb-1">💫 Replying to Aura:</p>
+                <p className="text-white/80 text-sm">&ldquo;{replyToPost.content.slice(0, 80)}...&rdquo;</p>
+              </div>
+              <button
+                onClick={() => setReplyToPost(null)}
+                className="text-white/60 hover:text-white text-xl"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+        
         {suggestion && (
           <div className="mb-2 p-2 rounded-lg bg-white/5 flex items-center gap-2">
             <div className="text-white/80 text-sm flex-1">AI suggests: {suggestion}</div>
@@ -157,7 +195,7 @@ export default function ConversationPage() {
                   await setTyping({ uid: user.uid, otherUid, chatId, typing: e.target.value.length > 0 }).catch(() => {});
                 }
               }}
-              placeholder="Type a message…"
+              placeholder={replyToPost ? "Reply to this Aura..." : "Type a message…"}
               className="w-full resize-none min-h-[44px] max-h-[140px] bg-white/5 rounded-xl p-3 outline-none"
             />
           </div>
