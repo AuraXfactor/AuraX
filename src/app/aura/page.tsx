@@ -110,11 +110,21 @@ export default function AuraPage() {
   };
 
   const handleCreatePost = async () => {
-    if (!user || (!newPostContent.trim() && !mediaFile)) return;
+    if (!user) {
+      alert('Please log in to share an Aura');
+      return;
+    }
+    
+    if (!newPostContent.trim() && !mediaFile) {
+      alert('Please add some content or media to your Aura');
+      return;
+    }
     
     setCreating(true);
     try {
-      await createAuraPost({
+      console.log('Creating Aura post...', { content: newPostContent, type: postType });
+      
+      const postId = await createAuraPost({
         user,
         content: newPostContent,
         type: postType,
@@ -123,6 +133,8 @@ export default function AuraPage() {
         emoji: selectedEmoji,
         visibility: 'friends',
       });
+
+      console.log('Aura post created successfully:', postId);
 
       // Reset form
       setNewPostContent('');
@@ -161,9 +173,11 @@ export default function AuraPage() {
       
       // Reload feed
       await loadAuraFeed();
+      
+      alert('Aura shared successfully! ✨');
     } catch (error) {
       console.error('Error creating Aura post:', error);
-      alert('Failed to create post');
+      alert('Failed to create post. Please try again.');
     } finally {
       setCreating(false);
     }

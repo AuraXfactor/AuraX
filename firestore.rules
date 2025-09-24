@@ -11,6 +11,11 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
+    // Journal entries - users can read/write their own journals
+    match /journals/{userId}/entries/{entryId} {
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Chat metadata minimal read by participants only
     match /users/{userId}/chatMeta/{chatId} {
       allow read: if request.auth != null && request.auth.uid == userId;

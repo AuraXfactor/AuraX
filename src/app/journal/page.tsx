@@ -278,10 +278,16 @@ export default function JournalPage() {
         // Don't fail the journal entry if points fail
       }
 
+      // Show success message
+      alert('Journal entry saved successfully! 🎉');
+
       setNotes('');
       setAffirmation('');
       setSelectedActivities([]);
       audioChunksRef.current = [];
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      alert('Failed to save journal entry. Please try again.');
     } finally {
       setSubmitting(false);
     }

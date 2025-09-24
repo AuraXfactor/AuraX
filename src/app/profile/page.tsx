@@ -6,6 +6,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
+import QRCode from 'qrcode';
 
 interface UserProfile {
   name?: string;
@@ -42,6 +43,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeUrl, setQRCodeUrl] = useState<string>('');
 
   useEffect(() => {
     if (!user) {
@@ -107,10 +110,64 @@ export default function ProfilePage() {
       setAvatarFile(null);
       setAvatarPreview(null);
       await loadProfile();
+      
+      alert('Profile saved successfully! 🎉');
     } catch (error) {
       console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const generateQRCode = async () => {
+    if (!user) return;
+    
+    try {
+      // Generate QR code with profile sharing URL
+      const profileUrl = `${window.location.origin}/friends/add/${user.uid}`;
+      const qrDataUrl = await QRCode.toDataURL(profileUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#7c3aed', // Purple color
+          light: '#ffffff'
+        }
+      });
+      
+      setQRCodeUrl(qrDataUrl);
+      setShowQRCode(true);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      alert('Failed to generate QR code');
+    }
+  };
+
+  const shareProfile = async () => {
+    if (!user) return;
+    
+    const profileUrl = `${window.location.origin}/friends/add/${user.uid}`;
+    const shareText = `Join me on AuraX - Your wellness companion! 🌟`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join me on AuraX',
+          text: shareText,
+          url: profileUrl,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${profileUrl}`);
+        alert('Profile link copied to clipboard! 📋');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert('Share link: ' + profileUrl);
+      }
     }
   };
 
@@ -185,14 +242,32 @@ export default function ProfilePage() {
                   </span>
                 </div>
               </div>
-              <div>
+              <div className="flex flex-col gap-2">
                 {!editing ? (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"
-                  >
-                    Edit Profile
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"
+                    >
+                      Edit Profile
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={shareProfile}
+                        className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition text-sm"
+                        title="Share Profile"
+                      >
+                        📤 Share
+                      </button>
+                      <button
+                        onClick={generateQRCode}
+                        className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg transition text-sm"
+                        title="QR Code"
+                      >
+                        📱 QR
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex gap-2">
                     <button
@@ -209,9 +284,9 @@ export default function ProfilePage() {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-4 py-2 bg-white text-purple-600 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+                      className="px-4 py-2 bg-white text-purple-600 hover:bg-gray-100 rounded-lg transition disabled:opacity-50 font-semibold"
                     >
-                      {saving ? 'Saving...' : 'Save'}
+                      {saving ? 'Saving...' : 'Save Changes'}
                     </button>
                   </div>
                 )}
@@ -363,6 +438,42 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* QR Code Modal */}
+        {showQRCode && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-sm w-full p-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-4">Share Your Profile</h2>
+                
+                {qrCodeUrl && (
+                  <div className="mb-6">
+                    <img src={qrCodeUrl} alt="Profile QR Code" className="w-64 h-64 mx-auto rounded-2xl" />
+                  </div>
+                )}
+                
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Friends can scan this QR code to connect with you on AuraX!
+                </p>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowQRCode(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={shareProfile}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition"
+                  >
+                    Share Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

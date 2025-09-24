@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
   searchUsersByUsername, 
+  getAllUsersForDiscovery,
   getFriendSuggestions, 
   sendFriendRequest, 
   acceptFriendRequest, 
@@ -71,6 +72,7 @@ export default function FriendsPage() {
     }
     loadFriends();
     loadSuggestions();
+    loadDiscoverableUsers();
     
     // Listen to friend requests
     const unsubscribe = listenToFriendRequests(user.uid, setFriendRequests);
@@ -107,9 +109,34 @@ export default function FriendsPage() {
     }
   };
 
+  const loadDiscoverableUsers = async () => {
+    if (!user) return;
+    try {
+      const allUsers = await getAllUsersForDiscovery(user.uid);
+      const currentFriends = new Set(friends.map(f => f.uid));
+      
+      const discoverableUsers = allUsers
+        .filter(user => !currentFriends.has(user.uid))
+        .slice(0, 10)
+        .map(user => ({
+          ...user,
+          isFriend: false,
+          requestSent: false,
+        }));
+      
+      // If no search results yet, show discoverable users by default
+      if (searchResults.length === 0 && !searchQuery) {
+        setSearchResults(discoverableUsers);
+      }
+    } catch (error) {
+      console.error('Error loading discoverable users:', error);
+    }
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      // Show discoverable users when search is empty
+      await loadDiscoverableUsers();
       return;
     }
 
@@ -127,6 +154,7 @@ export default function FriendsPage() {
       setSearchResults(enhancedResults);
     } catch (error) {
       console.error('Error searching users:', error);
+      alert('Error searching users. Please try again.');
     } finally {
       setSearching(false);
     }

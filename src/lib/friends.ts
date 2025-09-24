@@ -425,23 +425,84 @@ export async function searchUsersByUsername(username: string): Promise<Array<{
   avatar?: string;
   mutualFriends?: number;
 }>> {
-  // This would typically be implemented with a search index like Algolia
-  // For now, we'll use a simple Firestore query (limited functionality)
-  const usersRef = collection(db, 'users');
-  const q = query(
-    usersRef,
-    where('username', '>=', username.toLowerCase()),
-    where('username', '<=', username.toLowerCase() + '\uf8ff'),
-    limit(10)
-  );
-  
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
-    uid: doc.id,
-    name: doc.data().name || doc.data().email || 'Anonymous',
-    username: doc.data().username,
-    avatar: doc.data().avatar,
-  }));
+  try {
+    const usersRef = collection(db, 'users');
+    
+    // Search by username first
+    if (username.trim()) {
+      const q = query(
+        usersRef,
+        where('username', '>=', username.toLowerCase()),
+        where('username', '<=', username.toLowerCase() + '\uf8ff'),
+        limit(10)
+      );
+      
+      const snapshot = await getDocs(q);
+      const results = snapshot.docs.map(doc => ({
+        uid: doc.id,
+        name: doc.data().name || doc.data().email || 'Anonymous',
+        username: doc.data().username || '',
+        avatar: doc.data().avatar,
+      })).filter(user => user.username); // Only return users with usernames
+      
+      if (results.length > 0) {
+        return results;
+      }
+    }
+    
+    // If no username results, search by name or email
+    const allUsersSnapshot = await getDocs(query(usersRef, limit(20)));
+    const searchTerm = username.toLowerCase();
+    
+    return allUsersSnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          name: data.name || data.email || 'Anonymous',
+          username: data.username || data.email?.split('@')[0] || '',
+          avatar: data.avatar,
+          email: data.email,
+        };
+      })
+      .filter(user => 
+        user.name.toLowerCase().includes(searchTerm) ||
+        user.username.toLowerCase().includes(searchTerm) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm))
+      )
+      .slice(0, 10);
+      
+  } catch (error) {
+    console.error('Error searching users:', error);
+    return [];
+  }
+}
+
+// Get all users for general discovery
+export async function getAllUsersForDiscovery(currentUserUid: string): Promise<Array<{
+  uid: string;
+  name: string;
+  username: string;
+  avatar?: string;
+  email?: string;
+}>> {
+  try {
+    const usersRef = collection(db, 'users');
+    const snapshot = await getDocs(query(usersRef, limit(50)));
+    
+    return snapshot.docs
+      .filter(doc => doc.id !== currentUserUid) // Exclude current user
+      .map(doc => ({
+        uid: doc.id,
+        name: doc.data().name || doc.data().email || 'Anonymous',
+        username: doc.data().username || doc.data().email?.split('@')[0] || `user${doc.id.slice(-4)}`,
+        avatar: doc.data().avatar,
+        email: doc.data().email,
+      }));
+  } catch (error) {
+    console.error('Error getting users for discovery:', error);
+    return [];
+  }
 }
 
 export async function getFriendSuggestions(userUid: string): Promise<Array<{
