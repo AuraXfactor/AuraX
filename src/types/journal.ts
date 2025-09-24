@@ -38,7 +38,7 @@ export type EntryContent =
   | { items: Array<{ text: string; why?: string }> } // gratitude
   | { timerSec: number; text: string; released?: boolean } // brainDump
   | { situation: string; thoughts: string; feelings: string } // CBT
-  | { goals?: any; tasks?: any; progress?: number; reflection?: string } // goalTracker
+  | { goals?: GoalDefinition[]; tasks?: TaskItem[]; progress?: number; reflection?: string } // goalTracker
   | { bullets: Array<{ kind: 'task' | 'event' | 'note'; text: string; done?: boolean }> } // bullet
   | { prompt?: string; text: string } // dialogue (multi-speaker handled in UI layer)
   | { line: string; year: number } // oneLine
@@ -46,5 +46,21 @@ export type EntryContent =
 
 export interface JournalEntry extends JournalEntryBase {
   content: EntryContent;
+}
+
+export interface GoalDefinition {
+  id: string;
+  title: string;
+  description?: string;
+  targetDate?: string; // ISO date
+  completed?: boolean;
+}
+
+export interface TaskItem {
+  id: string;
+  title: string;
+  note?: string;
+  dueDate?: string; // ISO date
+  done?: boolean;
 }
 
