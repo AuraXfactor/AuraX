@@ -33,6 +33,9 @@ export default function Navbar() {
           <Link href="/groups" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow">
             💬 Groups
           </Link>
+          <Link href="/aura-points" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow">
+            🏆 Points
+          </Link>
           <Link href="/soulchat" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow">
             💭 Chat
           </Link>

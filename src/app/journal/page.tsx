@@ -17,6 +17,9 @@ import {
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { awardAuraPoints } from '@/lib/auraPoints';
+import { updateQuestProgress } from '@/lib/weeklyQuests';
+import { updateSquadChallengeProgress } from '@/lib/auraSquads';
 
 const defaultActivities: { key: string; label: string }[] = [
   { key: 'talk_friend', label: 'Talking to a friend/loved one' },
@@ -245,6 +248,35 @@ export default function JournalPage() {
         },
         { merge: true }
       );
+
+      // Award Aura Points for journal entry
+      try {
+        const wordCount = notes.trim().split(/\s+/).length;
+        await awardAuraPoints({
+          user,
+          activity: 'journal_entry',
+          proof: {
+            type: 'journal_length',
+            value: wordCount,
+            metadata: { 
+              moodTag, 
+              activities: selectedActivities,
+              hasVoice: Boolean(voiceMemoUrl),
+              affirmation: Boolean(affirmation)
+            }
+          },
+          description: `📔 Journal entry completed (${wordCount} words)`,
+        });
+        
+        // Update quest progress
+        await updateQuestProgress(user.uid, 'journal_entry');
+        
+        // Update squad challenge progress
+        await updateSquadChallengeProgress(user.uid, 'journal_entry', 1);
+      } catch (pointsError) {
+        console.error('Error awarding points:', pointsError);
+        // Don't fail the journal entry if points fail
+      }
 
       setNotes('');
       setAffirmation('');

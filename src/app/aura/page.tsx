@@ -12,6 +12,9 @@ import {
   AuraPost
 } from '@/lib/friends';
 import { Timestamp } from 'firebase/firestore';
+import { awardAuraPoints } from '@/lib/auraPoints';
+import { updateQuestProgress } from '@/lib/weeklyQuests';
+import { updateSquadChallengeProgress } from '@/lib/auraSquads';
 
 const moods = [
   { label: '🌟', value: 'grateful', color: 'from-yellow-400 to-amber-500' },
@@ -130,6 +133,32 @@ export default function AuraPage() {
       setMediaPreview('');
       setShowCreateModal(false);
       
+      // Award Aura Points for sharing
+      try {
+        await awardAuraPoints({
+          user,
+          activity: 'aura_post',
+          proof: {
+            type: 'social_interaction',
+            value: newPostContent.length,
+            metadata: { 
+              type: postType,
+              moodTag: selectedMood,
+              hasMedia: Boolean(mediaFile)
+            }
+          },
+          description: `✨ Shared an Aura with friends`,
+        });
+        
+        // Update quest progress
+        await updateQuestProgress(user.uid, 'aura_post');
+        
+        // Update squad challenge progress
+        await updateSquadChallengeProgress(user.uid, 'aura_post', 1);
+      } catch (pointsError) {
+        console.error('Error awarding points:', pointsError);
+      }
+      
       // Reload feed
       await loadAuraFeed();
     } catch (error) {
@@ -150,6 +179,34 @@ export default function AuraPage() {
         type: reactionType as 'like' | 'love' | 'support' | 'hug',
         emoji,
       });
+      
+      // Award points for supporting a friend
+      if (post.authorUid !== user.uid) {
+        try {
+          await awardAuraPoints({
+            user,
+            activity: 'friend_support',
+            proof: {
+              type: 'social_interaction',
+              value: reactionType,
+              metadata: { 
+                postId: post.id,
+                authorUid: post.authorUid,
+                reactionType
+              }
+            },
+            description: `🤗 Supported ${post.authorName}'s Aura`,
+          });
+          
+          // Update quest progress
+          await updateQuestProgress(user.uid, 'friend_support');
+          
+          // Update squad challenge progress
+          await updateSquadChallengeProgress(user.uid, 'friend_support', 1);
+        } catch (pointsError) {
+          console.error('Error awarding support points:', pointsError);
+        }
+      }
       
       // Reload feed to show updated reactions
       await loadAuraFeed();

@@ -2,6 +2,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import AuraPointsWidget from "@/components/AuraPointsWidget";
 import type { ReactNode } from 'react';
 
 export const metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({
           <ThemeProvider>
             <Navbar />
             {children}
+            <AuraPointsWidget />
           </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `

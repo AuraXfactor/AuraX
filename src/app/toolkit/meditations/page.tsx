@@ -3,10 +3,15 @@ import Link from 'next/link';
 import VoiceInput from '@/components/VoiceInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion } from 'framer-motion';
+import { awardAuraPoints } from '@/lib/auraPoints';
+import { updateQuestProgress } from '@/lib/weeklyQuests';
+import { updateSquadChallengeProgress } from '@/lib/auraSquads';
+import { useState } from 'react';
 
 export default function MeditationsPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
+  const [completedSessions, setCompletedSessions] = useState<Set<string>>(new Set());
 
   if (!user) {
     return (
@@ -24,10 +29,49 @@ export default function MeditationsPage() {
   }
 
   const sessions = [
-    { title: 'Sleep Drift (10m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-    { title: 'Anxiety Ease (8m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-    { title: 'Deep Focus (15m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+    { id: 'sleep', title: 'Sleep Drift (10m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration: 600 },
+    { id: 'anxiety', title: 'Anxiety Ease (8m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', duration: 480 },
+    { id: 'focus', title: 'Deep Focus (15m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', duration: 900 },
   ];
+
+  const handleMeditationComplete = async (sessionId: string, duration: number, completionPercentage: number) => {
+    if (!user || completedSessions.has(sessionId)) return;
+    
+    try {
+      // Award points for meditation completion (minimum 80% completion)
+      if (completionPercentage >= 80) {
+        await awardAuraPoints({
+          user,
+          activity: 'meditation_complete',
+          proof: {
+            type: 'video_completion',
+            value: completionPercentage,
+            metadata: { 
+              sessionId,
+              duration,
+              completedDuration: Math.round(duration * completionPercentage / 100)
+            }
+          },
+          description: `🧘 Completed meditation: ${sessions.find(s => s.id === sessionId)?.title}`,
+        });
+        
+        // Update quest progress
+        await updateQuestProgress(user.uid, 'meditation_complete');
+        
+        // Update squad challenge progress (pass minutes meditated)
+        const minutesCompleted = Math.round(duration * completionPercentage / 100 / 60);
+        await updateSquadChallengeProgress(user.uid, 'meditation_complete', minutesCompleted);
+        
+        // Mark as completed to prevent double awarding
+        setCompletedSessions(prev => new Set([...prev, sessionId]));
+        
+        // Show celebration
+        alert(`🎉 Meditation completed! +15 Aura Points earned for your mindfulness practice!`);
+      }
+    } catch (error) {
+      console.error('Error awarding meditation points:', error);
+    }
+  };
   const handleVoice = (text: string) => {
     const idx = sessions.findIndex((s) => text.toLowerCase().includes(s.title.toLowerCase().split(' ')[0]));
     if (idx >= 0) {
@@ -45,10 +89,30 @@ export default function MeditationsPage() {
         </div>
         {sessions.map((s) => (
           <div key={s.title} className="p-4 rounded-xl border border-white/20 bg-white/60 dark:bg-white/5 backdrop-blur">
-            <div className="font-semibold">{s.title}</div>
-            <audio controls className="w-full mt-2">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold">{s.title}</div>
+              {completedSessions.has(s.id) && (
+                <span className="text-green-500 font-bold text-sm">✅ +15 pts</span>
+              )}
+            </div>
+            <audio 
+              controls 
+              className="w-full mt-2"
+              onEnded={() => handleMeditationComplete(s.id, s.duration, 100)}
+              onTimeUpdate={(e) => {
+                const audio = e.target as HTMLAudioElement;
+                const completion = (audio.currentTime / audio.duration) * 100;
+                if (completion >= 80 && !completedSessions.has(s.id)) {
+                  // Award partial completion
+                  handleMeditationComplete(s.id, s.duration, completion);
+                }
+              }}
+            >
               <source src={s.url} type="audio/mpeg" />
             </audio>
+            <p className="text-xs text-gray-500 mt-2">
+              Complete 80% to earn 15 Aura Points! 🌟
+            </p>
           </div>
         ))}
       </div>
