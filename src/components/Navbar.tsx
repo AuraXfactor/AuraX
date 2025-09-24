@@ -39,8 +39,8 @@ export default function Navbar() {
           <Link href="/soulchat" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow">
             💭 Chat
           </Link>
-          <Link href="/journal" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow">
-            📔 Journal
+          <Link href="/journals" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow">
+            📔 Journals
           </Link>
           <Link href="/toolkit" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow">
             🧰 Toolkit

@@ -16,6 +16,16 @@ service cloud.firestore {
       allow read, write, create: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Specialized journals - users can read/write their own specialized journal entries
+    match /specialized-journals/{userId}/{journalType}/{entryId} {
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User goals - users can read/write their own goals
+    match /user-goals/{userId} {
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Chat metadata minimal read by participants only
     match /users/{userId}/chatMeta/{chatId} {
       allow read: if request.auth != null && request.auth.uid == userId;
