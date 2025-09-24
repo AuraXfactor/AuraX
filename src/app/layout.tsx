@@ -1,7 +1,8 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import SlimNavbar from "@/components/SlimNavbar";
+import SmartBottomNav from "@/components/SmartBottomNav";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
 import type { ReactNode } from 'react';
 
@@ -32,8 +33,9 @@ export default function RootLayout({
       <body className="bg-fun">
         <AuthProvider>
           <ThemeProvider>
-            <Navbar />
+            <SlimNavbar />
             {children}
+            <SmartBottomNav />
             <AuraPointsWidget />
           </ThemeProvider>
         </AuthProvider>
