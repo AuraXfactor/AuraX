@@ -1,16 +1,23 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigation } from "@/contexts/NavigationContext";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const { setPageTitle } = useNavigation();
+
+  useEffect(() => {
+    setPageTitle('Welcome to AuraX');
+  }, [setPageTitle]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center pb-20">Loading...</div>;
   }
 
   return (
-    <main className="min-h-screen p-6 md:p-10">
+    <main className="min-h-screen p-6 md:p-10 pb-24">
       <section className="max-w-5xl mx-auto text-center">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-4">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500">
@@ -22,11 +29,30 @@ export default function Home() {
         </p>
 
         {user ? (
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
-            <span>Welcome back, {user.email} 🎉</span>
-            <Link href="/journal" className="px-3 py-1.5 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
-              Write a journal ➜
-            </Link>
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
+              <span>Welcome back, {user.email} 🎉</span>
+            </div>
+            
+            {/* Quick Access Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+              <Link href="/hub/journal" className="p-4 bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-2xl hover:scale-105 transition text-center">
+                <div className="text-3xl mb-2">📔</div>
+                <div className="font-bold text-sm">Journal</div>
+              </Link>
+              <Link href="/hub/connect" className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl hover:scale-105 transition text-center">
+                <div className="text-3xl mb-2">🌟</div>
+                <div className="font-bold text-sm">Connect</div>
+              </Link>
+              <Link href="/hub/points" className="p-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl hover:scale-105 transition text-center">
+                <div className="text-3xl mb-2">🏆</div>
+                <div className="font-bold text-sm">Points</div>
+              </Link>
+              <Link href="/hub/profile" className="p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl hover:scale-105 transition text-center">
+                <div className="text-3xl mb-2">👤</div>
+                <div className="font-bold text-sm">Profile</div>
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-4">
