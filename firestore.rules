@@ -1,24 +1,54 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read/write their own documents
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Chat metadata minimal read by participants only
-    match /users/{userId}/chatMeta/{chatId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    match /users/{userId} {
+      // Privacy baseline: a user may only access their subtree
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Journals with explicit constraints
+      match /journals/{journalId} {
+        allow read, create: if isOwner(userId)
+          && request.resource.data.ownerId == userId;
+
+        allow update, delete: if isOwner(userId)
+          && resource.data.ownerId == userId;
+
+        match /entries/{entryId} {
+          allow read, create: if isOwner(userId)
+            && request.resource.data.ownerId == userId
+            && request.resource.data.createdAt is timestamp
+            && request.resource.data.updatedAt is timestamp
+            && (request.resource.data.content is map || request.resource.data.content is string)
+            && (request.resource.data.size() <= 50);
+
+          allow update, delete: if isOwner(userId)
+            && resource.data.ownerId == userId
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.updatedAt is timestamp;
+        }
+      }
+
+      // Reminders owned by the user
+      match /reminders/{reminderId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Export job metadata within the user subtree
+      match /exports/{exportId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
-    // Typing indicator docs under chats are readable by the two participants only
-    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
+    // Server-only analytics (Admin SDK bypasses rules)
     match /analytics/{collection=**} {
-      allow read, write: if false; // server-only
+      allow read, write: if false;
     }
   }
 }
