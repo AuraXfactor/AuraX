@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -32,7 +32,7 @@ const tabs = [
   { id: 'toolkit', label: 'Toolkit', icon: '🧰', href: '/toolkit' },
 ];
 
-export default function JournalHubPage() {
+function JournalHubContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -445,5 +445,17 @@ export default function JournalHubPage() {
         {activeTab === 'toolkit' && renderToolkitTab()}
       </div>
     </div>
+  );
+}
+
+export default function JournalHubPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center pb-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <JournalHubContent />
+    </Suspense>
   );
 }

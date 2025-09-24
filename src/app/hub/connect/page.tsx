@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -38,7 +38,7 @@ const tabs = [
   { id: 'chat', label: 'Messages', icon: '💭', href: '/soulchat' },
 ];
 
-export default function ConnectHubPage() {
+function ConnectHubContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -147,9 +147,9 @@ export default function ConnectHubPage() {
           id: group.id,
           name: group.name,
           lastMessage: 'Recent activity...',
-          lastActivity: (group.lastActivity as any)?.toDate ? (group.lastActivity as any).toDate() : undefined,
+          lastActivity: (group.lastActivity as { toDate?: () => Date })?.toDate ? (group.lastActivity as { toDate: () => Date }).toDate() : undefined,
           unreadCount: Math.floor(Math.random() * 5),
-          members: group.members?.length || 0,
+          members: (group.members as string[])?.length || 0,
         })) as GroupChat[];
       
       setGroups(groupsList);
@@ -561,5 +561,17 @@ export default function ConnectHubPage() {
         {activeTab === 'chat' && renderChatTab()}
       </div>
     </div>
+  );
+}
+
+export default function ConnectHubPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center pb-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <ConnectHubContent />
+    </Suspense>
   );
 }
