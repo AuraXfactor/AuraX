@@ -1,10 +1,7 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { NavigationProvider } from "@/contexts/NavigationContext";
 import "./globals.css";
-import TopBar from "@/components/TopBar";
-import BottomNavigation from "@/components/BottomNavigation";
-import ConditionalNavbar from "@/components/ConditionalNavbar";
+import Navbar from "@/components/Navbar";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
 import type { ReactNode } from 'react';
 
@@ -35,13 +32,9 @@ export default function RootLayout({
       <body className="bg-fun">
         <AuthProvider>
           <ThemeProvider>
-            <NavigationProvider>
-              <TopBar />
-              <ConditionalNavbar />
-              {children}
-              <BottomNavigation />
-              <AuraPointsWidget />
-            </NavigationProvider>
+            <Navbar />
+            {children}
+            <AuraPointsWidget />
           </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
