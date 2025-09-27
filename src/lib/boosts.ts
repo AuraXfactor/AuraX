@@ -8,10 +8,10 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
   Timestamp,
   updateDoc,
   where,
+  QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -46,8 +46,8 @@ export function getBoostsRef() {
 }
 
 export async function listBoosts(params?: { category?: BoostCategory; activeOnly?: boolean }): Promise<Boost[]> {
-  let base = getBoostsRef();
-  const filters = [] as any[];
+  const base = getBoostsRef();
+  const filters: QueryConstraint[] = [];
   if (params?.category) filters.push(where('category', '==', params.category));
   if (params?.activeOnly) filters.push(where('isActive', '==', true));
   const q = filters.length > 0 ? query(base, ...filters, orderBy('title')) : query(base, orderBy('title'));
@@ -86,7 +86,7 @@ export function extractYouTubeId(url?: string): string | null {
     const u = new URL(url);
     if (u.hostname.includes('youtu.be')) return u.pathname.replace('/', '') || null;
     if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
-  } catch (_) {
+  } catch {
     return null;
   }
   return null;

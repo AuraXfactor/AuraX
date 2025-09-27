@@ -29,6 +29,7 @@ export default function ToolkitPage() {
     { href: '/toolkit/breathing', title: 'Breathing Exercises', desc: '4-7-8, Box, and custom patterns', emoji: '🌬️', colors: 'from-cyan-400 to-blue-500' },
     { href: '/toolkit/meditations', title: 'Guided Meditations', desc: '5-20 min sessions for sleep, focus', emoji: '🧘', colors: 'from-emerald-400 to-teal-500' },
     { href: '/toolkit/body-scan', title: 'Body Scan', desc: 'Release tension with audio guidance', emoji: '🪷', colors: 'from-fuchsia-400 to-pink-500' },
+    { href: '/boosts', title: 'Aura Boosts', desc: 'YouTube meditations, workouts, and panic tools', emoji: '⚡', colors: 'from-purple-500 to-violet-500' },
     { href: '/toolkit/grounding', title: '5-4-3-2-1 Grounding', desc: 'Senses-based interactive grounding', emoji: '🪨', colors: 'from-amber-400 to-orange-500' },
     { href: '/toolkit/panic', title: 'Panic Button', desc: 'One-tap calming sequence', emoji: '🆘', colors: 'from-rose-500 to-orange-500' },
     { href: '/toolkit/playlists', title: 'Mood Playlists', desc: 'Curated Spotify/Apple playlists', emoji: '🎧', colors: 'from-indigo-500 to-blue-500' },
