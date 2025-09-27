@@ -87,6 +87,27 @@ export async function POST() {
       isActive: true,
       tags: ['panic', 'affirmations'],
     },
+    // Additional Recommendations
+    {
+      title: '3-Minute Breathing Space',
+      description: 'Creator: Mindfulness Exercises • Perfect for: Quick reset, breath awareness',
+      videoUrl: 'https://www.youtube.com/watch?v=SEfs5TJZ6Nk',
+      durationSec: 3 * 60,
+      points: 15,
+      category: 'guided_meditation',
+      isActive: true,
+      tags: ['breathing', 'reset'],
+    },
+    {
+      title: '5-Minute Morning Yoga for Energy',
+      description: 'Creator: SarahBethYoga • Perfect for: Morning activation, light movement',
+      videoUrl: 'https://www.youtube.com/watch?v=4pKly2JojMw',
+      durationSec: 5 * 60,
+      points: 15,
+      category: 'mini_workout',
+      isActive: true,
+      tags: ['yoga', 'morning'],
+    },
   ];
 
   try {
