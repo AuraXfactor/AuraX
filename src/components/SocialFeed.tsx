@@ -4,8 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   getAuraFeed, 
   createAuraPost, 
-  addAuraReaction, 
-  addAuraReply,
+  addAuraReaction,
   AuraPost 
 } from '@/lib/friends';
 
@@ -95,7 +94,7 @@ export default function SocialFeed({ className = '' }: SocialFeedProps) {
       await addAuraReaction({
         user,
         postId: post.id,
-        type: reactionType as any,
+        type: reactionType as 'like' | 'love' | 'support' | 'hug',
         emoji,
       });
       
@@ -107,10 +106,12 @@ export default function SocialFeed({ className = '' }: SocialFeedProps) {
     }
   };
 
-  const formatTimeAgo = (timestamp: any) => {
+  const formatTimeAgo = (timestamp: { toDate?: () => Date } | Date | null) => {
     if (!timestamp) return '';
     
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const date = timestamp && typeof timestamp === 'object' && 'toDate' in timestamp 
+      ? timestamp.toDate?.() || new Date() 
+      : new Date(timestamp as Date);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
@@ -169,7 +170,7 @@ export default function SocialFeed({ className = '' }: SocialFeedProps) {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">What's on your mind?</label>
+                <label className="block text-sm font-medium mb-1">What&apos;s on your mind?</label>
                 <textarea
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}

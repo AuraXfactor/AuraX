@@ -14,8 +14,6 @@ import {
   getEnrichedFriendsList,
   FriendRequest 
 } from '@/lib/friends';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 interface Friend {
   uid: string;

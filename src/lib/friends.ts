@@ -15,7 +15,6 @@ import {
   Timestamp,
   writeBatch,
   arrayUnion,
-  deleteDoc,
   setDoc,
   deleteField,
 } from 'firebase/firestore';
@@ -222,7 +221,7 @@ export async function acceptFriendRequest(params: {
   fromUserName: string;
   fromUserAvatar?: string;
 }): Promise<void> {
-  const { user, requestId, fromUid, fromUserName, fromUserAvatar } = params;
+  const { user, requestId, fromUid } = params;
   
   const batch = writeBatch(db);
   
@@ -256,7 +255,7 @@ export async function declineFriendRequest(params: {
   requestId: string;
   fromUid: string;
 }): Promise<void> {
-  const { user, requestId, fromUid } = params;
+  const { requestId } = params;
   
   // Update request status to rejected
   const requestRef = doc(getFriendRequestsRef(), requestId);
@@ -440,16 +439,20 @@ export async function searchUsersByUsername(username: string): Promise<Array<{
     
     const searchTerm = username.toLowerCase();
     const publicResults = publicSnapshot.docs
-      .map(doc => ({
-        uid: doc.id,
-        name: doc.data().name || 'Anonymous',
-        username: doc.data().username || '',
-        avatar: doc.data().avatar,
-        bio: doc.data().bio,
-        interests: doc.data().interests || [],
-      }))
+      .map(doc => {
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          name: data.name || 'Anonymous',
+          username: data.username || '',
+          avatar: data.avatar,
+          bio: data.bio,
+          interests: data.interests || [],
+          isDeleted: data.isDeleted,
+        };
+      })
       .filter(user => 
-        !doc.data().isDeleted &&
+        !user.isDeleted &&
         (user.name.toLowerCase().includes(searchTerm) ||
          user.username.toLowerCase().includes(searchTerm) ||
          (user.bio && user.bio.toLowerCase().includes(searchTerm)))
@@ -504,15 +507,21 @@ export async function getAllUsersForDiscovery(currentUserUid: string): Promise<A
     const publicSnapshot = await getDocs(query(publicProfilesRef, limit(30)));
     
     const publicResults = publicSnapshot.docs
-      .filter(doc => doc.id !== currentUserUid && !doc.data().isDeleted)
-      .map(doc => ({
-        uid: doc.id,
-        name: doc.data().name || 'Anonymous',
-        username: doc.data().username || `user${doc.id.slice(-4)}`,
-        avatar: doc.data().avatar,
-        bio: doc.data().bio,
-        interests: doc.data().interests || [],
-      }));
+      .filter(doc => {
+        const data = doc.data();
+        return doc.id !== currentUserUid && !data.isDeleted;
+      })
+      .map(doc => {
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          name: data.name || 'Anonymous',
+          username: data.username || `user${doc.id.slice(-4)}`,
+          avatar: data.avatar,
+          bio: data.bio,
+          interests: data.interests || [],
+        };
+      });
 
     if (publicResults.length >= 10) {
       return publicResults;
@@ -585,7 +594,7 @@ export async function getFriendSuggestions(userUid: string): Promise<Array<{
           
           if (candidateData) {
             const candidateInterests = candidateData.interests || candidateData.focusAreas || [];
-            const sharedInterests = userInterests.filter(interest => 
+            const sharedInterests = userInterests.filter((interest: string) => 
               candidateInterests.includes(interest)
             );
             
@@ -618,7 +627,7 @@ export async function getFriendSuggestions(userUid: string): Promise<Array<{
       }
       
       const profileInterests = profileData.interests || [];
-      const sharedInterests = userInterests.filter(interest => 
+      const sharedInterests = userInterests.filter((interest: string) => 
         profileInterests.includes(interest)
       );
       
@@ -661,7 +670,7 @@ export async function createGroup(params: {
 }): Promise<string> {
   const { user, name, description, isPublic = false, tags = [] } = params;
   
-  const groupData: Omit<Group, 'id'> = {
+  const groupData = {
     name,
     description,
     ownerId: user.uid,
@@ -752,7 +761,7 @@ export async function leaveGroup(params: {
   const batch = writeBatch(db);
   
   // Remove user from group members
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     memberCount: Math.max((groupData.memberCount || 1) - 1, 0),
   };
   updateData[`members.${user.uid}`] = deleteField();
@@ -852,7 +861,7 @@ export async function updateGroupRole(params: {
       [`admins.${targetUserId}`]: true,
     });
   } else {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     updateData[`admins.${targetUserId}`] = deleteField();
     batch.update(groupRef, updateData);
   }
@@ -1008,7 +1017,7 @@ export function listenToSentFriendRequests(userUid: string, callback: (requests:
   });
 }
 
-export function listenToFriends(userUid: string, callback: (friends: Array<{ uid: string; friendSince: Timestamp }>) => void) {
+export function listenToFriends(userUid: string, callback: (friends: Array<{ uid: string; [key: string]: unknown }>) => void) {
   const q = query(
     getFriendsRef(userUid),
     orderBy('friendSince', 'desc')

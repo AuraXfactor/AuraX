@@ -28,7 +28,7 @@ export async function ensureUserProfile(user: User) {
     await setDoc(userDocRef, profileData);
     
     // Create public profile if user chooses to be discoverable
-    await ensurePublicProfile(user, profileData);
+    await ensurePublicProfile(user, null);
   } else {
     await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
   }
@@ -67,7 +67,7 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
   await setDoc(userDocRef, userData, { merge: true });
   
   // Create/update public profile
-  await ensurePublicProfile(user, userData);
+  await ensurePublicProfile(user, null);
 }
 
 // Recovery Hub types and helpers
@@ -331,7 +331,7 @@ export async function authenticateWithBiometric(user: User): Promise<boolean> {
 }
 
 // Public Profile Management
-export async function ensurePublicProfile(user: User, userData?: any) {
+export async function ensurePublicProfile(user: User, userData?: UserProfileData | null) {
   if (!user) return;
   
   try {
@@ -341,7 +341,7 @@ export async function ensurePublicProfile(user: User, userData?: any) {
     // Only create/update public profile if user has isPublic set to true
     if (userDoc.isPublic) {
       const publicProfileRef = doc(db, 'publicProfiles', user.uid);
-      const publicProfileData: PublicProfile = {
+      const publicProfileData = {
         uid: user.uid,
         name: userDoc.name || 'Anonymous',
         username: userDoc.username || undefined,
@@ -406,7 +406,7 @@ export async function searchPublicProfiles(searchTerm: string, limit: number = 1
     
     const searchTermLower = searchTerm.toLowerCase();
     const results = snapshot.docs
-      .map(doc => ({ ...doc.data() } as PublicProfile))
+      .map(doc => ({ ...doc.data() } as PublicProfile & { isDeleted?: boolean }))
       .filter(profile => 
         !profile.isDeleted &&
         (profile.name.toLowerCase().includes(searchTermLower) ||

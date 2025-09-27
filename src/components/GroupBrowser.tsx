@@ -77,7 +77,7 @@ export default function GroupBrowser({ onGroupSelect }: GroupBrowserProps) {
     if (!user || !newGroupData.name.trim()) return;
     
     try {
-      const groupId = await createGroup({
+      await createGroup({
         user,
         name: newGroupData.name,
         description: newGroupData.description,

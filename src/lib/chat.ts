@@ -16,6 +16,7 @@ import {
   Timestamp,
   QueryDocumentSnapshot,
   DocumentData,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
