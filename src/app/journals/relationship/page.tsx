@@ -28,6 +28,13 @@ const COMMUNICATION_STYLES = [
   { label: 'Conflict', value: 'conflict', color: 'bg-red-500' }
 ];
 
+function formatDateKey(d: Date) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function RelationshipJournal() {
   const { user } = useAuth();
   const router = useRouter();
@@ -74,7 +81,8 @@ export default function RelationshipJournal() {
         journalType: 'relationship',
         userId: user.uid,
         timestamp: serverTimestamp(),
-        dateKey: new Date().toISOString().split('T')[0],
+        createdAt: serverTimestamp(),
+        dateKey: formatDateKey(new Date()),
         
         // Core relationship data
         relationship: {

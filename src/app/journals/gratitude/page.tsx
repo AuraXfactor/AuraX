@@ -20,6 +20,13 @@ const GRATITUDE_AFFIRMATIONS = [
   "I am blessed beyond measure in countless ways"
 ];
 
+function formatDateKey(d: Date) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function GratitudeJournal() {
   const { user } = useAuth();
   const router = useRouter();
@@ -74,7 +81,8 @@ export default function GratitudeJournal() {
         journalType: 'gratitude',
         userId: user.uid,
         timestamp: serverTimestamp(),
-        dateKey: new Date().toISOString().split('T')[0],
+        createdAt: serverTimestamp(),
+        dateKey: formatDateKey(new Date()),
         
         // Core gratitude data
         dailyHighlight: dailyHighlight.trim() || null,

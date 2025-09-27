@@ -26,6 +26,13 @@ const SELF_CARE_ACTIVITIES = [
   'Nature Time'
 ];
 
+function formatDateKey(d: Date) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function DailyCheckInJournal() {
   const { user } = useAuth();
   const router = useRouter();
@@ -86,7 +93,8 @@ export default function DailyCheckInJournal() {
         journalType: 'daily-checkin',
         userId: user.uid,
         timestamp: serverTimestamp(),
-        dateKey: new Date().toISOString().split('T')[0],
+        createdAt: serverTimestamp(),
+        dateKey: formatDateKey(new Date()),
         
         // Core data
         mood: {
