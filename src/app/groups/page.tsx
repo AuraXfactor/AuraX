@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   createGroupChat, 
-  GroupChat 
+  GroupChat,
+  Group
 } from '@/lib/friends';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import GroupBrowser from '@/components/GroupBrowser';
 
 interface Friend {
   uid: string;
@@ -20,6 +22,7 @@ interface Friend {
 export default function GroupsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'groups' | 'chats'>('groups');
   const [groups, setGroups] = useState<GroupChat[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,15 +68,27 @@ export default function GroupsPage() {
   const loadFriends = async () => {
     if (!user) return;
     try {
-      const friendsRef = collection(db, 'users', user.uid, 'friends');
+      const friendsRef = collection(db, 'friends', user.uid);
       const snapshot = await getDocs(friendsRef);
       
-      const friendsList = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        name: doc.data().friendName,
-        username: doc.data().friendUsername,
-        avatar: doc.data().friendAvatar,
-      })) as Friend[];
+      // Get friend profile data
+      const friendsList = [];
+      for (const doc of snapshot.docs) {
+        const friendUid = doc.id;
+        const userRef = collection(db, 'users');
+        const userQuery = query(userRef, where('__name__', '==', friendUid));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userData = userSnapshot.docs[0].data();
+          friendsList.push({
+            uid: friendUid,
+            name: userData.name || 'Anonymous',
+            username: userData.username,
+            avatar: userData.avatar,
+          });
+        }
+      }
       
       setFriends(friendsList);
     } catch (error) {
@@ -239,88 +254,127 @@ export default function GroupsPage() {
     );
   }
 
+  const handleGroupSelect = (group: Group) => {
+    router.push(`/groups/${group.id}`);
+  };
+
   return (
     <div className="min-h-screen p-6 md:p-10">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Group Chats</h1>
+          <h1 className="text-4xl font-bold mb-2">Groups & Chats</h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Connect with multiple friends and build supportive communities
+            Connect with friends, join communities, and build supportive networks
           </p>
         </div>
 
-        {/* Create Group Button */}
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="w-full p-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-3xl hover:from-purple-600 hover:to-pink-600 transition mb-8 flex items-center justify-center gap-3"
-        >
-          <span className="text-2xl">👥</span>
-          <span className="text-lg font-semibold">Create New Group</span>
-        </button>
+        {/* Tabs */}
+        <div className="flex space-x-1 mb-8 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('groups')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition ${
+              activeTab === 'groups'
+                ? 'bg-white dark:bg-gray-700 shadow text-purple-600 dark:text-purple-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <span>👥</span>
+            <span className="font-medium">Groups</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('chats')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition ${
+              activeTab === 'chats'
+                ? 'bg-white dark:bg-gray-700 shadow text-purple-600 dark:text-purple-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <span>💬</span>
+            <span className="font-medium">Group Chats</span>
+          </button>
+        </div>
 
-        {/* Groups List */}
-        <div className="space-y-4">
-          {groups.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-xl font-semibold mb-2">No group chats yet</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Create your first group chat to start building community!
-              </p>
-            </div>
+        {/* Tab Content */}
+        <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+          {activeTab === 'groups' ? (
+            <GroupBrowser onGroupSelect={handleGroupSelect} />
           ) : (
-            groups.map(group => (
-              <Link
-                key={group.id}
-                href={`/groups/${group.id}`}
-                className="block p-6 bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 hover:shadow-xl transition"
+            <div className="space-y-6">
+              {/* Create Group Chat Button */}
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="w-full p-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl hover:from-purple-600 hover:to-pink-600 transition flex items-center justify-center gap-3"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                    {group.avatar ? (
-                      <img src={group.avatar} alt={group.name} className="w-full h-full object-cover rounded-full" />
-                    ) : (
-                      <span className="text-white font-bold text-xl">{group.name.charAt(0).toUpperCase()}</span>
-                    )}
+                <span className="text-2xl">💬</span>
+                <span className="text-lg font-semibold">Create New Group Chat</span>
+              </button>
+
+              {/* Group Chats List */}
+              <div className="space-y-4">
+                {groups.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">💬</div>
+                    <h3 className="text-xl font-semibold mb-2">No group chats yet</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Create your first group chat to start building community!
+                    </p>
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold">{group.name}</h3>
-                      <span className="text-sm text-gray-500">
-                        {group.lastActivity?.toDate?.()?.toLocaleDateString() || 'Recently'}
-                      </span>
-                    </div>
-                    
-                    {group.description && (
-                      <p className="text-gray-600 dark:text-gray-400 mb-2">{group.description}</p>
-                    )}
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">
-                          {group.members.length} members
-                        </span>
-                        {group.messageCount > 0 && (
-                          <>
-                            <span className="text-gray-400">•</span>
+                ) : (
+                  groups.map(group => (
+                    <Link
+                      key={group.id}
+                      href={`/groups/${group.id}`}
+                      className="block p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                          {group.avatar ? (
+                            <img src={group.avatar} alt={group.name} className="w-full h-full object-cover rounded-full" />
+                          ) : (
+                            <span className="text-white font-bold text-xl">{group.name.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-xl font-semibold">{group.name}</h3>
                             <span className="text-sm text-gray-500">
-                              {Array.isArray(group.messageCount) ? group.messageCount.length : group.messageCount} messages
+                              {group.lastActivity?.toDate?.()?.toLocaleDateString() || 'Recently'}
                             </span>
-                          </>
-                        )}
+                          </div>
+                          
+                          {group.description && (
+                            <p className="text-gray-600 dark:text-gray-400 mb-2">{group.description}</p>
+                          )}
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-500">
+                                {group.members.length} members
+                              </span>
+                              {group.messageCount > 0 && (
+                                <>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="text-sm text-gray-500">
+                                    {Array.isArray(group.messageCount) ? group.messageCount.length : group.messageCount} messages
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            
+                            {group.isPrivate && (
+                              <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+                                Private
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      
-                      {group.isPrivate && (
-                        <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
-                          Private
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
           )}
         </div>
 

@@ -7,20 +7,28 @@ export async function ensureUserProfile(user: User) {
   const userDocRef = doc(db, 'users', user.uid);
   const snap = await getDoc(userDocRef);
   if (!snap.exists()) {
-    await setDoc(userDocRef, {
+    const profileData = {
       uid: user.uid,
       email: user.email ?? null,
       name: user.displayName ?? null,
       username: null,
       avatar: user.photoURL ?? null,
+      bio: '',
+      interests: [],
       focusAreas: [],
       preferredTherapy: null,
       reminderTime: null,
       moodBaseline: [],
       auraPoints: 0,
+      isPublic: false, // New field for public profile visibility
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp(),
-    });
+    };
+    
+    await setDoc(userDocRef, profileData);
+    
+    // Create public profile if user chooses to be discoverable
+    await ensurePublicProfile(user, profileData);
   } else {
     await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
   }
@@ -39,19 +47,27 @@ export type OnboardingProfile = {
 
 export async function saveOnboardingProfile(user: User, profile: OnboardingProfile) {
   const userDocRef = doc(db, 'users', user.uid);
-  await setDoc(userDocRef, {
+  const userData = {
     name: profile.name,
     username: profile.username,
     email: profile.email,
     avatar: profile.avatar,
+    bio: '',
+    interests: profile.focusAreas, // Use focusAreas as initial interests
     focusAreas: profile.focusAreas,
     preferredTherapy: profile.preferredTherapy ?? null,
     reminderTime: profile.reminderTime,
     moodBaseline: profile.moodBaseline,
     auraPoints: 0,
+    isPublic: false, // Default to private, user can change in settings
     createdAt: serverTimestamp(),
     lastLogin: serverTimestamp(),
-  }, { merge: true });
+  };
+  
+  await setDoc(userDocRef, userData, { merge: true });
+  
+  // Create/update public profile
+  await ensurePublicProfile(user, userData);
 }
 
 // Recovery Hub types and helpers
@@ -123,15 +139,31 @@ export type UserProfileData = {
   name?: string | null;
   username?: string | null;
   avatar?: string | null;
+  bio?: string;
+  interests?: string[];
   focusAreas?: string[];
   preferredTherapy?: string | null;
   reminderTime?: 'Morning' | 'Afternoon' | 'Evening' | null;
   moodBaseline?: string[];
   auraPoints?: number;
   auraTotal?: number;
+  isPublic?: boolean;
   settings?: UserSettings;
   createdAt?: { toDate?: () => Date } | null;
   lastLogin?: { toDate?: () => Date } | null;
+  updatedAt?: { toDate?: () => Date } | null;
+};
+
+export type PublicProfile = {
+  uid: string;
+  name: string;
+  username?: string;
+  avatar?: string;
+  bio?: string;
+  interests?: string[];
+  focusAreas?: string[];
+  auraPoints?: number;
+  createdAt?: { toDate?: () => Date } | null;
   updatedAt?: { toDate?: () => Date } | null;
 };
 
@@ -295,6 +327,101 @@ export async function authenticateWithBiometric(user: User): Promise<boolean> {
   } catch (error) {
     console.error('Error with biometric authentication:', error);
     return false;
+  }
+}
+
+// Public Profile Management
+export async function ensurePublicProfile(user: User, userData?: any) {
+  if (!user) return;
+  
+  try {
+    const userDoc = userData || await getUserProfile(user);
+    if (!userDoc) return;
+    
+    // Only create/update public profile if user has isPublic set to true
+    if (userDoc.isPublic) {
+      const publicProfileRef = doc(db, 'publicProfiles', user.uid);
+      const publicProfileData: PublicProfile = {
+        uid: user.uid,
+        name: userDoc.name || 'Anonymous',
+        username: userDoc.username || undefined,
+        avatar: userDoc.avatar || undefined,
+        bio: userDoc.bio || '',
+        interests: userDoc.interests || [],
+        focusAreas: userDoc.focusAreas || [],
+        auraPoints: userDoc.auraPoints || 0,
+        updatedAt: serverTimestamp(),
+      };
+      
+      await setDoc(publicProfileRef, publicProfileData, { merge: true });
+    }
+  } catch (error) {
+    console.error('Error ensuring public profile:', error);
+  }
+}
+
+export async function updatePublicProfile(user: User, updates: Partial<PublicProfile>) {
+  if (!user) return;
+  
+  try {
+    const publicProfileRef = doc(db, 'publicProfiles', user.uid);
+    await updateDoc(publicProfileRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error updating public profile:', error);
+    throw error;
+  }
+}
+
+export async function toggleProfileVisibility(user: User, isPublic: boolean) {
+  if (!user) return;
+  
+  try {
+    // Update main user profile
+    await updateUserProfile(user, { isPublic });
+    
+    if (isPublic) {
+      // Create/update public profile
+      await ensurePublicProfile(user);
+    } else {
+      // Remove public profile
+      const publicProfileRef = doc(db, 'publicProfiles', user.uid);
+      await updateDoc(publicProfileRef, {
+        isDeleted: true,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error('Error toggling profile visibility:', error);
+    throw error;
+  }
+}
+
+export async function searchPublicProfiles(searchTerm: string, limit: number = 10): Promise<PublicProfile[]> {
+  try {
+    const publicProfilesRef = collection(db, 'publicProfiles');
+    const snapshot = await getDocs(query(publicProfilesRef, orderBy('updatedAt', 'desc')));
+    
+    const searchTermLower = searchTerm.toLowerCase();
+    const results = snapshot.docs
+      .map(doc => ({ ...doc.data() } as PublicProfile))
+      .filter(profile => 
+        !profile.isDeleted &&
+        (profile.name.toLowerCase().includes(searchTermLower) ||
+         (profile.username && profile.username.toLowerCase().includes(searchTermLower)) ||
+         (profile.bio && profile.bio.toLowerCase().includes(searchTermLower)) ||
+         (profile.interests && profile.interests.some(interest => 
+           interest.toLowerCase().includes(searchTermLower)
+         )))
+      )
+      .slice(0, limit);
+      
+    return results;
+  } catch (error) {
+    console.error('Error searching public profiles:', error);
+    return [];
   }
 }
 

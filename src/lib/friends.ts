@@ -15,35 +15,32 @@ import {
   Timestamp,
   writeBatch,
   arrayUnion,
+  deleteDoc,
+  setDoc,
+  deleteField,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 // Types for Friends System
-export type FriendshipStatus = 'pending' | 'accepted' | 'blocked';
+export type FriendshipStatus = 'pending' | 'accepted' | 'rejected';
 
 export type FriendRequest = {
   id: string;
-  fromUid: string;
-  toUid: string;
-  fromUserName: string;
-  fromUserAvatar?: string;
-  toUserName: string;
-  toUserAvatar?: string;
+  fromUserId: string;
+  toUserId: string;
   status: FriendshipStatus;
   createdAt: Timestamp | null;
-  updatedAt: Timestamp | null;
   message?: string;
+  fromUserName?: string;
+  fromUserAvatar?: string;
+  toUserName?: string;
+  toUserAvatar?: string;
 };
 
 export type Friendship = {
   id: string;
-  userUid: string;
-  friendUid: string;
-  friendName: string;
-  friendUsername?: string;
-  friendAvatar?: string;
-  createdAt: Timestamp | null;
+  friendSince: Timestamp | null;
   lastInteraction?: Timestamp | null;
   mutualFriends?: number;
   sharedInterests?: string[];
@@ -91,6 +88,21 @@ export type AuraReply = {
   isPrivate: boolean; // If true, only visible to post author
 };
 
+export type Group = {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  isPublic: boolean;
+  members: { [userId: string]: boolean };
+  admins: { [userId: string]: boolean };
+  avatar?: string;
+  createdAt: Timestamp | null;
+  memberCount?: number;
+  challengeCount?: number;
+  tags?: string[];
+};
+
 export type GroupChat = {
   id: string;
   name: string;
@@ -121,12 +133,12 @@ export type GroupMessage = {
 };
 
 // Helper functions for Firestore paths
-export function getFriendRequestsRef(uid: string) {
-  return collection(db, 'users', uid, 'friendRequests');
+export function getFriendRequestsRef() {
+  return collection(db, 'friendRequests');
 }
 
-export function getFriendsRef(uid: string) {
-  return collection(db, 'users', uid, 'friends');
+export function getFriendsRef(userId: string) {
+  return collection(db, 'friends', userId);
 }
 
 export function getAuraPostsRef() {
@@ -135,6 +147,14 @@ export function getAuraPostsRef() {
 
 export function getAuraRepliesRef(postId: string) {
   return collection(db, 'auraPosts', postId, 'replies');
+}
+
+export function getGroupsRef() {
+  return collection(db, 'groups');
+}
+
+export function getGroupMembersRef(groupId: string) {
+  return collection(db, 'groupMembers', groupId);
 }
 
 export function getGroupChatsRef() {
@@ -159,34 +179,40 @@ export async function sendFriendRequest(params: {
     throw new Error('Cannot send friend request to yourself');
   }
 
-  const batch = writeBatch(db);
+  // Check if request already exists
+  const existingRequestQuery = query(
+    getFriendRequestsRef(),
+    where('fromUserId', '==', fromUser.uid),
+    where('toUserId', '==', toUid),
+    where('status', '==', 'pending')
+  );
   
-  // Create request document ID
-  const requestId = `${fromUser.uid}_${toUid}`;
+  const existingSnapshot = await getDocs(existingRequestQuery);
+  if (!existingSnapshot.empty) {
+    throw new Error('Friend request already sent');
+  }
+
+  // Check if they're already friends
+  const friendshipRef = doc(getFriendsRef(fromUser.uid), toUid);
+  const friendshipDoc = await getDoc(friendshipRef);
+  if (friendshipDoc.exists()) {
+    throw new Error('Already friends with this user');
+  }
   
   const requestData = {
-    fromUid: fromUser.uid,
-    toUid,
+    fromUserId: fromUser.uid,
+    toUserId: toUid,
+    status: 'pending' as FriendshipStatus,
+    message: message || '',
     fromUserName: fromUser.displayName || fromUser.email || 'Anonymous',
     fromUserAvatar: fromUser.photoURL || undefined,
     toUserName,
     toUserAvatar,
-    status: 'pending' as FriendshipStatus,
-    message: message || '',
     createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
   };
 
-  // Add to sender's sent requests
-  const senderRequestRef = doc(getFriendRequestsRef(fromUser.uid), requestId);
-  batch.set(senderRequestRef, requestData);
-
-  // Add to receiver's incoming requests
-  const receiverRequestRef = doc(getFriendRequestsRef(toUid), requestId);
-  batch.set(receiverRequestRef, requestData);
-
-  await batch.commit();
-  return requestId;
+  const docRef = await addDoc(getFriendRequestsRef(), requestData);
+  return docRef.id;
 }
 
 export async function acceptFriendRequest(params: {
@@ -200,40 +226,25 @@ export async function acceptFriendRequest(params: {
   
   const batch = writeBatch(db);
   
-  // Update request status
-  const userRequestRef = doc(getFriendRequestsRef(user.uid), requestId);
-  const senderRequestRef = doc(getFriendRequestsRef(fromUid), requestId);
-  
-  batch.update(userRequestRef, {
+  // Update request status to accepted
+  const requestRef = doc(getFriendRequestsRef(), requestId);
+  batch.update(requestRef, {
     status: 'accepted',
-    updatedAt: serverTimestamp(),
-  });
-  batch.update(senderRequestRef, {
-    status: 'accepted',
-    updatedAt: serverTimestamp(),
   });
 
-  // Create friendship records
+  // Create bidirectional friendship records
+  const friendshipTimestamp = serverTimestamp();
+  
   const userFriendRef = doc(getFriendsRef(user.uid), fromUid);
   const senderFriendRef = doc(getFriendsRef(fromUid), user.uid);
   
-  const friendshipTimestamp = serverTimestamp();
-  
   batch.set(userFriendRef, {
-    userUid: user.uid,
-    friendUid: fromUid,
-    friendName: fromUserName,
-    friendAvatar: fromUserAvatar,
-    createdAt: friendshipTimestamp,
+    friendSince: friendshipTimestamp,
     lastInteraction: friendshipTimestamp,
   });
 
   batch.set(senderFriendRef, {
-    userUid: fromUid,
-    friendUid: user.uid,
-    friendName: user.displayName || user.email || 'Anonymous',
-    friendAvatar: user.photoURL,
-    createdAt: friendshipTimestamp,
+    friendSince: friendshipTimestamp,
     lastInteraction: friendshipTimestamp,
   });
 
@@ -247,16 +258,11 @@ export async function declineFriendRequest(params: {
 }): Promise<void> {
   const { user, requestId, fromUid } = params;
   
-  const batch = writeBatch(db);
-  
-  // Delete request from both users
-  const userRequestRef = doc(getFriendRequestsRef(user.uid), requestId);
-  const senderRequestRef = doc(getFriendRequestsRef(fromUid), requestId);
-  
-  batch.delete(userRequestRef);
-  batch.delete(senderRequestRef);
-
-  await batch.commit();
+  // Update request status to rejected
+  const requestRef = doc(getFriendRequestsRef(), requestId);
+  await updateDoc(requestRef, {
+    status: 'rejected',
+  });
 }
 
 export async function removeFriend(params: {
@@ -267,7 +273,7 @@ export async function removeFriend(params: {
   
   const batch = writeBatch(db);
   
-  // Remove friendship records
+  // Remove bidirectional friendship records
   const userFriendRef = doc(getFriendsRef(user.uid), friendUid);
   const friendUserRef = doc(getFriendsRef(friendUid), user.uid);
   
@@ -423,36 +429,40 @@ export async function searchUsersByUsername(username: string): Promise<Array<{
   name: string;
   username: string;
   avatar?: string;
+  bio?: string;
+  interests?: string[];
   mutualFriends?: number;
 }>> {
   try {
-    const usersRef = collection(db, 'users');
+    // First search in public profiles for better performance
+    const publicProfilesRef = collection(db, 'publicProfiles');
+    const publicSnapshot = await getDocs(query(publicProfilesRef, limit(20)));
     
-    // Search by username first
-    if (username.trim()) {
-      const q = query(
-        usersRef,
-        where('username', '>=', username.toLowerCase()),
-        where('username', '<=', username.toLowerCase() + '\uf8ff'),
-        limit(10)
-      );
-      
-      const snapshot = await getDocs(q);
-      const results = snapshot.docs.map(doc => ({
+    const searchTerm = username.toLowerCase();
+    const publicResults = publicSnapshot.docs
+      .map(doc => ({
         uid: doc.id,
-        name: doc.data().name || doc.data().email || 'Anonymous',
+        name: doc.data().name || 'Anonymous',
         username: doc.data().username || '',
         avatar: doc.data().avatar,
-      })).filter(user => user.username); // Only return users with usernames
-      
-      if (results.length > 0) {
-        return results;
-      }
+        bio: doc.data().bio,
+        interests: doc.data().interests || [],
+      }))
+      .filter(user => 
+        !doc.data().isDeleted &&
+        (user.name.toLowerCase().includes(searchTerm) ||
+         user.username.toLowerCase().includes(searchTerm) ||
+         (user.bio && user.bio.toLowerCase().includes(searchTerm)))
+      )
+      .slice(0, 10);
+    
+    if (publicResults.length > 0) {
+      return publicResults;
     }
     
-    // If no username results, search by name or email
+    // Fallback to searching all users if no public profiles found
+    const usersRef = collection(db, 'users');
     const allUsersSnapshot = await getDocs(query(usersRef, limit(20)));
-    const searchTerm = username.toLowerCase();
     
     return allUsersSnapshot.docs
       .map(doc => {
@@ -462,13 +472,14 @@ export async function searchUsersByUsername(username: string): Promise<Array<{
           name: data.name || data.email || 'Anonymous',
           username: data.username || data.email?.split('@')[0] || '',
           avatar: data.avatar,
-          email: data.email,
+          bio: data.bio || '',
+          interests: data.interests || [],
         };
       })
       .filter(user => 
         user.name.toLowerCase().includes(searchTerm) ||
         user.username.toLowerCase().includes(searchTerm) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm))
+        user.bio.toLowerCase().includes(searchTerm)
       )
       .slice(0, 10);
       
@@ -484,21 +495,48 @@ export async function getAllUsersForDiscovery(currentUserUid: string): Promise<A
   name: string;
   username: string;
   avatar?: string;
-  email?: string;
+  bio?: string;
+  interests?: string[];
 }>> {
   try {
-    const usersRef = collection(db, 'users');
-    const snapshot = await getDocs(query(usersRef, limit(50)));
+    // Prioritize public profiles for discovery
+    const publicProfilesRef = collection(db, 'publicProfiles');
+    const publicSnapshot = await getDocs(query(publicProfilesRef, limit(30)));
     
-    return snapshot.docs
-      .filter(doc => doc.id !== currentUserUid) // Exclude current user
+    const publicResults = publicSnapshot.docs
+      .filter(doc => doc.id !== currentUserUid && !doc.data().isDeleted)
+      .map(doc => ({
+        uid: doc.id,
+        name: doc.data().name || 'Anonymous',
+        username: doc.data().username || `user${doc.id.slice(-4)}`,
+        avatar: doc.data().avatar,
+        bio: doc.data().bio,
+        interests: doc.data().interests || [],
+      }));
+
+    if (publicResults.length >= 10) {
+      return publicResults;
+    }
+
+    // Supplement with other users if needed
+    const usersRef = collection(db, 'users');
+    const allSnapshot = await getDocs(query(usersRef, limit(20)));
+    
+    const additionalResults = allSnapshot.docs
+      .filter(doc => 
+        doc.id !== currentUserUid && 
+        !publicResults.some(p => p.uid === doc.id)
+      )
       .map(doc => ({
         uid: doc.id,
         name: doc.data().name || doc.data().email || 'Anonymous',
         username: doc.data().username || doc.data().email?.split('@')[0] || `user${doc.id.slice(-4)}`,
         avatar: doc.data().avatar,
-        email: doc.data().email,
+        bio: doc.data().bio || '',
+        interests: doc.data().interests || [],
       }));
+
+    return [...publicResults, ...additionalResults].slice(0, 30);
   } catch (error) {
     console.error('Error getting users for discovery:', error);
     return [];
@@ -510,53 +548,357 @@ export async function getFriendSuggestions(userUid: string): Promise<Array<{
   name: string;
   username?: string;
   avatar?: string;
+  bio?: string;
   mutualFriends: number;
   sharedInterests: string[];
   reason: string;
 }>> {
-  // Get user's friends and interests
-  const [friendsSnapshot, userDoc] = await Promise.all([
-    getDocs(getFriendsRef(userUid)),
-    getDoc(doc(db, 'users', userUid)),
-  ]);
-  
-  const userFriends = new Set(friendsSnapshot.docs.map(doc => doc.data().friendUid));
-  const userInterests = userDoc.data()?.focusAreas || [];
-  
-  // Get friends of friends who aren't already friends
-  const suggestions = new Map();
-  
-  for (const friendDoc of friendsSnapshot.docs) {
-    const friendUid = friendDoc.data().friendUid;
-    const friendsFriendsSnapshot = await getDocs(getFriendsRef(friendUid));
+  try {
+    // Get user's friends and interests
+    const [friendsSnapshot, userDoc] = await Promise.all([
+      getDocs(getFriendsRef(userUid)),
+      getDoc(doc(db, 'users', userUid)),
+    ]);
     
-    for (const friendFriendDoc of friendsFriendsSnapshot.docs) {
-      const candidateUid = friendFriendDoc.data().friendUid;
+    const userFriends = new Set(friendsSnapshot.docs.map(doc => doc.id));
+    const userInterests = userDoc.data()?.interests || userDoc.data()?.focusAreas || [];
+    
+    // Get friends of friends who aren't already friends
+    const suggestions = new Map();
+    
+    for (const friendDoc of friendsSnapshot.docs) {
+      const friendUid = friendDoc.id;
+      const friendsFriendsSnapshot = await getDocs(getFriendsRef(friendUid));
       
-      // Skip if already friends or self
-      if (userFriends.has(candidateUid) || candidateUid === userUid) {
+      for (const friendFriendDoc of friendsFriendsSnapshot.docs) {
+        const candidateUid = friendFriendDoc.id;
+        
+        // Skip if already friends or self
+        if (userFriends.has(candidateUid) || candidateUid === userUid) {
+          continue;
+        }
+        
+        if (!suggestions.has(candidateUid)) {
+          // Get candidate's profile data
+          const candidateDoc = await getDoc(doc(db, 'users', candidateUid));
+          const candidateData = candidateDoc.data();
+          
+          if (candidateData) {
+            const candidateInterests = candidateData.interests || candidateData.focusAreas || [];
+            const sharedInterests = userInterests.filter(interest => 
+              candidateInterests.includes(interest)
+            );
+            
+            suggestions.set(candidateUid, {
+              uid: candidateUid,
+              name: candidateData.name || 'Anonymous',
+              username: candidateData.username,
+              avatar: candidateData.avatar,
+              bio: candidateData.bio,
+              mutualFriends: 1,
+              sharedInterests,
+              reason: sharedInterests.length > 0 ? 'Shared interests' : 'Mutual friends',
+            });
+          }
+        } else {
+          suggestions.get(candidateUid).mutualFriends++;
+        }
+      }
+    }
+    
+    // Add interest-based suggestions from public profiles
+    const publicProfilesSnapshot = await getDocs(collection(db, 'publicProfiles'));
+    
+    for (const profileDoc of publicProfilesSnapshot.docs) {
+      const profileData = profileDoc.data();
+      const profileUid = profileDoc.id;
+      
+      if (profileData.isDeleted || userFriends.has(profileUid) || profileUid === userUid) {
         continue;
       }
       
-      if (!suggestions.has(candidateUid)) {
-        const candidateData = friendFriendDoc.data();
-        suggestions.set(candidateUid, {
-          uid: candidateUid,
-          name: candidateData.friendName,
-          username: candidateData.friendUsername,
-          avatar: candidateData.friendAvatar,
-          mutualFriends: 1,
-          sharedInterests: [],
-          reason: 'Mutual friends',
+      const profileInterests = profileData.interests || [];
+      const sharedInterests = userInterests.filter(interest => 
+        profileInterests.includes(interest)
+      );
+      
+      if (sharedInterests.length >= 2 && !suggestions.has(profileUid)) {
+        suggestions.set(profileUid, {
+          uid: profileUid,
+          name: profileData.name || 'Anonymous',
+          username: profileData.username,
+          avatar: profileData.avatar,
+          bio: profileData.bio,
+          mutualFriends: 0,
+          sharedInterests,
+          reason: 'Shared interests',
         });
-      } else {
-        suggestions.get(candidateUid).mutualFriends++;
       }
     }
+    
+    // Sort by mutual friends count and shared interests
+    return Array.from(suggestions.values())
+      .sort((a, b) => {
+        const scoreA = a.mutualFriends * 2 + a.sharedInterests.length;
+        const scoreB = b.mutualFriends * 2 + b.sharedInterests.length;
+        return scoreB - scoreA;
+      })
+      .slice(0, 10);
+      
+  } catch (error) {
+    console.error('Error getting friend suggestions:', error);
+    return [];
+  }
+}
+
+// Groups System Functions
+export async function createGroup(params: {
+  user: User;
+  name: string;
+  description?: string;
+  isPublic?: boolean;
+  tags?: string[];
+}): Promise<string> {
+  const { user, name, description, isPublic = false, tags = [] } = params;
+  
+  const groupData: Omit<Group, 'id'> = {
+    name,
+    description,
+    ownerId: user.uid,
+    isPublic,
+    members: { [user.uid]: true },
+    admins: { [user.uid]: true },
+    tags,
+    createdAt: serverTimestamp(),
+    memberCount: 1,
+    challengeCount: 0,
+  };
+  
+  const docRef = await addDoc(getGroupsRef(), groupData);
+  
+  // Add creator to group members subcollection
+  await setDoc(doc(getGroupMembersRef(docRef.id), user.uid), {
+    joinedAt: serverTimestamp(),
+    role: 'owner',
+    invitedBy: user.uid,
+  });
+  
+  return docRef.id;
+}
+
+export async function joinGroup(params: {
+  user: User;
+  groupId: string;
+}): Promise<void> {
+  const { user, groupId } = params;
+  
+  const groupRef = doc(getGroupsRef(), groupId);
+  const groupDoc = await getDoc(groupRef);
+  
+  if (!groupDoc.exists()) {
+    throw new Error('Group not found');
   }
   
-  // Add shared interests data (simplified - would need more complex analysis)
-  return Array.from(suggestions.values()).slice(0, 10);
+  const groupData = groupDoc.data() as Group;
+  
+  // Check if group is public or user is invited
+  if (!groupData.isPublic) {
+    throw new Error('Cannot join private group without invitation');
+  }
+  
+  // Check if already a member
+  if (groupData.members[user.uid]) {
+    throw new Error('Already a member of this group');
+  }
+  
+  const batch = writeBatch(db);
+  
+  // Add user to group members
+  batch.update(groupRef, {
+    [`members.${user.uid}`]: true,
+    memberCount: (groupData.memberCount || 0) + 1,
+  });
+  
+  // Add member to subcollection
+  batch.set(doc(getGroupMembersRef(groupId), user.uid), {
+    joinedAt: serverTimestamp(),
+    role: 'member',
+    invitedBy: null,
+  });
+  
+  await batch.commit();
+}
+
+export async function leaveGroup(params: {
+  user: User;
+  groupId: string;
+}): Promise<void> {
+  const { user, groupId } = params;
+  
+  const groupRef = doc(getGroupsRef(), groupId);
+  const groupDoc = await getDoc(groupRef);
+  
+  if (!groupDoc.exists()) {
+    throw new Error('Group not found');
+  }
+  
+  const groupData = groupDoc.data() as Group;
+  
+  // Check if user is the owner
+  if (groupData.ownerId === user.uid) {
+    throw new Error('Owner cannot leave group. Transfer ownership or delete group first.');
+  }
+  
+  const batch = writeBatch(db);
+  
+  // Remove user from group members
+  const updateData: any = {
+    memberCount: Math.max((groupData.memberCount || 1) - 1, 0),
+  };
+  updateData[`members.${user.uid}`] = deleteField();
+  if (groupData.admins[user.uid]) {
+    updateData[`admins.${user.uid}`] = deleteField();
+  }
+  
+  batch.update(groupRef, updateData);
+  
+  // Remove member from subcollection
+  batch.delete(doc(getGroupMembersRef(groupId), user.uid));
+  
+  await batch.commit();
+}
+
+export async function inviteToGroup(params: {
+  user: User;
+  groupId: string;
+  inviteUserId: string;
+}): Promise<void> {
+  const { user, groupId, inviteUserId } = params;
+  
+  const groupRef = doc(getGroupsRef(), groupId);
+  const groupDoc = await getDoc(groupRef);
+  
+  if (!groupDoc.exists()) {
+    throw new Error('Group not found');
+  }
+  
+  const groupData = groupDoc.data() as Group;
+  
+  // Check if user has permission to invite (admin or owner)
+  if (!groupData.admins[user.uid] && groupData.ownerId !== user.uid) {
+    throw new Error('Only admins can invite members');
+  }
+  
+  // Check if invitee is already a member
+  if (groupData.members[inviteUserId]) {
+    throw new Error('User is already a member');
+  }
+  
+  // Check if users are friends (optional restriction)
+  const areFriendsResult = await areFriends(user.uid, inviteUserId);
+  if (!areFriendsResult) {
+    throw new Error('Can only invite friends to groups');
+  }
+  
+  const batch = writeBatch(db);
+  
+  // Add user to group members
+  batch.update(groupRef, {
+    [`members.${inviteUserId}`]: true,
+    memberCount: (groupData.memberCount || 0) + 1,
+  });
+  
+  // Add member to subcollection
+  batch.set(doc(getGroupMembersRef(groupId), inviteUserId), {
+    joinedAt: serverTimestamp(),
+    role: 'member',
+    invitedBy: user.uid,
+  });
+  
+  await batch.commit();
+}
+
+export async function updateGroupRole(params: {
+  user: User;
+  groupId: string;
+  targetUserId: string;
+  newRole: 'member' | 'admin';
+}): Promise<void> {
+  const { user, groupId, targetUserId, newRole } = params;
+  
+  const groupRef = doc(getGroupsRef(), groupId);
+  const groupDoc = await getDoc(groupRef);
+  
+  if (!groupDoc.exists()) {
+    throw new Error('Group not found');
+  }
+  
+  const groupData = groupDoc.data() as Group;
+  
+  // Check if user is owner
+  if (groupData.ownerId !== user.uid) {
+    throw new Error('Only group owner can change member roles');
+  }
+  
+  // Cannot change owner's role
+  if (targetUserId === user.uid) {
+    throw new Error('Cannot change owner role');
+  }
+  
+  const batch = writeBatch(db);
+  
+  if (newRole === 'admin') {
+    batch.update(groupRef, {
+      [`admins.${targetUserId}`]: true,
+    });
+  } else {
+    const updateData: any = {};
+    updateData[`admins.${targetUserId}`] = deleteField();
+    batch.update(groupRef, updateData);
+  }
+  
+  // Update member subcollection
+  batch.update(doc(getGroupMembersRef(groupId), targetUserId), {
+    role: newRole,
+    updatedAt: serverTimestamp(),
+  });
+  
+  await batch.commit();
+}
+
+export async function searchGroups(searchTerm: string, limit: number = 10): Promise<Group[]> {
+  try {
+    const groupsRef = getGroupsRef();
+    const snapshot = await getDocs(query(groupsRef, where('isPublic', '==', true)));
+    
+    const searchTermLower = searchTerm.toLowerCase();
+    const results = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Group))
+      .filter(group => 
+        group.name.toLowerCase().includes(searchTermLower) ||
+        (group.description && group.description.toLowerCase().includes(searchTermLower)) ||
+        (group.tags && group.tags.some(tag => tag.toLowerCase().includes(searchTermLower)))
+      )
+      .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
+      .slice(0, limit);
+      
+    return results;
+  } catch (error) {
+    console.error('Error searching groups:', error);
+    return [];
+  }
+}
+
+export async function getUserGroups(userUid: string): Promise<Group[]> {
+  try {
+    const groupsRef = getGroupsRef();
+    const snapshot = await getDocs(query(groupsRef, where(`members.${userUid}`, '==', true)));
+    
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group));
+  } catch (error) {
+    console.error('Error getting user groups:', error);
+    return [];
+  }
 }
 
 // Group Chat Functions
@@ -635,8 +977,8 @@ export async function sendGroupMessage(params: {
 // Listen to real-time updates
 export function listenToFriendRequests(userUid: string, callback: (requests: FriendRequest[]) => void) {
   const q = query(
-    getFriendRequestsRef(userUid),
-    where('toUid', '==', userUid),
+    getFriendRequestsRef(),
+    where('toUserId', '==', userUid),
     where('status', '==', 'pending'),
     orderBy('createdAt', 'desc')
   );
@@ -648,6 +990,159 @@ export function listenToFriendRequests(userUid: string, callback: (requests: Fri
     })) as FriendRequest[];
     callback(requests);
   });
+}
+
+export function listenToSentFriendRequests(userUid: string, callback: (requests: FriendRequest[]) => void) {
+  const q = query(
+    getFriendRequestsRef(),
+    where('fromUserId', '==', userUid),
+    orderBy('createdAt', 'desc')
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const requests = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as FriendRequest[];
+    callback(requests);
+  });
+}
+
+export function listenToFriends(userUid: string, callback: (friends: Array<{ uid: string; friendSince: Timestamp }>) => void) {
+  const q = query(
+    getFriendsRef(userUid),
+    orderBy('friendSince', 'desc')
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const friends = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+    }));
+    callback(friends);
+  });
+}
+
+// Get enriched friends list with user data
+export async function getEnrichedFriendsList(userUid: string): Promise<Array<{
+  uid: string;
+  name: string;
+  username?: string;
+  avatar?: string;
+  bio?: string;
+  friendSince: Timestamp | null;
+  lastInteraction?: Timestamp | null;
+  isOnline?: boolean;
+  mutualFriends?: number;
+}>> {
+  try {
+    const friendsSnapshot = await getDocs(getFriendsRef(userUid));
+    const enrichedFriends = [];
+    
+    for (const friendDoc of friendsSnapshot.docs) {
+      const friendUid = friendDoc.id;
+      const friendshipData = friendDoc.data();
+      
+      // Get friend's profile data
+      const friendProfileDoc = await getDoc(doc(db, 'users', friendUid));
+      
+      if (friendProfileDoc.exists()) {
+        const profileData = friendProfileDoc.data();
+        
+        enrichedFriends.push({
+          uid: friendUid,
+          name: profileData.name || 'Anonymous',
+          username: profileData.username,
+          avatar: profileData.avatar,
+          bio: profileData.bio,
+          friendSince: friendshipData.friendSince,
+          lastInteraction: friendshipData.lastInteraction,
+          isOnline: profileData.lastLogin && 
+            profileData.lastLogin.toDate() > new Date(Date.now() - 15 * 60 * 1000), // Online if active in last 15 minutes
+        });
+      }
+    }
+    
+    return enrichedFriends.sort((a, b) => {
+      // Sort by online status first, then by last interaction
+      if (a.isOnline && !b.isOnline) return -1;
+      if (!a.isOnline && b.isOnline) return 1;
+      
+      const aTime = a.lastInteraction?.toDate() || a.friendSince?.toDate() || new Date(0);
+      const bTime = b.lastInteraction?.toDate() || b.friendSince?.toDate() || new Date(0);
+      return bTime.getTime() - aTime.getTime();
+    });
+    
+  } catch (error) {
+    console.error('Error getting enriched friends list:', error);
+    return [];
+  }
+}
+
+// Update last interaction timestamp between friends
+export async function updateFriendInteraction(userUid: string, friendUid: string) {
+  try {
+    const batch = writeBatch(db);
+    const timestamp = serverTimestamp();
+    
+    const userFriendRef = doc(getFriendsRef(userUid), friendUid);
+    const friendUserRef = doc(getFriendsRef(friendUid), userUid);
+    
+    batch.update(userFriendRef, { lastInteraction: timestamp });
+    batch.update(friendUserRef, { lastInteraction: timestamp });
+    
+    await batch.commit();
+  } catch (error) {
+    console.error('Error updating friend interaction:', error);
+  }
+}
+
+// Check if two users are friends
+export async function areFriends(userUid: string, friendUid: string): Promise<boolean> {
+  try {
+    const friendshipDoc = await getDoc(doc(getFriendsRef(userUid), friendUid));
+    return friendshipDoc.exists();
+  } catch (error) {
+    console.error('Error checking friendship status:', error);
+    return false;
+  }
+}
+
+// Get mutual friends between two users
+export async function getMutualFriends(userUid: string, otherUserUid: string): Promise<Array<{
+  uid: string;
+  name: string;
+  avatar?: string;
+}>> {
+  try {
+    const [userFriendsSnapshot, otherUserFriendsSnapshot] = await Promise.all([
+      getDocs(getFriendsRef(userUid)),
+      getDocs(getFriendsRef(otherUserUid))
+    ]);
+    
+    const userFriends = new Set(userFriendsSnapshot.docs.map(doc => doc.id));
+    const mutualFriendUids = otherUserFriendsSnapshot.docs
+      .map(doc => doc.id)
+      .filter(uid => userFriends.has(uid));
+    
+    const mutualFriends = [];
+    for (const mutualUid of mutualFriendUids) {
+      const userDoc = await getDoc(doc(db, 'users', mutualUid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        mutualFriends.push({
+          uid: mutualUid,
+          name: userData.name || 'Anonymous',
+          avatar: userData.avatar,
+        });
+      }
+    }
+    
+    return mutualFriends.slice(0, 10); // Limit to 10 mutual friends
+  } catch (error) {
+    console.error('Error getting mutual friends:', error);
+    return [];
+  }
 }
 
 export function listenToAuraFeed(userUid: string, callback: (posts: AuraPost[]) => void) {

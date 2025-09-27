@@ -11,6 +11,7 @@ import {
   declineFriendRequest,
   removeFriend,
   listenToFriendRequests,
+  getEnrichedFriendsList,
   FriendRequest 
 } from '@/lib/friends';
 import { collection, query, getDocs, orderBy } from 'firebase/firestore';
@@ -21,7 +22,10 @@ interface Friend {
   name: string;
   username?: string;
   avatar?: string;
+  bio?: string;
+  friendSince?: { toDate?: () => Date } | null;
   lastInteraction?: { toDate?: () => Date } | null;
+  isOnline?: boolean;
   mutualFriends?: number;
 }
 
@@ -30,6 +34,8 @@ interface SearchResult {
   name: string;
   username: string;
   avatar?: string;
+  bio?: string;
+  interests?: string[];
   mutualFriends?: number;
   isFriend?: boolean;
   requestSent?: boolean;
@@ -40,6 +46,7 @@ interface FriendSuggestion {
   name: string;
   username?: string;
   avatar?: string;
+  bio?: string;
   mutualFriends: number;
   sharedInterests: string[];
   reason: string;
@@ -82,16 +89,8 @@ export default function FriendsPage() {
   const loadFriends = async () => {
     if (!user) return;
     try {
-      const friendsRef = collection(db, 'users', user.uid, 'friends');
-      const q = query(friendsRef, orderBy('lastInteraction', 'desc'));
-      const snapshot = await getDocs(q);
-      
-      const friendsList = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-      })) as Friend[];
-      
-      setFriends(friendsList);
+      const enrichedFriends = await getEnrichedFriendsList(user.uid);
+      setFriends(enrichedFriends);
     } catch (error) {
       console.error('Error loading friends:', error);
     } finally {
@@ -199,8 +198,8 @@ export default function FriendsPage() {
       await acceptFriendRequest({
         user,
         requestId: request.id,
-        fromUid: request.fromUid,
-        fromUserName: request.fromUserName,
+        fromUid: request.fromUserId,
+        fromUserName: request.fromUserName || 'Anonymous',
         fromUserAvatar: request.fromUserAvatar,
       });
       
@@ -223,7 +222,7 @@ export default function FriendsPage() {
       await declineFriendRequest({
         user,
         requestId: request.id,
-        fromUid: request.fromUid,
+        fromUid: request.fromUserId,
       });
       
       alert('Friend request declined');
@@ -270,23 +269,39 @@ export default function FriendsPage() {
         friends.map(friend => (
           <div key={friend.uid} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
                 {friend.avatar ? (
                   <img src={friend.avatar} alt={friend.name} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-white font-bold">{friend.name.charAt(0).toUpperCase()}</span>
                 )}
+                {friend.isOnline && (
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                )}
               </div>
               <div>
-                <h3 className="font-semibold">{friend.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold">{friend.name}</h3>
+                  {friend.isOnline && (
+                    <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900 px-2 py-0.5 rounded-full">
+                      Online
+                    </span>
+                  )}
+                </div>
                 {friend.username && (
                   <p className="text-sm text-gray-600 dark:text-gray-400">@{friend.username}</p>
                 )}
-                {friend.mutualFriends && friend.mutualFriends > 0 && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    {friend.mutualFriends} mutual friends
-                  </p>
+                {friend.bio && (
+                  <p className="text-xs text-gray-500 dark:text-gray-500 max-w-xs truncate">{friend.bio}</p>
                 )}
+                <div className="flex gap-2 text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  {friend.friendSince && (
+                    <span>Friends since {friend.friendSince.toDate?.()?.toLocaleDateString()}</span>
+                  )}
+                  {friend.mutualFriends && friend.mutualFriends > 0 && (
+                    <span>• {friend.mutualFriends} mutual friends</span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
@@ -346,6 +361,15 @@ export default function FriendsPage() {
                 <div>
                   <h4 className="font-semibold">{result.name}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">@{result.username}</p>
+                  {result.bio && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500 max-w-xs truncate">{result.bio}</p>
+                  )}
+                  {result.interests && result.interests.length > 0 && (
+                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                      Interests: {result.interests.slice(0, 3).join(', ')}
+                      {result.interests.length > 3 && '...'}
+                    </p>
+                  )}
                   {result.mutualFriends && result.mutualFriends > 0 && (
                     <p className="text-xs text-blue-600 dark:text-blue-400">
                       {result.mutualFriends} mutual friends
@@ -401,11 +425,11 @@ export default function FriendsPage() {
                   {request.fromUserAvatar ? (
                     <img src={request.fromUserAvatar} alt={request.fromUserName} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white font-bold">{request.fromUserName.charAt(0).toUpperCase()}</span>
+                    <span className="text-white font-bold">{(request.fromUserName || 'Anonymous').charAt(0).toUpperCase()}</span>
                   )}
                 </div>
                 <div>
-                  <h4 className="font-semibold">{request.fromUserName}</h4>
+                  <h4 className="font-semibold">{request.fromUserName || 'Anonymous'}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">wants to be friends</p>
                   {request.message && (
                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">&ldquo;{request.message}&rdquo;</p>
@@ -462,15 +486,26 @@ export default function FriendsPage() {
                   {suggestion.username && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">@{suggestion.username}</p>
                   )}
-                  <p className="text-sm text-purple-600 dark:text-purple-400">{suggestion.reason}</p>
-                  {suggestion.mutualFriends > 0 && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400">
-                      {suggestion.mutualFriends} mutual friends
-                    </p>
+                  {suggestion.bio && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500 max-w-xs truncate">{suggestion.bio}</p>
                   )}
+                  <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">{suggestion.reason}</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {suggestion.mutualFriends > 0 && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded-full">
+                        {suggestion.mutualFriends} mutual friends
+                      </span>
+                    )}
+                    {suggestion.sharedInterests.length > 0 && (
+                      <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900 px-2 py-0.5 rounded-full">
+                        {suggestion.sharedInterests.length} shared interests
+                      </span>
+                    )}
+                  </div>
                   {suggestion.sharedInterests.length > 0 && (
-                    <p className="text-xs text-green-600 dark:text-green-400">
-                      Shared interests: {suggestion.sharedInterests.join(', ')}
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {suggestion.sharedInterests.slice(0, 3).join(', ')}
+                      {suggestion.sharedInterests.length > 3 && ` +${suggestion.sharedInterests.length - 3} more`}
                     </p>
                   )}
                 </div>
