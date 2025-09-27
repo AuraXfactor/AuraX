@@ -1,6 +1,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { 
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager
@@ -21,12 +22,14 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 
-// Enable offline persistence for Firestore with multi-tab support
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
+// Enable offline persistence only in the browser to avoid SSR build errors
+export const db = (typeof window !== 'undefined')
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    })
+  : getFirestore(app);
 
 export const storage = getStorage(app);
 export default app;
