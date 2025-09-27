@@ -29,9 +29,9 @@ export default function MeditationsPage() {
   }
 
   const sessions = [
-    { id: 'sleep', title: 'Sleep Drift (10m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration: 600 },
-    { id: 'anxiety', title: 'Anxiety Ease (8m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', duration: 480 },
-    { id: 'focus', title: 'Deep Focus (15m)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', duration: 900 },
+    { id: 'sleep', title: 'Sleep Drift (10m)', embed: 'https://www.youtube.com/embed/aEqlQvczMJQ', duration: 600 },
+    { id: 'anxiety', title: 'Anxiety Ease (8m)', embed: 'https://www.youtube.com/embed/6vO1wPAmiMQ', duration: 480 },
+    { id: 'focus', title: 'Deep Focus (15m)', embed: 'https://www.youtube.com/embed/9pLpCg0_9Ic', duration: 900 },
   ];
 
   const handleMeditationComplete = async (sessionId: string, duration: number, completionPercentage: number) => {
@@ -95,24 +95,19 @@ export default function MeditationsPage() {
                 <span className="text-green-500 font-bold text-sm">✅ +15 pts</span>
               )}
             </div>
-            <audio 
-              controls 
-              className="w-full mt-2"
-              onEnded={() => handleMeditationComplete(s.id, s.duration, 100)}
-              onTimeUpdate={(e) => {
-                const audio = e.target as HTMLAudioElement;
-                const completion = (audio.currentTime / audio.duration) * 100;
-                if (completion >= 80 && !completedSessions.has(s.id)) {
-                  // Award partial completion
-                  handleMeditationComplete(s.id, s.duration, completion);
-                }
-              }}
-            >
-              <source src={s.url} type="audio/mpeg" />
-            </audio>
-            <p className="text-xs text-gray-500 mt-2">
-              Complete 80% to earn 15 Aura Points! 🌟
-            </p>
+            <div className="aspect-video w-full rounded-lg overflow-hidden mb-3">
+              <iframe className="w-full h-full" src={s.embed} title={s.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">Mark complete after finishing the session to earn 15 Aura Points.</p>
+              <button
+                onClick={() => handleMeditationComplete(s.id, s.duration, 100)}
+                disabled={completedSessions.has(s.id)}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg hover:from-emerald-600 hover:to-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {completedSessions.has(s.id) ? 'Completed ✅' : 'Mark Complete'}
+              </button>
+            </div>
           </div>
         ))}
       </div>

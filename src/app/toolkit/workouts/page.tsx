@@ -28,8 +28,9 @@ export default function WorkoutsPage() {
   }
 
   const routines = [
-    { id: 'neck-shoulder', title: 'Neck & Shoulder Release (5m)', embed: 'https://www.youtube.com/embed/2bG3m9z1Zt8', duration: 300 },
-    { id: 'desk-stretch', title: 'Desk Stretch (7m)', embed: 'https://www.youtube.com/embed/Kh6C7Sx5D60', duration: 420 },
+    { id: 'neck-shoulder', title: 'Neck & Shoulder Release (5m)', embed: 'https://www.youtube.com/embed/2NOsE-VPpkE', duration: 300 },
+    { id: 'desk-stretch', title: 'Desk Stretch (7m)', embed: 'https://www.youtube.com/embed/TLggs3mWz_c', duration: 420 },
+    { id: 'morning-energy', title: 'Morning Energy (5m)', embed: 'https://www.youtube.com/embed/4pKly2JojMw', duration: 300 },
   ];
 
   const handleWorkoutComplete = async (workoutId: string) => {

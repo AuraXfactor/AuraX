@@ -97,6 +97,13 @@ export default function BreathingToolPage() {
         Tip: switch patterns to match your needs. Phone users feel subtle haptics between phases.
       </div>
 
+      <div className="w-full max-w-2xl">
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Guided: 3-Minute Breathing Space</div>
+        <div className="aspect-video w-full rounded-lg overflow-hidden">
+          <iframe className="w-full h-full" src="https://www.youtube.com/embed/SEfs5TJZ6Nk" title="3-Minute Breathing Space" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+        </div>
+      </div>
+
       <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
     </motion.div>
   );

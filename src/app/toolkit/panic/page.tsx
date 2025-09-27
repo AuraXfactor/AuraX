@@ -2,12 +2,20 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 export default function PanicButtonPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
   const [affirmation, setAffirmation] = useState('You are safe. This will pass.');
+  const affirmations = [
+    'This moment will pass',
+    'I am safe right now',
+    'Breathe in peace, breathe out tension',
+    'I can handle this feeling',
+    'I am stronger than this anxiety',
+  ];
+  const [idx, setIdx] = useState(0);
 
   const chime = useCallback(() => {
     try {
@@ -35,6 +43,19 @@ export default function PanicButtonPage() {
     chime();
   }, [chime]);
 
+  // Rotate affirmations offline
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIdx((current) => {
+        const next = (current + 1) % affirmations.length;
+        setAffirmation(affirmations[next]);
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
@@ -61,6 +82,12 @@ export default function PanicButtonPage() {
         <div className="text-sm mb-2">Affirmation</div>
         <input value={affirmation} onChange={(e) => setAffirmation(e.target.value)} className="w-full px-3 py-2 rounded-md bg-white/80 dark:bg-white/10 border border-white/20" />
         <div className="mt-2 text-lg">{affirmation}</div>
+      </div>
+      <div className="mt-6 max-w-md mx-auto p-4 rounded-xl border border-white/20 bg-white/60 dark:bg-white/5">
+        <div className="text-sm mb-2">Calming Chime (30s)</div>
+        <div className="aspect-video w-full rounded-lg overflow-hidden">
+          <iframe className="w-full h-full" src="https://www.youtube.com/embed/7iCZj69V4w8?start=0&end=30&modestbranding=1&rel=0&playsinline=1" title="Calming Chime" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+        </div>
       </div>
       <div className="mt-6">
         <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
