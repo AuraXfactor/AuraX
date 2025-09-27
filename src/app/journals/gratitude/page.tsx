@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -21,7 +21,7 @@ const GRATITUDE_AFFIRMATIONS = [
 ];
 
 export default function GratitudeJournal() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   
   // Form state
@@ -43,10 +43,13 @@ export default function GratitudeJournal() {
   const [customAffirmation, setCustomAffirmation] = useState('');
   const [saving, setSaving] = useState(false);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   const updateGratitudeEntry = (index: number, field: 'item' | 'why', value: string) => {
     setGratitudeEntries(prev => prev.map((entry, i) => 

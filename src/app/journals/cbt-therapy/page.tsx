@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ const EMOTIONS = [
 ];
 
 export default function CBTTherapyJournal() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   
   // Form state
@@ -34,10 +34,13 @@ export default function CBTTherapyJournal() {
   const [actionStep, setActionStep] = useState('');
   const [saving, setSaving] = useState(false);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   const handleSave = async () => {
     if (!user) return;

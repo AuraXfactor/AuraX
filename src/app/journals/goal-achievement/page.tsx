@@ -22,7 +22,7 @@ interface DailyTask {
 }
 
 export default function GoalAchievementJournal() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   
   // Form state
@@ -53,10 +53,13 @@ export default function GoalAchievementJournal() {
     }
   }, [user]);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   const loadCurrentGoal = async () => {
     try {
