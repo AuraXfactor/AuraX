@@ -7,6 +7,7 @@
 */
 
 import admin from 'firebase-admin';
+import { seedBasicCollections } from '@/lib/initFirestore';
 import { readFileSync } from 'fs';
 
 type Args = {
@@ -307,6 +308,9 @@ async function main() {
     const targetUid = usersSnap.docs[0]?.id || 'sampleUserA';
     await ensurePerUserData(db, targetUid);
   }
+
+  // Also ensure the minimal collections requested in PR context (posts/journals/boosts/userBoosts)
+  await seedBasicCollections({ projectId: project, uid });
 
   console.log('Seeding complete.');
 }
