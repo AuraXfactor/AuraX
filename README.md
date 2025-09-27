@@ -24,6 +24,30 @@ The `pages/api` directory is mapped to `/api/*`. Files in this directory are tre
 
 This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+### Firestore: Seed required collections and sample data
+
+This project expects several Firestore collections beyond `users`. Use the Admin SDK seeding script to initialize missing data locally or in your project.
+
+Prerequisites:
+- Service account credentials with Firestore access. Save as `serviceAccount.json` or set `GOOGLE_APPLICATION_CREDENTIALS` to its path.
+
+Commands:
+```bash
+# Using npm script (project pre-filled from src/lib/firebase.ts)
+GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json npm run seed:firestore
+
+# Or directly with ts-node and explicit flags
+GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json npx ts-node scripts/seed-firestore.ts \
+  --project aura-app-prod-4dc34 \
+  --uid <your-user-uid>
+```
+
+What it seeds (idempotent upserts):
+- Top-level: `auraPosts` (with `reactions`, `replies`), `groupChats` (with `messages`), `weeklyQuests`, `rewards`, `auraSquads`.
+- Per user (`users/{uid}`): `friends`, `friendRequests`, `chats/{chatId}/messages`, `chatMeta`, `chats/{chatId}/typing`, `journalEntries`, `journalCollections`, `questProgress`, `auraStats/main`, `pointTransactions`, `purchases`.
+
+If `--uid` is omitted, it seeds the first existing user or falls back to `sampleUserA`.
+
 ## SoulChat & Aura Coach (Demo Steps)
 
 1. Sign up or log in.

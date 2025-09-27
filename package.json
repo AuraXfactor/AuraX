@@ -6,11 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:firestore": "ts-node scripts/seed-firestore.ts --project aura-app-prod-4dc34"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.5",
     "firebase": "^12.2.1",
+    "firebase-admin": "^13.5.0",
     "framer-motion": "^12.23.13",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.544.0",
