@@ -14,8 +14,7 @@ import {
   where,
   Timestamp,
   writeBatch,
-  arrayUnion,
-  increment,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -219,15 +218,14 @@ export async function awardAuraPoints(params: {
   const { user, activity, proof, description, multiplier = 1, questId, squadId } = params;
   
   try {
-    // Get current user stats
+    // Get or initialize user stats
     const statsRef = getAuraStatsRef(user.uid);
-    const statsDoc = await getDoc(statsRef);
-    
+    let statsDoc = await getDoc(statsRef);
     if (!statsDoc.exists()) {
       await initializeUserAuraStats(user);
+      statsDoc = await getDoc(statsRef);
     }
-    
-    const stats = statsDoc.data() as UserAuraStats;
+    const stats = (statsDoc.data() as UserAuraStats) || ({} as UserAuraStats);
     const today = new Date().toISOString().split('T')[0];
     
     // Check daily caps
@@ -417,18 +415,47 @@ export async function initializeUserAuraStats(user: User): Promise<void> {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
-  
-  await updateDoc(statsRef, initialStats);
+  // Create or overwrite the main stats doc
+  await setDoc(statsRef, initialStats, { merge: true });
 }
 
 // Get user's current Aura stats
 export async function getUserAuraStats(userUid: string): Promise<UserAuraStats | null> {
   try {
-    const statsDoc = await getDoc(getAuraStatsRef(userUid));
-    if (statsDoc.exists()) {
-      return statsDoc.data() as UserAuraStats;
-    }
-    return null;
+    const ref = getAuraStatsRef(userUid);
+    const statsDoc = await getDoc(ref);
+    if (statsDoc.exists()) return statsDoc.data() as UserAuraStats;
+    // Initialize if missing
+    await setDoc(ref, {
+      userUid,
+      totalPoints: 0,
+      availablePoints: 0,
+      lifetimeEarned: 0,
+      lifetimeSpent: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastActivityDate: '',
+      dailyPointsEarned: 0,
+      weeklyPointsEarned: 0,
+      level: 1,
+      badges: [],
+      achievements: [],
+      joinedSquads: [],
+      preferences: {
+        celebrationStyle: 'enthusiastic',
+        privacyLevel: 'friends',
+        notifications: {
+          dailyReminder: true,
+          streakAlert: true,
+          questAvailable: true,
+          squadActivity: true,
+        },
+      },
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    const fresh = await getDoc(ref);
+    return fresh.exists() ? (fresh.data() as UserAuraStats) : null;
   } catch (error) {
     console.error('Error getting Aura stats:', error);
     return null;
