@@ -2,8 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { sendFriendRequest } from '@/lib/friends';
 import Link from 'next/link';
 
@@ -36,33 +34,11 @@ export default function AddFriendPage() {
       return;
     }
     
-    loadUserProfile();
+    // Under new rules we cannot read another user's profile; set minimal
+    setSharedUser({ uid: userId, name: 'New friend' });
   }, [user, router, userId]);
-
-  const loadUserProfile = async () => {
-    try {
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        setSharedUser({
-          uid: userId,
-          name: userData.name || userData.email || 'Anonymous',
-          username: userData.username,
-          avatar: userData.avatar,
-          email: userData.email,
-        });
-      } else {
-        alert('User not found');
-        router.push('/friends');
-      }
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-      alert('Error loading user profile');
-      router.push('/friends');
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  useEffect(() => { setLoading(false); }, []);
 
   const handleSendFriendRequest = async () => {
     if (!user || !sharedUser) return;
@@ -74,7 +50,7 @@ export default function AddFriendPage() {
         toUid: sharedUser.uid,
         toUserName: sharedUser.name,
         toUserAvatar: sharedUser.avatar,
-        message: `Hi ${sharedUser.name}, I'd like to connect with you on AuraX!`,
+        message: `I'd like to connect with you on AuraX!`,
       });
       
       alert('Friend request sent! 🎉');
@@ -112,7 +88,7 @@ export default function AddFriendPage() {
     <div className="min-h-screen p-6 md:p-10">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Connect with {sharedUser.name}</h1>
+          <h1 className="text-4xl font-bold mb-2">Connect with a friend</h1>
           <p className="text-gray-600 dark:text-gray-300">
             Someone shared their AuraX profile with you!
           </p>
@@ -121,21 +97,11 @@ export default function AddFriendPage() {
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-8 text-center">
           {/* User Avatar */}
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6">
-            {sharedUser.avatar ? (
-              <img 
-                src={sharedUser.avatar} 
-                alt={sharedUser.name} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white font-bold text-3xl">
-                {sharedUser.name.charAt(0).toUpperCase()}
-              </span>
-            )}
+            <span className="text-white font-bold text-3xl">🤝</span>
           </div>
 
           {/* User Info */}
-          <h2 className="text-3xl font-bold mb-2">{sharedUser.name}</h2>
+          <h2 className="text-3xl font-bold mb-2">Ready to connect?</h2>
           {sharedUser.username && (
             <p className="text-purple-600 dark:text-purple-400 mb-2">@{sharedUser.username}</p>
           )}

@@ -107,8 +107,8 @@ export default function RelationshipJournal() {
         relationshipHealth: calculateRelationshipHealth(),
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'relationship'), entryData);
+      // Save to Firestore unified journals path
+      await addDoc(collection(db, 'journals', user.uid, 'entries'), entryData);
 
       // Award points with relationship bonus
       try {

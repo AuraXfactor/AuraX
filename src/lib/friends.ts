@@ -15,6 +15,7 @@ import {
   Timestamp,
   writeBatch,
   arrayUnion,
+  setDoc,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -121,20 +122,16 @@ export type GroupMessage = {
 };
 
 // Helper functions for Firestore paths
-export function getFriendRequestsRef(uid: string) {
-  return collection(db, 'users', uid, 'friendRequests');
+function getFriendsCollection() {
+  return collection(db, 'friends');
 }
 
-export function getFriendsRef(uid: string) {
-  return collection(db, 'users', uid, 'friends');
+function buildFriendshipId(a: string, b: string) {
+  return [a, b].sort().join('_');
 }
 
-export function getAuraPostsRef() {
-  return collection(db, 'auraPosts');
-}
-
-export function getAuraRepliesRef(postId: string) {
-  return collection(db, 'auraPosts', postId, 'replies');
+export function getPostsRef() {
+  return collection(db, 'posts');
 }
 
 export function getGroupChatsRef() {
@@ -159,12 +156,9 @@ export async function sendFriendRequest(params: {
     throw new Error('Cannot send friend request to yourself');
   }
 
-  const batch = writeBatch(db);
-  
-  // Create request document ID
-  const requestId = `${fromUser.uid}_${toUid}`;
-  
-  const requestData = {
+  const friendshipId = buildFriendshipId(fromUser.uid, toUid);
+  const requestRef = doc(getFriendsCollection(), friendshipId);
+  await setDoc(requestRef, {
     fromUid: fromUser.uid,
     toUid,
     fromUserName: fromUser.displayName || fromUser.email || 'Anonymous',
@@ -175,18 +169,8 @@ export async function sendFriendRequest(params: {
     message: message || '',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  };
-
-  // Add to sender's sent requests
-  const senderRequestRef = doc(getFriendRequestsRef(fromUser.uid), requestId);
-  batch.set(senderRequestRef, requestData);
-
-  // Add to receiver's incoming requests
-  const receiverRequestRef = doc(getFriendRequestsRef(toUid), requestId);
-  batch.set(receiverRequestRef, requestData);
-
-  await batch.commit();
-  return requestId;
+  });
+  return friendshipId;
 }
 
 export async function acceptFriendRequest(params: {
@@ -197,47 +181,19 @@ export async function acceptFriendRequest(params: {
   fromUserAvatar?: string;
 }): Promise<void> {
   const { user, requestId, fromUid, fromUserName, fromUserAvatar } = params;
-  
-  const batch = writeBatch(db);
-  
-  // Update request status
-  const userRequestRef = doc(getFriendRequestsRef(user.uid), requestId);
-  const senderRequestRef = doc(getFriendRequestsRef(fromUid), requestId);
-  
-  batch.update(userRequestRef, {
+  const friendshipId = buildFriendshipId(user.uid, fromUid);
+  const friendshipRef = doc(getFriendsCollection(), friendshipId);
+  await updateDoc(friendshipRef, {
     status: 'accepted',
     updatedAt: serverTimestamp(),
+    // Denormalized names/avatars for both sides
+    aUid: user.uid,
+    bUid: fromUid,
+    aName: user.displayName || user.email || 'Anonymous',
+    aAvatar: user.photoURL || null,
+    bName: fromUserName,
+    bAvatar: fromUserAvatar || null,
   });
-  batch.update(senderRequestRef, {
-    status: 'accepted',
-    updatedAt: serverTimestamp(),
-  });
-
-  // Create friendship records
-  const userFriendRef = doc(getFriendsRef(user.uid), fromUid);
-  const senderFriendRef = doc(getFriendsRef(fromUid), user.uid);
-  
-  const friendshipTimestamp = serverTimestamp();
-  
-  batch.set(userFriendRef, {
-    userUid: user.uid,
-    friendUid: fromUid,
-    friendName: fromUserName,
-    friendAvatar: fromUserAvatar,
-    createdAt: friendshipTimestamp,
-    lastInteraction: friendshipTimestamp,
-  });
-
-  batch.set(senderFriendRef, {
-    userUid: fromUid,
-    friendUid: user.uid,
-    friendName: user.displayName || user.email || 'Anonymous',
-    friendAvatar: user.photoURL,
-    createdAt: friendshipTimestamp,
-    lastInteraction: friendshipTimestamp,
-  });
-
-  await batch.commit();
 }
 
 export async function declineFriendRequest(params: {
@@ -246,17 +202,12 @@ export async function declineFriendRequest(params: {
   fromUid: string;
 }): Promise<void> {
   const { user, requestId, fromUid } = params;
-  
-  const batch = writeBatch(db);
-  
-  // Delete request from both users
-  const userRequestRef = doc(getFriendRequestsRef(user.uid), requestId);
-  const senderRequestRef = doc(getFriendRequestsRef(fromUid), requestId);
-  
-  batch.delete(userRequestRef);
-  batch.delete(senderRequestRef);
-
-  await batch.commit();
+  const friendshipId = buildFriendshipId(user.uid, fromUid);
+  const friendshipRef = doc(getFriendsCollection(), friendshipId);
+  await updateDoc(friendshipRef, {
+    status: 'declined',
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function removeFriend(params: {
@@ -264,17 +215,11 @@ export async function removeFriend(params: {
   friendUid: string;
 }): Promise<void> {
   const { user, friendUid } = params;
-  
-  const batch = writeBatch(db);
-  
-  // Remove friendship records
-  const userFriendRef = doc(getFriendsRef(user.uid), friendUid);
-  const friendUserRef = doc(getFriendsRef(friendUid), user.uid);
-  
-  batch.delete(userFriendRef);
-  batch.delete(friendUserRef);
-
-  await batch.commit();
+  const friendshipId = buildFriendshipId(user.uid, friendUid);
+  await updateDoc(doc(getFriendsCollection(), friendshipId), {
+    status: 'removed',
+    updatedAt: serverTimestamp(),
+  });
 }
 
 // Aura Posts (Ephemeral Posts) Functions
@@ -305,9 +250,11 @@ export async function createAuraPost(params: {
   }
   
   // Calculate expiration time (24 hours from now)
-  const expiresAt = new Timestamp(Date.now() / 1000 + 24 * 60 * 60, 0);
+  const expiresAt = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
   
   const postData = {
+    kind: 'post' as const,
+    authorId: user.uid,
     authorUid: user.uid,
     authorName: user.displayName || user.email || 'Anonymous',
     authorAvatar: user.photoURL || undefined,
@@ -326,7 +273,7 @@ export async function createAuraPost(params: {
     tags,
   };
   
-  const docRef = await addDoc(getAuraPostsRef(), postData);
+  const docRef = await addDoc(getPostsRef(), postData);
   return docRef.id;
 }
 
@@ -335,25 +282,15 @@ export async function getAuraFeed(params: {
   limitCount?: number;
 }): Promise<AuraPost[]> {
   const { userUid, limitCount = 20 } = params;
-  
-  // Get user's friends to filter feed
-  const friendsSnapshot = await getDocs(getFriendsRef(userUid));
-  const friendUids = friendsSnapshot.docs.map(doc => doc.data().friendUid);
-  friendUids.push(userUid); // Include user's own posts
-  
-  if (friendUids.length === 0) {
-    return [];
-  }
-  
-  // Query posts from friends and self, ordered by creation time
+  // For simplicity, show recent non-expired posts globally (kind == 'post')
   const q = query(
-    getAuraPostsRef(),
-    where('authorUid', 'in', friendUids.slice(0, 10)), // Firestore 'in' limit is 10
+    getPostsRef(),
+    where('kind', '==', 'post'),
     where('expiresAt', '>', Timestamp.now()),
     orderBy('createdAt', 'desc'),
     limit(limitCount)
   );
-  
+
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({
     id: doc.id,
@@ -368,23 +305,15 @@ export async function addAuraReaction(params: {
   emoji: string;
 }): Promise<void> {
   const { user, postId, type, emoji } = params;
-  
-  const reactionData = {
-    postId,
-    userUid: user.uid,
+  // Store reaction as a separate document in posts collection (allowed by rules)
+  await addDoc(getPostsRef(), {
+    kind: 'reaction',
+    parentId: postId,
+    userId: user.uid,
     userName: user.displayName || user.email || 'Anonymous',
     type,
     emoji,
     createdAt: serverTimestamp(),
-  };
-  
-  const reactionsRef = collection(db, 'auraPosts', postId, 'reactions');
-  await addDoc(reactionsRef, reactionData);
-  
-  // Update post like count
-  const postRef = doc(getAuraPostsRef(), postId);
-  await updateDoc(postRef, {
-    likeCount: arrayUnion(user.uid),
   });
 }
 
@@ -395,25 +324,16 @@ export async function addAuraReply(params: {
   isPrivate?: boolean;
 }): Promise<string> {
   const { user, postId, content, isPrivate = false } = params;
-  
-  const replyData = {
-    postId,
-    userUid: user.uid,
+  const docRef = await addDoc(getPostsRef(), {
+    kind: 'reply',
+    parentId: postId,
+    userId: user.uid,
     userName: user.displayName || user.email || 'Anonymous',
     userAvatar: user.photoURL || undefined,
     content,
     isPrivate,
     createdAt: serverTimestamp(),
-  };
-  
-  const docRef = await addDoc(getAuraRepliesRef(postId), replyData);
-  
-  // Update post reply count
-  const postRef = doc(getAuraPostsRef(), postId);
-  await updateDoc(postRef, {
-    replyCount: arrayUnion(user.uid),
   });
-  
   return docRef.id;
 }
 
@@ -425,57 +345,8 @@ export async function searchUsersByUsername(username: string): Promise<Array<{
   avatar?: string;
   mutualFriends?: number;
 }>> {
-  try {
-    const usersRef = collection(db, 'users');
-    
-    // Search by username first
-    if (username.trim()) {
-      const q = query(
-        usersRef,
-        where('username', '>=', username.toLowerCase()),
-        where('username', '<=', username.toLowerCase() + '\uf8ff'),
-        limit(10)
-      );
-      
-      const snapshot = await getDocs(q);
-      const results = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        name: doc.data().name || doc.data().email || 'Anonymous',
-        username: doc.data().username || '',
-        avatar: doc.data().avatar,
-      })).filter(user => user.username); // Only return users with usernames
-      
-      if (results.length > 0) {
-        return results;
-      }
-    }
-    
-    // If no username results, search by name or email
-    const allUsersSnapshot = await getDocs(query(usersRef, limit(20)));
-    const searchTerm = username.toLowerCase();
-    
-    return allUsersSnapshot.docs
-      .map(doc => {
-        const data = doc.data();
-        return {
-          uid: doc.id,
-          name: data.name || data.email || 'Anonymous',
-          username: data.username || data.email?.split('@')[0] || '',
-          avatar: data.avatar,
-          email: data.email,
-        };
-      })
-      .filter(user => 
-        user.name.toLowerCase().includes(searchTerm) ||
-        user.username.toLowerCase().includes(searchTerm) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm))
-      )
-      .slice(0, 10);
-      
-  } catch (error) {
-    console.error('Error searching users:', error);
-    return [];
-  }
+  // Restricted by rules; searching other users' profiles is not allowed.
+  return [];
 }
 
 // Get all users for general discovery
@@ -486,23 +357,8 @@ export async function getAllUsersForDiscovery(currentUserUid: string): Promise<A
   avatar?: string;
   email?: string;
 }>> {
-  try {
-    const usersRef = collection(db, 'users');
-    const snapshot = await getDocs(query(usersRef, limit(50)));
-    
-    return snapshot.docs
-      .filter(doc => doc.id !== currentUserUid) // Exclude current user
-      .map(doc => ({
-        uid: doc.id,
-        name: doc.data().name || doc.data().email || 'Anonymous',
-        username: doc.data().username || doc.data().email?.split('@')[0] || `user${doc.id.slice(-4)}`,
-        avatar: doc.data().avatar,
-        email: doc.data().email,
-      }));
-  } catch (error) {
-    console.error('Error getting users for discovery:', error);
-    return [];
-  }
+  // Not available under strict rules
+  return [];
 }
 
 export async function getFriendSuggestions(userUid: string): Promise<Array<{
@@ -514,48 +370,44 @@ export async function getFriendSuggestions(userUid: string): Promise<Array<{
   sharedInterests: string[];
   reason: string;
 }>> {
-  // Get user's friends and interests
-  const [friendsSnapshot, userDoc] = await Promise.all([
-    getDocs(getFriendsRef(userUid)),
-    getDoc(doc(db, 'users', userUid)),
-  ]);
-  
-  const userFriends = new Set(friendsSnapshot.docs.map(doc => doc.data().friendUid));
-  const userInterests = userDoc.data()?.focusAreas || [];
-  
-  // Get friends of friends who aren't already friends
-  const suggestions = new Map();
-  
-  for (const friendDoc of friendsSnapshot.docs) {
-    const friendUid = friendDoc.data().friendUid;
-    const friendsFriendsSnapshot = await getDocs(getFriendsRef(friendUid));
-    
-    for (const friendFriendDoc of friendsFriendsSnapshot.docs) {
-      const candidateUid = friendFriendDoc.data().friendUid;
-      
-      // Skip if already friends or self
-      if (userFriends.has(candidateUid) || candidateUid === userUid) {
-        continue;
-      }
-      
-      if (!suggestions.has(candidateUid)) {
-        const candidateData = friendFriendDoc.data();
-        suggestions.set(candidateUid, {
-          uid: candidateUid,
-          name: candidateData.friendName,
-          username: candidateData.friendUsername,
-          avatar: candidateData.friendAvatar,
+  // Build suggestions using global friends relationships
+  const outgoing = await getDocs(query(getFriendsCollection(), where('fromUid', '==', userUid), where('status', '==', 'accepted')));
+  const incoming = await getDocs(query(getFriendsCollection(), where('toUid', '==', userUid), where('status', '==', 'accepted')));
+  const direct = new Set<string>();
+  outgoing.docs.forEach(d => direct.add(d.data().toUid));
+  incoming.docs.forEach(d => direct.add(d.data().fromUid));
+
+  const suggestions = new Map<string, { uid: string; name: string; username?: string; avatar?: string; mutualFriends: number; sharedInterests: string[]; reason: string }>();
+
+  for (const friendUid of Array.from(direct)) {
+    const fo = await getDocs(query(getFriendsCollection(), where('fromUid', '==', friendUid), where('status', '==', 'accepted')));
+    const fi = await getDocs(query(getFriendsCollection(), where('toUid', '==', friendUid), where('status', '==', 'accepted')));
+    const fof = new Set<string>();
+    fo.docs.forEach(d => fof.add(d.data().toUid));
+    fi.docs.forEach(d => fof.add(d.data().fromUid));
+
+    for (const candidate of Array.from(fof)) {
+      if (candidate === userUid || direct.has(candidate)) continue;
+      const id = buildFriendshipId(friendUid, candidate);
+      // We rely on denormalized names stored when friendships were created
+      const friendshipDoc = fo.docs.find(d => d.id === buildFriendshipId(friendUid, candidate)) || fi.docs.find(d => d.id === buildFriendshipId(friendUid, candidate));
+      const name = (friendshipDoc?.data().bName || friendshipDoc?.data().aName || 'Friend') as string;
+      const avatar = (friendshipDoc?.data().bAvatar || friendshipDoc?.data().aAvatar) as string | undefined;
+      if (!suggestions.has(candidate)) {
+        suggestions.set(candidate, {
+          uid: candidate,
+          name,
+          username: undefined,
+          avatar,
           mutualFriends: 1,
           sharedInterests: [],
           reason: 'Mutual friends',
         });
       } else {
-        suggestions.get(candidateUid).mutualFriends++;
+        suggestions.get(candidate)!.mutualFriends += 1;
       }
     }
   }
-  
-  // Add shared interests data (simplified - would need more complex analysis)
   return Array.from(suggestions.values()).slice(0, 10);
 }
 
@@ -634,30 +486,16 @@ export async function sendGroupMessage(params: {
 
 // Listen to real-time updates
 export function listenToFriendRequests(userUid: string, callback: (requests: FriendRequest[]) => void) {
-  const q = query(
-    getFriendRequestsRef(userUid),
-    where('toUid', '==', userUid),
-    where('status', '==', 'pending'),
-    orderBy('createdAt', 'desc')
-  );
-  
-  return onSnapshot(q, (snapshot) => {
-    const requests = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as FriendRequest[];
+  const q1 = query(getFriendsCollection(), where('toUid', '==', userUid), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q1, (snapshot) => {
+    const requests = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) })) as FriendRequest[];
     callback(requests);
   });
 }
 
 export function listenToAuraFeed(userUid: string, callback: (posts: AuraPost[]) => void) {
   return onSnapshot(
-    query(
-      getAuraPostsRef(),
-      where('expiresAt', '>', Timestamp.now()),
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    ),
+    query(getPostsRef(), where('kind', '==', 'post'), where('expiresAt', '>', Timestamp.now()), orderBy('createdAt', 'desc'), limit(20)),
     (snapshot) => {
       const posts = snapshot.docs.map(doc => ({
         id: doc.id,

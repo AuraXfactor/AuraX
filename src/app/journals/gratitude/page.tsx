@@ -110,8 +110,8 @@ export default function GratitudeJournal() {
         abundanceAreasCount: Object.values(abundanceReflections).filter(v => v.trim()).length,
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'gratitude'), entryData);
+      // Save to Firestore unified journals path
+      await addDoc(collection(db, 'journals', user.uid, 'entries'), entryData);
 
       // Award points with gratitude bonus
       try {

@@ -108,8 +108,8 @@ export default function DailyCheckInJournal() {
         completionScore: calculateCompletionScore(),
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'daily-checkin'), entryData);
+      // Save to Firestore unified journals path
+      await addDoc(collection(db, 'journals', user.uid, 'entries'), entryData);
 
       // Award points
       try {
