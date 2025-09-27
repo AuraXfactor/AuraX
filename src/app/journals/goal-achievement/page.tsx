@@ -62,7 +62,7 @@ export default function GoalAchievementJournal() {
     try {
       const goalDoc = await getDoc(doc(db, 'users', user.uid));
       if (goalDoc.exists()) {
-        const data = goalDoc.data() as any;
+        const data = goalDoc.data() as { currentGoal?: Goal };
         if (data.currentGoal) setCurrentGoal({ id: user.uid, ...data.currentGoal } as Goal);
       }
     } catch (error) {

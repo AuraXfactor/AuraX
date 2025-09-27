@@ -488,7 +488,10 @@ export async function sendGroupMessage(params: {
 export function listenToFriendRequests(userUid: string, callback: (requests: FriendRequest[]) => void) {
   const q1 = query(getFriendsCollection(), where('toUid', '==', userUid), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
   return onSnapshot(q1, (snapshot) => {
-    const requests = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) })) as FriendRequest[];
+    const requests = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as Omit<FriendRequest, 'id'>;
+      return { id: docSnap.id, ...data } as FriendRequest;
+    });
     callback(requests);
   });
 }

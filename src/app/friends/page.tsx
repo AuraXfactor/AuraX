@@ -87,7 +87,12 @@ export default function FriendsPage() {
       const acceptedTo = await getDocs(query(collection(db, 'friends'), where('toUid', '==', user.uid), where('status', '==', 'accepted')));
       const list: Friend[] = [];
       acceptedFrom.docs.forEach((d) => {
-        const data = d.data() as any;
+        const data = d.data() as {
+          toUid: string;
+          toUserName: string;
+          toUserAvatar?: string;
+          updatedAt?: { toDate?: () => Date } | null;
+        };
         list.push({
           uid: data.toUid,
           name: data.toUserName,
@@ -97,7 +102,12 @@ export default function FriendsPage() {
         });
       });
       acceptedTo.docs.forEach((d) => {
-        const data = d.data() as any;
+        const data = d.data() as {
+          fromUid: string;
+          fromUserName: string;
+          fromUserAvatar?: string;
+          updatedAt?: { toDate?: () => Date } | null;
+        };
         list.push({
           uid: data.fromUid,
           name: data.fromUserName,
