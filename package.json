@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "echo \"Start dev (npm run dev), login, then open /admin/seed to run seeding.\""
   },
   "dependencies": {
     "@types/qrcode": "^1.5.5",
