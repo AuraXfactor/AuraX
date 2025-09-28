@@ -53,6 +53,16 @@ service cloud.firestore {
         request.resource.data.participants[request.auth.uid] == true;
     }
 
+    // Enhanced encrypted chats
+    match /enhancedChats/{chatId} {
+      allow read, write, create, update: if request.auth != null;
+    }
+
+    // Enhanced chat messages
+    match /enhancedChats/{chatId}/messages/{messageId} {
+      allow read, write, create, update: if request.auth != null;
+    }
+
     // Journal entries - users can read/write their own journals
     match /journals/{userId}/entries/{entryId} {
       allow read, write, create: if request.auth != null && request.auth.uid == userId;

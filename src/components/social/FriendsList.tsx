@@ -64,11 +64,10 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
   };
 
   const handleStartChat = (friendId: string) => {
-    router.push(`/soulchat/${friendId}`);
+    router.push(`/chat/${friendId}`);
   };
 
   const handleViewProfile = (friendId: string) => {
-    // Navigate to user profile page
     router.push(`/profile/${friendId}`);
   };
 
