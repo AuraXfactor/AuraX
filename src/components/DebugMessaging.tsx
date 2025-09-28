@@ -33,7 +33,7 @@ export default function DebugMessaging() {
     // Test 1: Basic user document access
     try {
       const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      await getDoc(userDocRef);
       addResult('✅ users/{userId} READ: Success');
       
       // Try to write to user document
@@ -42,8 +42,9 @@ export default function DebugMessaging() {
         testField: 'debug'
       }, { merge: true });
       addResult('✅ users/{userId} WRITE: Success');
-    } catch (error: any) {
-      addResult(`❌ users/{userId}: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`❌ users/{userId}: ${errorMessage}`);
     }
 
     // Test 2: Group chat creation
@@ -79,8 +80,9 @@ export default function DebugMessaging() {
       );
       addResult(`✅ groupChats/{groupId}/messages CREATE: Success (${messageRef.id})`);
       
-    } catch (error: any) {
-      addResult(`❌ groupChats: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`❌ groupChats: ${errorMessage}`);
     }
 
     // Test 3: Enhanced chat creation
@@ -117,8 +119,9 @@ export default function DebugMessaging() {
       );
       addResult(`✅ enhancedChats/{chatId}/messages CREATE: Success (${messageRef.id})`);
       
-    } catch (error: any) {
-      addResult(`❌ enhancedChats: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`❌ enhancedChats: ${errorMessage}`);
     }
 
     // Test 4: Social system chats
@@ -138,8 +141,9 @@ export default function DebugMessaging() {
       );
       addResult(`✅ chats/{chatId}/messages CREATE: Success (${messageRef.id})`);
       
-    } catch (error: any) {
-      addResult(`❌ chats/{chatId}/messages: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`❌ chats/{chatId}/messages: ${errorMessage}`);
     }
 
     // Test 5: Legacy chat system
@@ -159,8 +163,9 @@ export default function DebugMessaging() {
       );
       addResult(`✅ users/{userId}/chats/{chatId}/messages CREATE: Success (${messageRef.id})`);
       
-    } catch (error: any) {
-      addResult(`❌ users/{userId}/chats/{chatId}/messages: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`❌ users/{userId}/chats/{chatId}/messages: ${errorMessage}`);
     }
 
     addResult('🏁 Permission testing completed');
