@@ -79,6 +79,9 @@ export default function JournalPage() {
   const [reminderTime, setReminderTime] = useState('20:00');
   const [customActivities, setCustomActivities] = useState<string[]>([]);
   const [newActivity, setNewActivity] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [filterMood, setFilterMood] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -208,6 +211,30 @@ export default function JournalPage() {
     },
     [selectedActivities.length, moodTag, affirmation, notes]
   );
+
+  const filteredEntries = useMemo(() => {
+    let filtered = entries;
+    
+    // Filter by mood
+    if (filterMood !== 'all') {
+      filtered = filtered.filter(entry => entry.moodTag === filterMood);
+    }
+    
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(entry => 
+        entry.entryText.toLowerCase().includes(term) ||
+        entry.affirmation?.toLowerCase().includes(term) ||
+        entry.activities?.some(activity => 
+          defaultActivities.find(d => d.key === activity)?.label.toLowerCase().includes(term) ||
+          activity.toLowerCase().includes(term)
+        )
+      );
+    }
+    
+    return filtered;
+  }, [entries, filterMood, searchTerm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -420,8 +447,19 @@ export default function JournalPage() {
     <div className="max-w-2xl mx-auto p-6 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Journal</h1>
-        <div className="px-3 py-1 rounded-full border border-white/20 text-sm">
-          Streak: <span className="font-semibold">{currentStreak}</span>🔥
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.location.href = '/journal/history'}
+            className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-700 dark:text-purple-300 rounded-lg transition text-sm flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            {entries.length > 0 ? `View All ${entries.length} Entries` : 'View History'}
+          </button>
+          <div className="px-3 py-1 rounded-full border border-white/20 text-sm">
+            Streak: <span className="font-semibold">{currentStreak}</span>🔥
+          </div>
         </div>
       </div>
 
@@ -567,36 +605,47 @@ export default function JournalPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {entries.map((e) => (
-            <div key={e.id} className="border rounded p-3">
-              <div className="text-sm text-gray-500">{e.createdAt?.toDate?.().toLocaleString?.() ?? 'Pending sync'}</div>
-              <div className="text-2xl mb-2">{moods.find((m) => m.value === e.moodTag)?.label ?? '😐'}</div>
-              {e.affirmation ? (
-                <div className="mb-2 text-sm italic opacity-80">“{e.affirmation}”</div>
-              ) : null}
-              {e.activities && e.activities.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-2">
-                  {e.activities.map((a) => {
-                    const label = defaultActivities.find((d) => d.key === a)?.label || a.replace(/^custom_/, '').replace(/_/g, ' ');
-                    return (
-                      <span key={a} className="px-2 py-0.5 rounded-full text-xs border">
-                        {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-              <p className="whitespace-pre-wrap">{e.entryText}</p>
-              {typeof e.auraScore === 'number' && (
-                <div className="mt-2 text-sm opacity-80">Aura: +{e.auraScore}</div>
-              )}
-              {e.voiceMemoUrl && (
-                <audio src={e.voiceMemoUrl} controls className="mt-2 w-full" />
-              )}
+        {/* Recent Entries Preview */}
+        {entries.length > 0 && (
+          <div className="bg-white/60 dark:bg-white/10 backdrop-blur rounded-lg p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                📖 Recent Entries
+              </h2>
+              <button
+                onClick={() => window.location.href = '/journal/history'}
+                className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 transition"
+              >
+                View All →
+              </button>
             </div>
-          ))}
-        </div>
+            
+            <div className="space-y-3">
+              {entries.slice(0, 3).map((entry) => (
+                <div key={entry.id} className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">
+                        {moods.find((m) => m.value === entry.moodTag)?.label ?? '😐'}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {entry.createdAt?.toDate?.().toLocaleDateString() ?? 'Recent'}
+                      </span>
+                    </div>
+                    {typeof entry.auraScore === 'number' && (
+                      <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
+                        +{entry.auraScore} Aura
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+                    {entry.entryText.length > 100 ? `${entry.entryText.slice(0, 100)}...` : entry.entryText}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
