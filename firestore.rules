@@ -1,14 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read/write their own documents
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Allow reading basic user info for friend discovery
+    // User profiles - users can read/write their own, read public profiles
     match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        resource.data.isPublic == true
+      );
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Public user data for search/suggestions
+    match /publicProfiles/{userId} {
+      allow read: if true; // Anyone can read for search/suggestions
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Friend requests system
+    match /friendRequests/{requestId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.toUserId ||
+        request.auth.uid == resource.data.fromUserId
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.fromUserId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.toUserId;
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.fromUserId ||
+        request.auth.uid == resource.data.toUserId
+      );
+    }
+
+    // Friends relationships (two-way)
+    match /friends/{userId}/{friendId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Groups system
+    match /groups/{groupId} {
+      allow read: if request.auth != null && (
+        resource.data.isPublic == true ||
+        resource.data.members[request.auth.uid] == true
+      );
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId ||
+        resource.data.admins[request.auth.uid] == true
+      );
+    }
+
+    // Group memberships
+    match /groupMembers/{groupId}/{userId} {
       allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Chat messages (individual and group)
+    match /chats/{chatId}/messages/{messageId} {
+      allow read: if request.auth != null && 
+        resource.data.participants[request.auth.uid] == true;
+      allow create: if request.auth != null && 
+        request.resource.data.participants[request.auth.uid] == true;
     }
 
     // Journal entries - users can read/write their own journals
@@ -26,18 +78,21 @@ service cloud.firestore {
       allow read, write, create: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Chat metadata minimal read by participants only
-    match /users/{userId}/chatMeta/{chatId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Existing collections (keep these)
+    match /boosts/{boostId} {
+      allow read: if true;
+      allow write: if false;
     }
-
-    // Typing indicator docs under chats are readable by the two participants only
-    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+    match /userBoosts/{userId}/entries/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
 
-    // Aura Posts - can be read by friends, written by author
+    // Legacy support for existing Aura Posts
     match /auraPosts/{postId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == resource.data.authorUid;
@@ -57,20 +112,31 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == request.resource.data.userUid;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
     }
-    
-    // Group Chats - members can read/write
+
+    // Legacy Group Chats - members can read/write
     match /groupChats/{groupId} {
       allow read, write: if request.auth != null && request.auth.uid in resource.data.members;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.createdBy;
     }
     
-    // Group Messages - members can read/write
+    // Legacy Group Messages - members can read/write
     match /groupChats/{groupId}/messages/{messageId} {
       allow read, write: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members;
       allow create: if request.auth != null && 
         request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members &&
         request.auth.uid == request.resource.data.fromUid;
+    }
+
+    // Chat metadata minimal read by participants only
+    match /users/{userId}/chatMeta/{chatId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Typing indicator docs under chats are readable by the two participants only
+    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     match /analytics/{collection=**} {
