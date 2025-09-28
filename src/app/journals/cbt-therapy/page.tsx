@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
+import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
 const EMOTIONS = [
   { label: 'Angry', value: 'angry', color: 'bg-red-500' },
@@ -415,7 +416,7 @@ export default function CBTTherapyJournal() {
           </section>
 
           {/* Save Button */}
-          <div className="text-center pb-20">
+          <div className="text-center">
             <button
               onClick={handleSave}
               disabled={saving || !situation.trim() || !selectedEmotion}
@@ -429,6 +430,59 @@ export default function CBTTherapyJournal() {
             )}
           </div>
         </div>
+
+        {/* Journal History */}
+        <SpecializedJournalHistory
+          journalType="cbt-therapy"
+          title="Thought Reframe"
+          icon="🧠"
+          renderEntry={(entry) => (
+            <div className="space-y-3">
+              {entry.situation && (
+                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-l-4 border-blue-500">
+                  <div className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">🎯 Situation</div>
+                  <div className="text-blue-700 dark:text-blue-300">{entry.situation}</div>
+                </div>
+              )}
+              
+              {entry.emotion && (
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full ${EMOTIONS.find(e => e.value === entry.emotion.type)?.color || 'bg-gray-500'}`}></div>
+                  <div>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {EMOTIONS.find(e => e.value === entry.emotion.type)?.label || 'Unknown Emotion'}
+                    </span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                      (Intensity: {entry.emotion.intensity}/10)
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {entry.negativeThoughts && entry.negativeThoughts.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">🤔 Thoughts</div>
+                  {entry.negativeThoughts.map((thought: string, index: number) => (
+                    <div key={index} className="text-sm text-gray-600 dark:text-gray-400 pl-4 border-l-2 border-gray-300">
+                      {thought}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {entry.reframedThoughts && entry.reframedThoughts.length > 0 && (
+                <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border-l-4 border-green-500">
+                  <div className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">💡 Reframed Thoughts</div>
+                  {entry.reframedThoughts.map((thought: string, index: number) => (
+                    <div key={index} className="text-green-700 dark:text-green-300 text-sm mb-1">
+                      • {thought}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        />
       </div>
     </div>
   );

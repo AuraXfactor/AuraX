@@ -63,6 +63,13 @@ export async function sendTextMessage(params: {
   const { fromUser, toUid, text } = params;
   const chatId = getDeterministicChatId(fromUser.uid, toUid);
 
+  console.log('💬 sendTextMessage called', { 
+    fromUid: fromUser.uid, 
+    toUid, 
+    textLength: text.length, 
+    chatId 
+  });
+
   const messageBase = {
     fromUid: fromUser.uid,
     toUid,
@@ -75,15 +82,23 @@ export async function sendTextMessage(params: {
   const colA = getMessagesColRef(fromUser.uid, chatId);
   const colB = getMessagesColRef(toUid, chatId);
 
-  console.log('[Chat] sendText', { toUid, text });
+  console.log('📤 [Legacy Chat] Sending to collections...', { 
+    colAPath: `users/${fromUser.uid}/chats/${chatId}/messages`,
+    colBPath: `users/${toUid}/chats/${chatId}/messages`
+  });
+  
   const docA = await addDoc(colA, messageBase);
-  console.log('[Chat] mirrored message id', docA.id);
+  console.log('✅ [Legacy Chat] Message added to sender collection', { messageId: docA.id });
+  
   await setDoc(doc(colB, docA.id), { ...messageBase });
+  console.log('✅ [Legacy Chat] Message mirrored to recipient collection');
 
   await Promise.all([
     updateChatMetaOnSend(fromUser.uid, toUid, chatId, text),
     updateChatMetaOnSend(toUid, fromUser.uid, chatId, text, true),
   ]);
+  
+  console.log('✅ [Legacy Chat] Chat metadata updated');
 }
 
 export async function sendMoodSticker(params: {

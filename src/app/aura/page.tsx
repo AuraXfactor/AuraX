@@ -80,20 +80,32 @@ export default function AuraPage() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Check file type
     if (file.type.startsWith('image/')) {
       setPostType('image');
-    } else if (file.type.startsWith('video/')) {
-      setPostType('video');
-      // Limit video to 30 seconds (would need additional validation)
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        alert('Video file is too large. Please select a file under 50MB.');
+      
+      // Image size validation
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit for images
+        alert('Image file is too large. Please select a file under 10MB.');
         return;
       }
+    } else if (file.type.startsWith('video/')) {
+      setPostType('video');
+      
+      // Import video validation utility
+      const { validateVideoFile } = await import('@/utils/videoValidation');
+      const validation = await validateVideoFile(file);
+      
+      if (!validation.isValid) {
+        alert(validation.error || 'Invalid video file');
+        return;
+      }
+      
+      console.log(`✅ Video validated: ${validation.duration?.toFixed(1)}s, ${(validation.size! / 1024 / 1024).toFixed(1)}MB`);
     } else {
       alert('Please select an image or video file.');
       return;
@@ -358,7 +370,7 @@ export default function AuraPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,video/*"
+              accept="image/*,video/mp4,video/webm,video/mov,video/quicktime"
               onChange={handleFileSelect}
               className="hidden"
             />

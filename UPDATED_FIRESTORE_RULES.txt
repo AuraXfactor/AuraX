@@ -107,25 +107,11 @@ service cloud.firestore {
     match /userBoosts/{userId}/entries/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    // Social Posts - 24hr stories and regular posts
     match /posts/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
+      allow read: if true;
+      allow create: if request.auth != null;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
     }
-    
-    // Post Comments
-    match /posts/{postId}/comments/{commentId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
-    }
-    
-    // Social chat system
-    match /chats/{chatId} {
-      allow read, write, create, update: if request.auth != null;
-    }
-
 
     // Legacy Group Chats - members can read/write
     match /groupChats/{groupId} {
@@ -158,9 +144,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Analytics - server only
     match /analytics/{collection=**} {
       allow read, write: if false; // server-only
     }
   }
 }
-

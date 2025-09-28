@@ -80,19 +80,52 @@ export default function EnhancedChatInterface({ otherUserId, onClose }: Enhanced
   }, [chatId, user, otherUserId]);
 
   const initializeChat = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('❌ Cannot initialize chat: user not logged in');
+      setLoading(false);
+      return;
+    }
+    
+    console.log('🔄 Initializing chat session...', { 
+      currentUserId: user.uid, 
+      otherUserId 
+    });
     
     try {
-      // Load other user's profile
-      const profile = await getPublicProfile(otherUserId);
-      setOtherUserProfile(profile);
+      // Load other user's profile (non-blocking)
+      console.log('👤 Loading other user profile...', { otherUserId });
+      try {
+        const profile = await getPublicProfile(otherUserId);
+        setOtherUserProfile(profile);
+        console.log('✅ Profile loaded', { profile: profile?.name || 'No name' });
+      } catch (profileError) {
+        console.warn('⚠️ Profile loading failed, continuing without profile', profileError);
+        setOtherUserProfile(null);
+      }
       
       // Create or get chat session
+      console.log('💬 Creating/getting chat session...');
       const sessionId = await createOrGetChatSession(user.uid, otherUserId);
+      console.log('✅ Chat session ready', { sessionId });
+      
       setChatId(sessionId);
+      setLoading(false);
+      
+      console.log('🎉 Chat initialization completed successfully');
       
     } catch (error) {
-      console.error('Error initializing chat:', error);
+      console.error('❌ Error initializing chat:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // More specific error messages
+      if (errorMessage.includes('permission')) {
+        alert(`❌ Permission error: Please make sure Firestore rules are updated. Error: ${errorMessage}`);
+      } else if (errorMessage.includes('not found')) {
+        alert(`❌ User or data not found: ${errorMessage}`);
+      } else {
+        alert(`❌ Failed to initialize chat: ${errorMessage}`);
+      }
+      
       setLoading(false);
     }
   };
@@ -102,19 +135,46 @@ export default function EnhancedChatInterface({ otherUserId, onClose }: Enhanced
   };
 
   const handleSendMessage = async () => {
-    if (!user || !newMessage.trim() || !chatId) return;
+    console.log('🚀 Send button clicked', { 
+      hasUser: !!user, 
+      hasMessage: !!newMessage.trim(), 
+      hasChatId: !!chatId,
+      chatId,
+      messageLength: newMessage.trim().length
+    });
+
+    // More explicit validation with user feedback
+    if (!user) {
+      alert('❌ Please log in to send messages');
+      return;
+    }
+    
+    if (!newMessage.trim()) {
+      alert('❌ Please type a message');
+      return;
+    }
+    
+    if (!chatId) {
+      alert('❌ Chat session not initialized. Please refresh the page.');
+      console.error('Missing chatId in handleSendMessage');
+      return;
+    }
 
     setSending(true);
     const messageContent = newMessage.trim();
     setNewMessage('');
     
+    console.log('📤 Attempting to send message...', { chatId, messageContent });
+    
     try {
-      await sendEncryptedMessage({
+      const messageId = await sendEncryptedMessage({
         user,
         chatId,
         content: messageContent,
         type: 'text',
       });
+
+      console.log('✅ Message sent successfully', { messageId });
 
       // Stop typing indicator
       if (isTyping) {
@@ -124,9 +184,10 @@ export default function EnhancedChatInterface({ otherUserId, onClose }: Enhanced
 
       inputRef.current?.focus();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       setNewMessage(messageContent); // Restore message on error
-      alert('Failed to send message');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`❌ Failed to send message: ${errorMessage}`);
     } finally {
       setSending(false);
     }

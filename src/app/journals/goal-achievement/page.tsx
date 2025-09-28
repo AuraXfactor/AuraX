@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
+import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
 interface Goal {
   id?: string;
@@ -657,7 +658,7 @@ export default function GoalAchievementJournal() {
               </section>
 
               {/* Save Button */}
-              <div className="text-center pb-20">
+              <div className="text-center">
                 <button
                   onClick={handleSave}
                   disabled={saving || !dailyProgress.some(task => task.task.trim())}
@@ -670,6 +671,59 @@ export default function GoalAchievementJournal() {
                   <p className="text-sm text-gray-500 mt-2">Please add at least one daily progress item to save</p>
                 )}
               </div>
+              
+              {/* Journal History */}
+              <SpecializedJournalHistory
+                journalType="goal-achievement"
+                title="Progress Tracker"
+                icon="🎯"
+                renderEntry={(entry) => (
+                  <div className="space-y-3">
+                    {entry.goal && (
+                      <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border-l-4 border-green-500">
+                        <div className="text-sm font-medium text-green-800 dark:text-green-300 mb-1">🎯 Goal</div>
+                        <div className="font-medium text-green-700 dark:text-green-300">{entry.goal.title}</div>
+                        {entry.goal.description && (
+                          <div className="text-green-600 dark:text-green-400 text-sm">{entry.goal.description}</div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {entry.dailyProgress && entry.dailyProgress.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">📋 Daily Tasks</div>
+                        {entry.dailyProgress.map((taskData: unknown, index: number) => {
+                          const task = taskData as { task?: string; completed?: boolean };
+                          return task.task ? (
+                            <div key={index} className="flex items-center gap-2">
+                              <div className={`w-4 h-4 rounded-full ${task.completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                              <span className={`text-sm ${task.completed ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500'}`}>
+                                {task.task}
+                              </span>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                    
+                    {entry.motivationLevel && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Motivation:</span>
+                        <div className="flex gap-1">
+                          {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                            <div key={num} className={`w-2 h-4 ${
+                              num <= entry.motivationLevel ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
+                            }`}></div>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          ({entry.motivationLevel}/10)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              />
             </div>
           </>
         ) : null}

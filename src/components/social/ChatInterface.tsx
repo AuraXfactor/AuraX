@@ -71,23 +71,44 @@ export default function ChatInterface({
   };
 
   const handleSendMessage = async () => {
-    if (!user || !newMessage.trim()) return;
+    console.log('🚀 Social chat send clicked', { 
+      hasUser: !!user, 
+      hasMessage: !!newMessage.trim(), 
+      chatId,
+      participants,
+      messageLength: newMessage.trim().length
+    });
+
+    if (!user) {
+      alert('❌ Please log in to send messages');
+      return;
+    }
+    
+    if (!newMessage.trim()) {
+      alert('❌ Please type a message');
+      return;
+    }
 
     setSending(true);
+    const messageContent = newMessage.trim();
+    console.log('📤 Sending social chat message...', { chatId, messageContent, participants });
+    
     try {
-      await sendMessage({
+      const messageId = await sendMessage({
         user,
         chatId,
-        content: newMessage.trim(),
+        content: messageContent,
         type: 'text',
         participants,
       });
 
+      console.log('✅ Social chat message sent successfully', { messageId });
       setNewMessage('');
       inputRef.current?.focus();
     } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Failed to send message');
+      console.error('❌ Social chat send failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`❌ Failed to send message: ${errorMessage}`);
     } finally {
       setSending(false);
     }

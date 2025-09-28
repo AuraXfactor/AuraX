@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
+import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
 const MOOD_OPTIONS = [
   { emoji: '😢', label: 'Very Sad', value: 'very_sad', color: 'from-blue-400 to-blue-600' },
@@ -440,7 +441,7 @@ export default function DailyCheckInJournal() {
           </section>
 
           {/* Save Button */}
-          <div className="text-center pb-20">
+          <div className="text-center">
             <button
               onClick={handleSave}
               disabled={saving || !selectedMood}
@@ -454,6 +455,69 @@ export default function DailyCheckInJournal() {
             )}
           </div>
         </div>
+
+        {/* Journal History */}
+        <SpecializedJournalHistory
+          journalType="daily-checkin"
+          title="Daily Check-In"
+          icon="📔"
+          renderEntry={(entry) => (
+            <div className="space-y-3">
+              {entry.mood && (
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">
+                    {MOOD_OPTIONS.find(m => m.value === entry.mood.value)?.emoji || '😐'}
+                  </span>
+                  <div>
+                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                      {MOOD_OPTIONS.find(m => m.value === entry.mood.value)?.label || 'Unknown Mood'}
+                    </div>
+                    {entry.mood.customLabel && (
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        &ldquo;{entry.mood.customLabel}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {entry.heartSpeak && (
+                <div className="p-3 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-lg border-l-4 border-rose-500">
+                  <div className="text-sm font-medium text-rose-800 dark:text-rose-300 mb-1">💝 Heart Speak</div>
+                  <div className="text-rose-700 dark:text-rose-300">{entry.heartSpeak}</div>
+                </div>
+              )}
+              
+              {entry.gratitude && entry.gratitude.length > 0 && (
+                <div className="p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border-l-4 border-yellow-500">
+                  <div className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">🙏 Gratitude</div>
+                  <ul className="space-y-1">
+                    {entry.gratitude.map((item: string, index: number) => (
+                      <li key={index} className="text-yellow-700 dark:text-yellow-300">• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {entry.selfCareActivities && entry.selfCareActivities.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {entry.selfCareActivities.map((activity: string, index: number) => (
+                    <span key={index} className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-xs font-medium">
+                      {activity}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              {entry.challenges && (
+                <div className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Challenges: </span>
+                  {entry.challenges}
+                </div>
+              )}
+            </div>
+          )}
+        />
       </div>
     </div>
   );
