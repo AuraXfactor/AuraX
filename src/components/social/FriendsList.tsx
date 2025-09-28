@@ -91,7 +91,11 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
         case 'recent':
         default:
           if (!a.lastInteraction || !b.lastInteraction) return 0;
-          return b.lastInteraction.toDate().getTime() - a.lastInteraction.toDate().getTime();
+          if (typeof a.lastInteraction === 'object' && 'toDate' in a.lastInteraction &&
+              typeof b.lastInteraction === 'object' && 'toDate' in b.lastInteraction) {
+            return b.lastInteraction.toDate().getTime() - a.lastInteraction.toDate().getTime();
+          }
+          return 0;
       }
     });
 
@@ -202,7 +206,7 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
                   )}
                   
                   <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {friend.friendSince && (
+                    {friend.friendSince && typeof friend.friendSince === 'object' && 'toDate' in friend.friendSince && (
                       <span>
                         🤝 Friends since {new Date(friend.friendSince.toDate()).toLocaleDateString()}
                       </span>

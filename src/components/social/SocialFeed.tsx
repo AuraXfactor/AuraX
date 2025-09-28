@@ -139,7 +139,7 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
   };
 
   const formatTimeAgo = (timestamp: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (!timestamp) return 'Unknown';
+    if (!timestamp || !timestamp.toDate) return 'Unknown';
     
     const date = timestamp.toDate();
     const now = new Date();

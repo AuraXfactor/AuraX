@@ -101,7 +101,7 @@ export default function ChatInterface({
   };
 
   const formatMessageTime = (timestamp: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (!timestamp) return '';
+    if (!timestamp || !timestamp.toDate) return '';
     
     const date = timestamp.toDate();
     const now = new Date();
@@ -121,6 +121,8 @@ export default function ChatInterface({
       !prevMessage || 
       prevMessage.senderId !== message.senderId ||
       (message.timestamp && prevMessage.timestamp && 
+       typeof message.timestamp === 'object' && 'toDate' in message.timestamp &&
+       typeof prevMessage.timestamp === 'object' && 'toDate' in prevMessage.timestamp &&
        Math.abs(message.timestamp.toDate().getTime() - prevMessage.timestamp.toDate().getTime()) > 5 * 60 * 1000)
     );
 

@@ -19,6 +19,7 @@ import {
   deleteDoc,
   startAfter,
   DocumentSnapshot,
+  FieldValue,
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -35,10 +36,10 @@ export type PublicProfile = {
   interests: string[];
   location?: string;
   isOnline: boolean;
-  lastSeen: Timestamp | null;
+  lastSeen: Timestamp | FieldValue | null;
   friendsCount: number;
   postsCount: number;
-  joinedAt: Timestamp | null;
+  joinedAt: Timestamp | FieldValue | null;
   focusAreas?: string[];
 };
 
@@ -47,7 +48,7 @@ export type EnhancedFriendRequest = {
   fromUserId: string;
   toUserId: string;
   status: FriendRequestStatus;
-  createdAt: Timestamp | null;
+  createdAt: Timestamp | FieldValue | null;
   message?: string;
   fromProfile?: PublicProfile;
   toProfile?: PublicProfile;
@@ -57,8 +58,8 @@ export type Friendship = {
   id: string;
   userId: string;
   friendId: string;
-  friendSince: Timestamp | null;
-  lastInteraction?: Timestamp | null;
+  friendSince: Timestamp | FieldValue | null;
+  lastInteraction?: Timestamp | FieldValue | null;
   mutualFriends?: number;
   sharedInterests?: string[];
   friendProfile?: PublicProfile;
@@ -72,11 +73,11 @@ export type Group = {
   isPublic: boolean;
   members: { [userId: string]: boolean };
   admins: { [userId: string]: boolean };
-  createdAt: Timestamp | null;
+  createdAt: Timestamp | FieldValue | null;
   memberCount: number;
   avatar?: string;
   tags?: string[];
-  lastActivity?: Timestamp | null;
+  lastActivity?: Timestamp | FieldValue | null;
 };
 
 export type ChatMessage = {
@@ -84,11 +85,11 @@ export type ChatMessage = {
   senderId: string;
   content: string;
   type: 'text' | 'image' | 'system';
-  timestamp: Timestamp | null;
+  timestamp: Timestamp | FieldValue | null;
   participants: { [userId: string]: boolean };
   mediaUrl?: string;
-  readBy?: { [userId: string]: Timestamp };
-  editedAt?: Timestamp | null;
+  readBy?: { [userId: string]: Timestamp | FieldValue };
+  editedAt?: Timestamp | FieldValue | null;
   replyTo?: string;
 };
 
@@ -99,8 +100,8 @@ export type SocialPost = {
   type: 'text' | 'image' | 'video' | 'achievement' | 'boost';
   mediaUrl?: string;
   visibility: 'friends' | 'public' | 'private';
-  createdAt: Timestamp | null;
-  updatedAt?: Timestamp | null;
+  createdAt: Timestamp | FieldValue | null;
+  updatedAt?: Timestamp | FieldValue | null;
   likes: string[];
   comments: number;
   shares: number;
@@ -115,7 +116,7 @@ export type PostComment = {
   postId: string;
   authorId: string;
   content: string;
-  createdAt: Timestamp | null;
+  createdAt: Timestamp | FieldValue | null;
   likes: string[];
   replyTo?: string;
   authorProfile?: PublicProfile;
@@ -127,7 +128,7 @@ export type PostReaction = {
   userId: string;
   type: 'like' | 'love' | 'support' | 'celebrate' | 'inspire';
   emoji: string;
-  createdAt: Timestamp | null;
+  createdAt: Timestamp | FieldValue | null;
 };
 
 // Collection References
@@ -203,7 +204,22 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
   try {
     const profileDoc = await getDoc(doc(getPublicProfilesRef(), userId));
     if (profileDoc.exists()) {
-      return { id: profileDoc.id, ...profileDoc.data() } as PublicProfile;
+      const data = profileDoc.data();
+      return {
+        userId: profileDoc.id,
+        name: data.name || '',
+        username: data.username,
+        bio: data.bio,
+        avatar: data.avatar,
+        interests: data.interests || [],
+        location: data.location,
+        isOnline: data.isOnline || false,
+        lastSeen: data.lastSeen,
+        friendsCount: data.friendsCount || 0,
+        postsCount: data.postsCount || 0,
+        joinedAt: data.joinedAt,
+        focusAreas: data.focusAreas || [],
+      } as PublicProfile;
     }
     return null;
   } catch (error) {
@@ -310,10 +326,10 @@ export async function searchUsers(params: {
   currentUserId: string;
   limitCount?: number;
 }): Promise<PublicProfile[]> {
-  const { query, currentUserId, limitCount = 20 } = params;
+  const { query: searchQuery, currentUserId, limitCount = 20 } = params;
   
   try {
-    const searchTerm = query.toLowerCase().trim();
+    const searchTerm = searchQuery.toLowerCase().trim();
     
     if (!searchTerm) {
       // Return random public profiles
@@ -321,7 +337,24 @@ export async function searchUsers(params: {
       const snapshot = await getDocs(q);
       return snapshot.docs
         .filter(doc => doc.id !== currentUserId)
-        .map(doc => ({ id: doc.id, ...doc.data() } as PublicProfile));
+        .map(doc => {
+          const data = doc.data();
+          return {
+            userId: doc.id,
+            name: data.name || '',
+            username: data.username,
+            bio: data.bio,
+            avatar: data.avatar,
+            interests: data.interests || [],
+            location: data.location,
+            isOnline: data.isOnline || false,
+            lastSeen: data.lastSeen,
+            friendsCount: data.friendsCount || 0,
+            postsCount: data.postsCount || 0,
+            joinedAt: data.joinedAt,
+            focusAreas: data.focusAreas || [],
+          } as PublicProfile;
+        });
     }
 
     // Search by username first
@@ -335,7 +368,24 @@ export async function searchUsers(params: {
     const usernameSnapshot = await getDocs(usernameQuery);
     const usernameResults = usernameSnapshot.docs
       .filter(doc => doc.id !== currentUserId)
-      .map(doc => ({ id: doc.id, ...doc.data() } as PublicProfile));
+      .map(doc => {
+        const data = doc.data();
+        return {
+          userId: doc.id,
+          name: data.name || '',
+          username: data.username,
+          bio: data.bio,
+          avatar: data.avatar,
+          interests: data.interests || [],
+          location: data.location,
+          isOnline: data.isOnline || false,
+          lastSeen: data.lastSeen,
+          friendsCount: data.friendsCount || 0,
+          postsCount: data.postsCount || 0,
+          joinedAt: data.joinedAt,
+          focusAreas: data.focusAreas || [],
+        } as PublicProfile;
+      });
 
     if (usernameResults.length > 0) {
       return usernameResults;
@@ -347,7 +397,24 @@ export async function searchUsers(params: {
     
     return allSnapshot.docs
       .filter(doc => doc.id !== currentUserId)
-      .map(doc => ({ id: doc.id, ...doc.data() } as PublicProfile))
+      .map(doc => {
+        const data = doc.data();
+        return {
+          userId: doc.id,
+          name: data.name || '',
+          username: data.username,
+          bio: data.bio,
+          avatar: data.avatar,
+          interests: data.interests || [],
+          location: data.location,
+          isOnline: data.isOnline || false,
+          lastSeen: data.lastSeen,
+          friendsCount: data.friendsCount || 0,
+          postsCount: data.postsCount || 0,
+          joinedAt: data.joinedAt,
+          focusAreas: data.focusAreas || [],
+        } as PublicProfile;
+      })
       .filter(profile => 
         profile.name.toLowerCase().includes(searchTerm) ||
         profile.username?.toLowerCase().includes(searchTerm) ||
@@ -384,7 +451,24 @@ export async function getFriendSuggestions(params: {
     
     const suggestions = profilesSnapshot.docs
       .filter(doc => doc.id !== userId && !friendIds.has(doc.id))
-      .map(doc => ({ id: doc.id, ...doc.data() } as PublicProfile))
+      .map(doc => {
+        const data = doc.data();
+        return {
+          userId: doc.id,
+          name: data.name || '',
+          username: data.username,
+          bio: data.bio,
+          avatar: data.avatar,
+          interests: data.interests || [],
+          location: data.location,
+          isOnline: data.isOnline || false,
+          lastSeen: data.lastSeen,
+          friendsCount: data.friendsCount || 0,
+          postsCount: data.postsCount || 0,
+          joinedAt: data.joinedAt,
+          focusAreas: data.focusAreas || [],
+        } as PublicProfile;
+      })
       .filter(profile => {
         // Match by interests or focus areas
         const hasCommonInterests = profile.interests?.some(interest => 
@@ -418,9 +502,9 @@ export async function getFriends(userId: string): Promise<Friendship[]> {
       const friendProfile = await getPublicProfile(friendData.friendId);
       
       friends.push({
-        id: friendDoc.id,
         ...friendData,
-        friendProfile,
+        id: friendDoc.id,
+        friendProfile: friendProfile || undefined,
       });
     }
     
@@ -643,9 +727,9 @@ export async function getSocialFeed(params: {
       const authorProfile = await getPublicProfile(postData.authorId);
       
       posts.push({
-        id: postDoc.id,
         ...postData,
-        authorProfile,
+        id: postDoc.id,
+        authorProfile: authorProfile || undefined,
       });
     }
     
@@ -708,9 +792,9 @@ export function listenToFriendRequests(userId: string, callback: (requests: Enha
       const fromProfile = await getPublicProfile(requestData.fromUserId);
       
       requests.push({
-        id: doc.id,
         ...requestData,
-        fromProfile,
+        id: doc.id,
+        fromProfile: fromProfile || undefined,
       });
     }
     
@@ -736,9 +820,9 @@ export function listenToSocialFeed(userId: string, callback: (posts: SocialPost[
       const authorProfile = await getPublicProfile(postData.authorId);
       
       posts.push({
-        id: postDoc.id,
         ...postData,
-        authorProfile,
+        id: postDoc.id,
+        authorProfile: authorProfile || undefined,
       });
     }
     

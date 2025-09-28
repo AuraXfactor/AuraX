@@ -213,10 +213,10 @@ export default function GroupBrowser({ showMyGroups = false }: GroupBrowserProps
               
               <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-3">
                 <span>👥 {group.memberCount} members</span>
-                {group.createdAt && (
+                {group.createdAt && typeof group.createdAt === 'object' && 'toDate' in group.createdAt && (
                   <span>📅 Created {new Date(group.createdAt.toDate()).toLocaleDateString()}</span>
                 )}
-                {group.lastActivity && (
+                {group.lastActivity && typeof group.lastActivity === 'object' && 'toDate' in group.lastActivity && (
                   <span>🕐 Active {new Date(group.lastActivity.toDate()).toLocaleDateString()}</span>
                 )}
               </div>

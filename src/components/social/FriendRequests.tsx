@@ -150,7 +150,7 @@ export default function FriendRequests({ onRequestHandled }: FriendRequestsProps
                   {request.fromProfile?.location && (
                     <span>📍 {request.fromProfile.location}</span>
                   )}
-                  {request.createdAt && (
+                  {request.createdAt && typeof request.createdAt === 'object' && 'toDate' in request.createdAt && (
                     <span>
                       ⏰ {new Date(request.createdAt.toDate()).toLocaleDateString()}
                     </span>
