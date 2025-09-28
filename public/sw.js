@@ -67,7 +67,6 @@ self.addEventListener('push', (event) => {
         badge: payload.badge || notificationData.badge,
         tag: payload.tag || payload.id || notificationData.tag,
         data: payload.data || {},
-        vibrate: [200, 100, 200],
         actions: [
           {
             action: 'view',
@@ -92,7 +91,6 @@ self.addEventListener('push', (event) => {
       badge: notificationData.badge,
       tag: notificationData.tag,
       data: notificationData.data,
-      vibrate: notificationData.vibrate,
       actions: notificationData.actions,
     })
   );

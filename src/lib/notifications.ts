@@ -152,18 +152,6 @@ class NotificationManager {
       badge: payload.badge || '/favicon.ico',
       tag: payload.id,
       data: payload.data,
-      vibrate: [200, 100, 200],
-      actions: [
-        {
-          action: 'view',
-          title: 'View',
-          icon: '/favicon.ico',
-        },
-        {
-          action: 'dismiss',
-          title: 'Dismiss',
-        },
-      ],
     };
 
     await this.swRegistration.showNotification(payload.title, options);
