@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 🚨 EMERGENCY DEBUG RULES - EXTREMELY PERMISSIVE 🚨
+    // Copy these to Firebase Console immediately to test if rules are the issue
+    
+    match /{document=**} {
+      allow read, write, create, update, delete: if true;
+    }
+  }
+}
+
+// INSTRUCTIONS:
+// 1. Copy the rules above to your Firebase Console -> Firestore -> Rules
+// 2. Click "Publish" 
+// 3. Try sending a message again
+// 4. If it works, the issue is definitely in your security rules
+// 5. If it still fails, the issue is in your code/authentication
+
+// ⚠️ WARNING: These rules allow ANYONE to read/write ANY data
+// ⚠️ DO NOT USE IN PRODUCTION - ONLY FOR DEBUGGING
+// ⚠️ REPLACE WITH PROPER RULES IMMEDIATELY AFTER TESTING
