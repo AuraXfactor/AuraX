@@ -4,26 +4,62 @@ import { db } from './firebase';
 
 export async function ensureUserProfile(user: User) {
   if (!user) return;
+  
   const userDocRef = doc(db, 'users', user.uid);
   const snap = await getDoc(userDocRef);
+  
+  const userData = {
+    uid: user.uid,
+    email: user.email ?? null,
+    name: user.displayName ?? user.email?.split('@')[0] ?? 'Anonymous',
+    username: user.email?.split('@')[0] ?? `user${user.uid.slice(-4)}`,
+    avatar: user.photoURL ?? null,
+    focusAreas: ['wellness'],
+    preferredTherapy: null,
+    reminderTime: null,
+    moodBaseline: [],
+    auraPoints: 0,
+    isPublic: true, // Default to public for social features
+    bio: 'AuraX community member',
+    interests: ['wellness'],
+    lastLogin: serverTimestamp(),
+  };
+  
   if (!snap.exists()) {
+    // Create new user profile
     await setDoc(userDocRef, {
-      uid: user.uid,
-      email: user.email ?? null,
-      name: user.displayName ?? null,
-      username: null,
-      avatar: user.photoURL ?? null,
-      focusAreas: [],
-      preferredTherapy: null,
-      reminderTime: null,
-      moodBaseline: [],
-      auraPoints: 0,
+      ...userData,
       createdAt: serverTimestamp(),
-      lastLogin: serverTimestamp(),
     });
   } else {
-    await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
+    // Update existing user with social fields if missing
+    const existingData = snap.data();
+    const updates: any = { lastLogin: serverTimestamp() }; // eslint-disable-line @typescript-eslint/no-explicit-any
+    
+    if (!existingData.isPublic) updates.isPublic = true;
+    if (!existingData.bio) updates.bio = 'AuraX community member';
+    if (!existingData.interests) updates.interests = ['wellness'];
+    if (!existingData.username) updates.username = user.email?.split('@')[0] ?? `user${user.uid.slice(-4)}`;
+    
+    await updateDoc(userDocRef, updates);
   }
+  
+  // Always ensure public profile exists for social features
+  const publicProfileRef = doc(db, 'publicProfiles', user.uid);
+  await setDoc(publicProfileRef, {
+    userId: user.uid,
+    name: userData.name,
+    username: userData.username,
+    bio: userData.bio,
+    avatar: userData.avatar,
+    interests: userData.interests,
+    focusAreas: userData.focusAreas,
+    isOnline: true,
+    lastSeen: serverTimestamp(),
+    friendsCount: 0,
+    postsCount: 0,
+    joinedAt: serverTimestamp(),
+  }, { merge: true });
 }
 
 export type OnboardingProfile = {
