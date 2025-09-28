@@ -22,20 +22,11 @@ export default function Home() {
         </p>
 
         {user ? (
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
-              <span>Welcome back, {user.email} 🎉</span>
-            </div>
-            
-            {/* NEW: Prominent Messaging CTA */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/messages" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 transition-all font-bold text-lg">
-                💬 Open Messages (NEW!)
-              </Link>
-              <Link href="/journals" className="px-6 py-3 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
-                📔 Choose Journal ➜
-              </Link>
-            </div>
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
+            <span>Welcome back, {user.email} 🎉</span>
+                    <Link href="/journals" className="px-3 py-1.5 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
+                      Choose Journal ➜
+                    </Link>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-4">
@@ -51,8 +42,7 @@ export default function Home() {
 
       <section className="max-w-5xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
-          { title: 'Secure Messages', desc: 'End-to-end encrypted WhatsApp-style messaging 💬', href: '/messages', emoji: '🔒', colors: 'from-purple-500 to-pink-500' },
-          { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
+                  { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
           { title: 'Breath Toolkit', desc: '4-7-8 breathing with haptics and motion 🌬️', href: '/toolkit', emoji: '🧘', colors: 'from-cyan-400 to-blue-500' },
           { title: 'PWA Offline', desc: 'Works offline with sync when back online ⚡', href: '/', emoji: '📶', colors: 'from-emerald-400 to-teal-500' },
         ].map((c) => (

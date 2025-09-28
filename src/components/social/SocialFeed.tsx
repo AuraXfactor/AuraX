@@ -9,7 +9,6 @@ import {
   SocialPost
 } from '@/lib/socialSystem';
 import { DocumentSnapshot } from 'firebase/firestore';
-import PostCommentsSection from '@/components/messaging/PostCommentsSection';
 
 interface SocialFeedProps {
   showCreatePost?: boolean;
@@ -32,7 +31,6 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
   const [newPostMood, setNewPostMood] = useState('');
   const [newPostTags, setNewPostTags] = useState<string[]>([]);
   const [creatingPost, setCreatingPost] = useState(false);
-  const [showComments, setShowComments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -138,25 +136,6 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
     } catch (error) {
       console.error('Error toggling like:', error);
     }
-  };
-
-  const toggleComments = (postId: string) => {
-    setShowComments(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(postId)) {
-        newSet.delete(postId);
-      } else {
-        newSet.add(postId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleCommentsCountChange = (postId: string, count: number) => {
-    // Update the post's comment count in local state
-    setPosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, comments: count } : post
-    ));
   };
 
   const formatTimeAgo = (timestamp: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -364,10 +343,7 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
               </span>
             </button>
             
-            <button 
-              onClick={() => toggleComments(post.id)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition"
-            >
+            <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition">
               <span className="text-lg">💬</span>
               <span className="text-sm font-medium">
                 {post.comments} {post.comments === 1 ? 'Comment' : 'Comments'}
@@ -389,16 +365,6 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
             </div>
           )}
         </div>
-        
-        {/* Comments Section */}
-        {showComments.has(post.id) && (
-          <PostCommentsSection
-            postId={post.id}
-            postAuthorId={post.authorId}
-            initialCommentsCount={post.comments}
-            onCommentsCountChange={(count) => handleCommentsCountChange(post.id, count)}
-          />
-        )}
       </div>
     );
   };

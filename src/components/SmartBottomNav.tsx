@@ -42,7 +42,7 @@ const NAV_TABS: NavTab[] = [
       { label: 'Aura Feed', href: '/aura', icon: '✨', description: 'View friends\' 24h glimpses' },
       { label: 'Friends', href: '/friends', icon: '👥', description: 'Manage your network' },
       { label: 'Groups', href: '/groups', icon: '💬', description: 'Group conversations' },
-      { label: 'Messages', href: '/messages', icon: '💬', description: 'Secure encrypted messaging' },
+      { label: 'Direct Chat', href: '/soulchat', icon: '💭', description: 'Private messages' },
     ],
   },
   {
