@@ -76,21 +76,41 @@ export default function GroupChatPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!user || !newMessage.trim()) return;
+    console.log('🚀 Group chat send clicked', { 
+      hasUser: !!user, 
+      hasMessage: !!newMessage.trim(), 
+      groupId,
+      messageLength: newMessage.trim().length
+    });
+
+    if (!user) {
+      alert('❌ Please log in to send messages');
+      return;
+    }
+    
+    if (!newMessage.trim()) {
+      alert('❌ Please type a message');
+      return;
+    }
     
     setSending(true);
+    const messageContent = newMessage.trim();
+    console.log('📤 Sending group message...', { groupId, messageContent });
+    
     try {
-      await sendGroupMessage({
+      const messageId = await sendGroupMessage({
         user,
         groupId,
-        content: newMessage,
+        content: messageContent,
         type: 'text',
       });
       
+      console.log('✅ Group message sent successfully', { messageId });
       setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Failed to send message');
+      console.error('❌ Group message send failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`❌ Failed to send message: ${errorMessage}`);
     } finally {
       setSending(false);
     }

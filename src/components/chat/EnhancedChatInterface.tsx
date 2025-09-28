@@ -102,19 +102,46 @@ export default function EnhancedChatInterface({ otherUserId, onClose }: Enhanced
   };
 
   const handleSendMessage = async () => {
-    if (!user || !newMessage.trim() || !chatId) return;
+    console.log('🚀 Send button clicked', { 
+      hasUser: !!user, 
+      hasMessage: !!newMessage.trim(), 
+      hasChatId: !!chatId,
+      chatId,
+      messageLength: newMessage.trim().length
+    });
+
+    // More explicit validation with user feedback
+    if (!user) {
+      alert('❌ Please log in to send messages');
+      return;
+    }
+    
+    if (!newMessage.trim()) {
+      alert('❌ Please type a message');
+      return;
+    }
+    
+    if (!chatId) {
+      alert('❌ Chat session not initialized. Please refresh the page.');
+      console.error('Missing chatId in handleSendMessage');
+      return;
+    }
 
     setSending(true);
     const messageContent = newMessage.trim();
     setNewMessage('');
     
+    console.log('📤 Attempting to send message...', { chatId, messageContent });
+    
     try {
-      await sendEncryptedMessage({
+      const messageId = await sendEncryptedMessage({
         user,
         chatId,
         content: messageContent,
         type: 'text',
       });
+
+      console.log('✅ Message sent successfully', { messageId });
 
       // Stop typing indicator
       if (isTyping) {
@@ -124,9 +151,10 @@ export default function EnhancedChatInterface({ otherUserId, onClose }: Enhanced
 
       inputRef.current?.focus();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       setNewMessage(messageContent); // Restore message on error
-      alert('Failed to send message');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`❌ Failed to send message: ${errorMessage}`);
     } finally {
       setSending(false);
     }

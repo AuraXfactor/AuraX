@@ -71,7 +71,24 @@ export default function ConversationPage() {
 
   async function onSend(e?: FormEvent) {
     e?.preventDefault();
-    if (!user || !input.trim()) return;
+    
+    console.log('🚀 Soul Chat send clicked', { 
+      hasUser: !!user, 
+      hasInput: !!input.trim(), 
+      inputLength: input.trim().length,
+      otherUid,
+      chatId
+    });
+    
+    if (!user) {
+      alert('❌ Please log in to send messages');
+      return;
+    }
+    
+    if (!input.trim()) {
+      alert('❌ Please type a message');
+      return;
+    }
     
     let text = input.trim();
     
@@ -83,8 +100,20 @@ export default function ConversationPage() {
       setReplyToPost(null);
     }
     
+    console.log('📤 Sending soul chat message...', { text, otherUid });
+    
     setInput('');
-    await sendTextMessage({ fromUser: user, toUid: otherUid, text }).catch(console.error);
+    
+    try {
+      await sendTextMessage({ fromUser: user, toUid: otherUid, text });
+      console.log('✅ Soul chat message sent successfully');
+    } catch (error) {
+      console.error('❌ Soul chat send failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`❌ Failed to send message: ${errorMessage}`);
+      setInput(text); // Restore message on error
+    }
+    
     await setTyping({ uid: user.uid, otherUid, chatId, typing: false }).catch(() => {});
   }
 

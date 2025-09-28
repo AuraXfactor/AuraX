@@ -885,6 +885,14 @@ export async function sendMessage(params: {
 }): Promise<string> {
   const { user, chatId, content, type = 'text', participants, file } = params;
   
+  console.log('🌐 sendMessage (social system) called', { 
+    userId: user.uid, 
+    chatId, 
+    contentLength: content.length, 
+    type, 
+    participants 
+  });
+  
   let mediaUrl: string | undefined;
   
   if (file && type === 'image') {

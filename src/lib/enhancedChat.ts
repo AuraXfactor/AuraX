@@ -117,6 +117,13 @@ export async function sendEncryptedMessage(params: {
 }): Promise<string> {
   const { user, chatId, content, type = 'text', replyTo } = params;
   
+  console.log('🔐 sendEncryptedMessage called', { 
+    userId: user.uid, 
+    chatId, 
+    contentLength: content.length, 
+    type 
+  });
+  
   try {
     // Generate or get shared encryption key
     const chatSession = await getDoc(getChatSessionRef(chatId));
