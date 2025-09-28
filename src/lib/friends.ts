@@ -608,10 +608,22 @@ export async function sendGroupMessage(params: {
     mediaUrl = await getDownloadURL(storageRef);
   }
   
+  // Get a better display name
+  const getDisplayName = () => {
+    if (user.displayName && user.displayName.trim() && user.displayName !== 'Anonymous') {
+      return user.displayName.trim();
+    }
+    if (user.email) {
+      const emailName = user.email.split('@')[0];
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    }
+    return `User ${user.uid.slice(-4)}`;
+  };
+
   const messageData = {
     groupId,
     fromUid: user.uid,
-    fromName: user.displayName || user.email || 'Anonymous',
+    fromName: getDisplayName(),
     fromAvatar: user.photoURL || undefined,
     content,
     type,

@@ -278,7 +278,7 @@ export default function GroupChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-12">
@@ -289,114 +289,175 @@ export default function GroupChatPage() {
               </p>
             </div>
           ) : (
-            messages.map(message => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${message.fromUid === user?.uid ? 'justify-end' : ''}`}
-              >
-                {message.fromUid !== user?.uid && (
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                    {message.fromAvatar ? (
-                      <img src={message.fromAvatar} alt={message.fromName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-white font-bold text-xs">{message.fromName.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                )}
-                
-                <div className={`max-w-xs lg:max-w-md ${message.fromUid === user?.uid ? 'order-first' : ''}`}>
-                  {message.fromUid !== user?.uid && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{message.fromName}</p>
+            messages.map((message, index) => {
+              const isOwnMessage = message.fromUid === user?.uid;
+              const prevMessage = index > 0 ? messages[index - 1] : null;
+              const showAvatar = !prevMessage || prevMessage.fromUid !== message.fromUid;
+              const displayName = message.fromName && message.fromName !== 'Anonymous' 
+                ? message.fromName 
+                : message.fromUid.slice(0, 8) + '...';
+
+              return (
+                <div key={message.id} className={`flex items-end gap-2 mb-4 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+                  {/* Avatar */}
+                  {!isOwnMessage && (
+                    <div className={`flex-shrink-0 ${showAvatar ? '' : 'invisible'}`}>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        {message.fromAvatar ? (
+                          <img 
+                            src={message.fromAvatar} 
+                            alt={displayName} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <span className="text-white font-semibold text-xs">
+                            {displayName.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
                   
-                  <div className={`p-3 rounded-2xl ${
-                    message.fromUid === user?.uid
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white ml-auto'
-                      : 'bg-gray-100 dark:bg-gray-800'
-                  }`}>
-                    {message.type === 'text' && (
-                      <p>{message.content}</p>
-                    )}
-                    
-                    {message.type === 'image' && message.mediaUrl && (
-                      <div>
-                        <img 
-                          src={message.mediaUrl} 
-                          alt="Shared image" 
-                          className="w-full h-48 object-cover rounded-lg mb-2"
-                        />
-                        {message.content && <p>{message.content}</p>}
+                  {/* Message Content */}
+                  <div className={`flex flex-col max-w-xs sm:max-w-sm lg:max-w-md ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                    {/* Sender Name */}
+                    {!isOwnMessage && showAvatar && (
+                      <div className="mb-1 px-1">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {displayName}
+                        </span>
                       </div>
                     )}
                     
-                    {message.type === 'video' && message.mediaUrl && (
-                      <div>
-                        <video 
-                          src={message.mediaUrl} 
-                          className="w-full h-48 object-cover rounded-lg mb-2" 
-                          controls
-                        />
-                        {message.content && <p>{message.content}</p>}
-                      </div>
-                    )}
+                    {/* Message Bubble */}
+                    <div className={`px-4 py-2 rounded-2xl shadow-sm relative ${
+                      isOwnMessage
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-md'
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-bl-md'
+                    }`}>
+                      {/* Message Content */}
+                      {message.type === 'text' && (
+                        <p className="text-sm leading-relaxed break-words">{message.content}</p>
+                      )}
+                      
+                      {message.type === 'image' && message.mediaUrl && (
+                        <div className="space-y-2">
+                          {message.content && (
+                            <p className="text-sm leading-relaxed break-words">{message.content}</p>
+                          )}
+                          <img 
+                            src={message.mediaUrl} 
+                            alt="Shared image" 
+                            className="max-w-full h-auto rounded-lg"
+                          />
+                        </div>
+                      )}
+                      
+                      {message.type === 'video' && message.mediaUrl && (
+                        <div className="space-y-2">
+                          {message.content && (
+                            <p className="text-sm leading-relaxed break-words">{message.content}</p>
+                          )}
+                          <video 
+                            src={message.mediaUrl} 
+                            className="max-w-full h-auto rounded-lg" 
+                            controls
+                          />
+                        </div>
+                      )}
+                      
+                      {message.replyToPostId && (
+                        <div className="text-xs opacity-75 mb-2 p-2 bg-black/10 rounded-md">
+                          💫 Replying to an Aura post
+                        </div>
+                      )}
+                    </div>
                     
-                    {message.replyToPostId && (
-                      <div className="text-xs opacity-75 mb-2 p-2 bg-black/10 rounded">
-                        Replying to an Aura post
-                      </div>
-                    )}
+                    {/* Timestamp */}
+                    <div className={`mt-1 px-1 ${isOwnMessage ? 'text-right' : 'text-left'}`}>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatMessageTime(message.createdAt)}
+                      </span>
+                    </div>
                   </div>
-                  
-                  <p className={`text-xs text-gray-500 mt-1 ${
-                    message.fromUid === user?.uid ? 'text-right' : ''
-                  }`}>
-                    {formatMessageTime(message.createdAt)}
-                  </p>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Message Input */}
-      <div className="bg-white/60 dark:bg-white/5 backdrop-blur border-t border-white/20 p-4">
-        <div className="max-w-4xl mx-auto flex gap-3">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            accept="image/*,video/*"
-            className="hidden"
-          />
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-end gap-3 bg-white dark:bg-gray-700 rounded-2xl p-3 shadow-lg border border-gray-100 dark:border-gray-600">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*,video/*"
+              className="hidden"
+            />
+            
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending}
+              className="flex-shrink-0 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 disabled:opacity-50"
+              title="Attach file"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+            
+            <div className="flex-1">
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder="Type a message..."
+                className="w-full px-0 py-2 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                rows={1}
+                style={{
+                  minHeight: '24px',
+                  maxHeight: '120px',
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                }}
+                disabled={sending}
+              />
+            </div>
+            
+            <button
+              onClick={handleSendMessage}
+              disabled={sending || !newMessage.trim()}
+              className="flex-shrink-0 p-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              {sending ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              )}
+            </button>
+          </div>
           
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={sending}
-            className="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-50"
-            title="Attach file"
-          >
-            📎
-          </button>
-          
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            disabled={sending}
-          />
-          
-          <button
-            onClick={handleSendMessage}
-            disabled={sending || !newMessage.trim()}
-            className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition disabled:opacity-50"
-          >
-            {sending ? 'Sending...' : 'Send'}
-          </button>
+          {/* Typing indicator placeholder */}
+          <div className="mt-2 px-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Press Enter to send, Shift+Enter for new line
+            </p>
+          </div>
         </div>
       </div>
 

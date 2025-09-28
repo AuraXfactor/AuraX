@@ -148,58 +148,58 @@ export default function ChatInterface({
     );
 
     const senderProfile = participantProfiles[message.senderId];
+    const displayName = senderProfile?.name || message.senderId.slice(0, 8) + '...';
     
     return (
       <div
         key={message.id}
-        className={`flex gap-3 mb-4 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+        className={`flex items-end gap-2 mb-4 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
       >
         {/* Avatar */}
-        {!isOwnMessage && showSender && (
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-            {senderProfile?.avatar ? (
-              <img 
-                src={senderProfile.avatar} 
-                alt={senderProfile.name} 
-                className="w-full h-full object-cover" 
-              />
-            ) : (
-              <span className="text-white font-bold text-sm">
-                {senderProfile?.name?.charAt(0).toUpperCase() || '?'}
-              </span>
-            )}
+        {!isOwnMessage && (
+          <div className={`flex-shrink-0 ${showSender ? '' : 'invisible'}`}>
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+              {senderProfile?.avatar ? (
+                <img 
+                  src={senderProfile.avatar} 
+                  alt={displayName} 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <span className="text-white font-semibold text-xs">
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
           </div>
         )}
         
-        {/* Spacer for grouped messages */}
-        {!isOwnMessage && !showSender && <div className="w-8"></div>}
-        
-        <div className={`flex-1 max-w-xs sm:max-w-sm md:max-w-md ${isOwnMessage ? 'flex justify-end' : ''}`}>
-          {/* Sender name for group chats */}
-          {!isOwnMessage && showSender && isGroup && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-2">
-              {senderProfile?.name || 'Unknown User'}
-            </p>
+        <div className={`flex flex-col max-w-xs sm:max-w-sm lg:max-w-md ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+          {/* Sender name */}
+          {!isOwnMessage && showSender && (
+            <div className="mb-1 px-1">
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                {displayName}
+              </span>
+            </div>
           )}
           
           {/* Message bubble */}
           <div
-            className={`px-4 py-2 rounded-2xl ${
+            className={`px-4 py-2 rounded-2xl shadow-sm relative ${
               isOwnMessage
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-            } ${
-              showSender ? 'rounded-tl-md' : isOwnMessage ? 'rounded-tr-2xl' : 'rounded-tl-2xl'
+                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-md'
+                : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-bl-md'
             }`}
           >
             {message.type === 'text' && (
-              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+              <p className="text-sm leading-relaxed break-words">{message.content}</p>
             )}
             
             {message.type === 'image' && message.mediaUrl && (
               <div className="space-y-2">
                 {message.content && (
-                  <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  <p className="text-sm leading-relaxed break-words">{message.content}</p>
                 )}
                 <img 
                   src={message.mediaUrl} 
@@ -212,10 +212,13 @@ export default function ChatInterface({
             {message.type === 'system' && (
               <p className="text-sm italic opacity-75">{message.content}</p>
             )}
-            
-            <div className={`text-xs mt-1 ${isOwnMessage ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+          </div>
+          
+          {/* Timestamp */}
+          <div className={`mt-1 px-1 ${isOwnMessage ? 'text-right' : 'text-left'}`}>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatMessageTime(message.timestamp)}
-            </div>
+            </span>
           </div>
         </div>
       </div>
@@ -312,7 +315,7 @@ export default function ChatInterface({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-2">💬</div>

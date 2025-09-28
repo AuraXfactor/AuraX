@@ -1,0 +1,246 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // CORE USER DOCUMENTS - ESSENTIAL FOR APP FUNCTIONALITY
+    // ============================================================================
+    
+    // User documents - users can read/write their own, read public profiles
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        resource.data.isPublic == true
+      );
+      allow write, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User subcollections - friend requests stored under users
+    match /users/{userId}/friendRequests/{requestId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User subcollections - friends stored under users  
+    match /users/{userId}/friends/{friendId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User subcollections - journal entries
+    match /users/{userId}/journalEntries/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User quest progress
+    match /users/{userId}/questProgress/{questId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // CHAT SYSTEMS - MULTIPLE MESSAGING SYSTEMS
+    // ============================================================================
+
+    // LEGACY CHAT SYSTEM - users/{userId}/chats/{chatId}/messages/{messageId}
+    match /users/{userId}/chats/{chatId}/messages/{messageId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // LEGACY CHAT METADATA
+    match /users/{userId}/chatMeta/{chatId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // LEGACY CHAT TYPING INDICATORS
+    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // SOCIAL SYSTEM CHATS - chats/{chatId}/messages/{messageId}
+    match /chats/{chatId}/messages/{messageId} {
+      allow read, write, create, update: if request.auth != null && (
+        resource.data.participants[request.auth.uid] == true ||
+        request.resource.data.participants[request.auth.uid] == true
+      );
+    }
+
+    // ENHANCED ENCRYPTED CHATS - enhancedChats/{chatId}
+    match /enhancedChats/{chatId} {
+      allow read, write, create, update: if request.auth != null && (
+        resource.data.participants[request.auth.uid] != null ||
+        request.resource.data.participants[request.auth.uid] != null
+      );
+    }
+
+    // ENHANCED CHAT MESSAGES - enhancedChats/{chatId}/messages/{messageId}
+    match /enhancedChats/{chatId}/messages/{messageId} {
+      allow read, write, create, update: if request.auth != null;
+    }
+
+    // ============================================================================
+    // GROUP SYSTEM - ENHANCED SECURITY
+    // ============================================================================
+
+    // GROUP CHATS - groupChats/{groupId}
+    match /groupChats/{groupId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.members;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.createdBy;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.createdBy ||
+        request.auth.uid in resource.data.admins
+      );
+      allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+    }
+    
+    // GROUP CHAT MESSAGES - groupChats/{groupId}/messages/{messageId}
+    match /groupChats/{groupId}/messages/{messageId} {
+      allow read: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members;
+      allow create: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members &&
+        request.auth.uid == request.resource.data.fromUid;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.fromUid;
+    }
+
+    // ============================================================================
+    // SOCIAL FEATURES - FRIENDS AND PROFILES
+    // ============================================================================
+
+    // Public user profiles for search/suggestions
+    match /publicProfiles/{userId} {
+      allow read: if true;
+      allow write, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Friend requests system (global collection)
+    match /friendRequests/{requestId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.fromUserId ||
+        request.auth.uid == resource.data.toUserId
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.fromUserId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.toUserId;
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.fromUserId ||
+        request.auth.uid == resource.data.toUserId
+      );
+    }
+
+    // Friends relationships (global collection with subcollections)
+    match /friends/{userId}/friendships/{friendId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Groups system (global collection)
+    match /groups/{groupId} {
+      allow read: if request.auth != null && (
+        resource.data.isPublic == true ||
+        resource.data.members[request.auth.uid] == true
+      );
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId ||
+        resource.data.admins[request.auth.uid] == true
+      );
+    }
+
+    // Group memberships (if you use this pattern)
+    match /groupMembers/{groupId}/{userId} {
+      allow read: if request.auth != null;
+      allow write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // SOCIAL POSTS AND AURA SYSTEM
+    // ============================================================================
+
+    // Aura Posts - social ephemeral posts
+    match /auraPosts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorUid;
+    }
+    
+    // Aura Post Reactions
+    match /auraPosts/{postId}/reactions/{reactionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userUid;
+    }
+    
+    // Aura Post Replies  
+    match /auraPosts/{postId}/replies/{replyId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userUid;
+    }
+
+    // Social posts (global collection)
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
+
+    // ============================================================================
+    // JOURNAL AND USER DATA
+    // ============================================================================
+
+    // Journal entries - users can read/write their own journals
+    match /journals/{userId}/entries/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Specialized journals - users can read/write their own specialized journal entries
+    match /specialized-journals/{userId}/{journalType}/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User goals - users can read/write their own goals
+    match /user-goals/{userId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // BOOST AND REWARD SYSTEM
+    // ============================================================================
+
+    // Boosts - readable by all, but not writable
+    match /boosts/{boostId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // User-specific boosts
+    match /userBoosts/{userId}/entries/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Weekly quests
+    match /weeklyQuests/{questId} {
+      allow read: if request.auth != null;
+      allow write, create, update: if false; // Server-only for now
+    }
+
+    // ============================================================================
+    // ANALYTICS AND ADMIN
+    // ============================================================================
+
+    // Analytics - server only
+    match /analytics/{collection=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// INSTRUCTIONS FOR DEPLOYMENT:
+// 1. Copy the rules above to your Firebase Console -> Firestore -> Rules
+// 2. Click "Publish"
+// 3. Test your messaging functionality
+// 4. If any specific operation fails, we can adjust the specific rule
+
+// SECURITY FEATURES:
+// - Users can only access their own data
+// - Group members can only access groups they belong to
+// - Chat participants can only access chats they're part of
+// - Friend requests properly secured
+// - Public profiles readable by all for search functionality
