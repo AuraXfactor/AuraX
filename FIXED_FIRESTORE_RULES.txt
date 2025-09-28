@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User profiles - users can read/write their own, read public profiles
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        resource.data.isPublic == true
+      );
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Public user data for search/suggestions - anyone can read, users can write their own
+    match /publicProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Friend requests system - allow authenticated users to manage requests
+    match /friendRequests/{requestId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Friends relationships - allow authenticated users to manage friendships
+    match /friends/{userId}/friendships/{friendId} {
+      allow read: if request.auth != null;
+      allow write, create: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Groups system - allow authenticated users to manage groups
+    match /groups/{groupId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Group memberships - allow authenticated users
+    match /groupMembers/{groupId}/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Chat messages (individual and group) - allow authenticated users
+    match /chats/{chatId}/messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // Posts system - allow authenticated users
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Post comments
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Journal entries - users can read/write their own journals
+    match /journals/{userId}/entries/{entryId} {
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Specialized journals - users can read/write their own specialized journal entries
+    match /specialized-journals/{userId}/{journalType}/{entryId} {
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User goals - users can read/write their own goals
+    match /user-goals/{userId} {
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Existing collections (keep these)
+    match /boosts/{boostId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /userBoosts/{userId}/entries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Legacy support for existing Aura Posts
+    match /auraPosts/{postId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == resource.data.authorUid;
+      allow create: if request.auth != null;
+    }
+    
+    // Aura Reactions
+    match /auraPosts/{postId}/reactions/{reactionId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Aura Replies
+    match /auraPosts/{postId}/replies/{replyId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // Legacy Group Chats - members can read/write
+    match /groupChats/{groupId} {
+      allow read, write: if request.auth != null && request.auth.uid in resource.data.members;
+      allow create: if request.auth != null;
+    }
+    
+    // Legacy Group Messages - members can read/write
+    match /groupChats/{groupId}/messages/{messageId} {
+      allow read, write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // Chat metadata minimal read by participants only
+    match /users/{userId}/chatMeta/{chatId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Typing indicator docs under chats are readable by the two participants only
+    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /analytics/{collection=**} {
+      allow read, write: if false; // server-only
+    }
+  }
+}
