@@ -98,15 +98,23 @@ export default function FriendSearch({ onRequestSent }: FriendSearchProps) {
   };
 
   const handleSendFriendRequest = async (profile: SearchResult) => {
-    if (!user) return;
+    if (!user) {
+      alert('Please sign in to send friend requests');
+      return;
+    }
+    
+    console.log('🚀 Attempting to send friend request to:', profile);
+    console.log('👤 Current user:', { uid: user.uid, email: user.email });
     
     setSendingRequest(profile.userId);
     try {
-      await sendFriendRequest({
+      const requestId = await sendFriendRequest({
         fromUser: user,
         toUserId: profile.userId,
         message: `Hi ${profile.name}, I'd like to connect with you on AuraX!`,
       });
+      
+      console.log('✅ Friend request sent successfully with ID:', requestId);
       
       // Update UI to show request sent
       if (activeTab === 'search') {
@@ -124,9 +132,26 @@ export default function FriendSearch({ onRequestSent }: FriendSearchProps) {
       }
       
       onRequestSent?.(profile.userId);
+      alert(`✅ Friend request sent to ${profile.name}!`);
+      
     } catch (error) {
-      console.error('Error sending friend request:', error);
-      alert(error instanceof Error ? error.message : 'Failed to send friend request');
+      console.error('❌ Error sending friend request:', error);
+      
+      let errorMessage = 'Failed to send friend request';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide more specific error messages
+        if (error.message.includes('permission')) {
+          errorMessage = 'Permission denied. Please make sure your profile is set up properly.';
+        } else if (error.message.includes('already sent')) {
+          errorMessage = 'Friend request already sent to this user.';
+        } else if (error.message.includes('already friends')) {
+          errorMessage = 'You are already friends with this user.';
+        }
+      }
+      
+      alert(`❌ ${errorMessage}`);
     } finally {
       setSendingRequest(null);
     }

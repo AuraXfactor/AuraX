@@ -252,39 +252,59 @@ export async function sendFriendRequest(params: {
 }): Promise<string> {
   const { fromUser, toUserId, message } = params;
   
+  console.log('🔍 sendFriendRequest called with:', { 
+    fromUserId: fromUser.uid, 
+    toUserId, 
+    message 
+  });
+  
   if (fromUser.uid === toUserId) {
     throw new Error('Cannot send friend request to yourself');
   }
 
-  // Check if request already exists
-  const existingRequestQuery = query(
-    getFriendRequestsRef(),
-    where('fromUserId', '==', fromUser.uid),
-    where('toUserId', '==', toUserId),
-    where('status', '==', 'pending')
-  );
-  
-  const existingRequests = await getDocs(existingRequestQuery);
-  if (!existingRequests.empty) {
-    throw new Error('Friend request already sent');
+  try {
+    // Check if request already exists
+    console.log('📋 Checking for existing requests...');
+    const existingRequestQuery = query(
+      getFriendRequestsRef(),
+      where('fromUserId', '==', fromUser.uid),
+      where('toUserId', '==', toUserId),
+      where('status', '==', 'pending')
+    );
+    
+    const existingRequests = await getDocs(existingRequestQuery);
+    if (!existingRequests.empty) {
+      throw new Error('Friend request already sent');
+    }
+
+    // Check if already friends
+    console.log('👥 Checking existing friendship...');
+    const friendshipDoc = await getDoc(getFriendDocRef(fromUser.uid, toUserId));
+    if (friendshipDoc.exists()) {
+      throw new Error('Already friends with this user');
+    }
+
+    console.log('📝 Creating friend request...');
+    const requestData = {
+      fromUserId: fromUser.uid,
+      toUserId,
+      status: 'pending' as FriendRequestStatus,
+      message: message || '',
+      createdAt: serverTimestamp(),
+    };
+
+    console.log('📤 Sending request data:', requestData);
+    const docRef = await addDoc(getFriendRequestsRef(), requestData);
+    console.log('✅ Friend request created with ID:', docRef.id);
+    
+    return docRef.id;
+    
+  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    console.error('❌ Error in sendFriendRequest:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    throw error;
   }
-
-  // Check if already friends
-  const friendshipDoc = await getDoc(getFriendDocRef(fromUser.uid, toUserId));
-  if (friendshipDoc.exists()) {
-    throw new Error('Already friends with this user');
-  }
-
-  const requestData: Partial<EnhancedFriendRequest> = {
-    fromUserId: fromUser.uid,
-    toUserId,
-    status: 'pending',
-    message: message || '',
-    createdAt: serverTimestamp(),
-  };
-
-  const docRef = await addDoc(getFriendRequestsRef(), requestData);
-  return docRef.id;
 }
 
 export async function respondToFriendRequest(params: {
