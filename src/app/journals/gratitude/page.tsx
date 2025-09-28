@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
+import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
 const ABUNDANCE_CATEGORIES = ['Physical', 'Emotional', 'Relational'];
 
@@ -422,7 +423,7 @@ export default function GratitudeJournal() {
           </section>
 
           {/* Save Button */}
-          <div className="text-center pb-20">
+          <div className="text-center">
             <button
               onClick={handleSave}
               disabled={saving}
@@ -432,6 +433,52 @@ export default function GratitudeJournal() {
             </button>
           </div>
         </div>
+
+        {/* Journal History */}
+        <SpecializedJournalHistory
+          journalType="gratitude"
+          title="Thankful Heart"
+          icon="🙏"
+          renderEntry={(entry) => (
+            <div className="space-y-3">
+              {entry.dailyHighlight && (
+                <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border-l-4 border-yellow-500">
+                  <div className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">⭐ Daily Highlight</div>
+                  <div className="text-yellow-700 dark:text-yellow-300">{entry.dailyHighlight}</div>
+                </div>
+              )}
+              
+              {entry.gratitudeEntries && entry.gratitudeEntries.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">🙏 Gratitude List</div>
+                  {entry.gratitudeEntries.map((itemData: unknown, index: number) => {
+                    const item = itemData as { item?: string; why?: string };
+                    return item.item ? (
+                      <div key={index} className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">• {item.item}</span>
+                        {item.why && <span className="text-gray-500"> - {item.why}</span>}
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              )}
+              
+              {entry.personAppreciation && (
+                <div className="p-3 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-lg border-l-4 border-pink-500">
+                  <div className="text-sm font-medium text-pink-800 dark:text-pink-300 mb-1">💝 Person Appreciation</div>
+                  <div className="text-pink-700 dark:text-pink-300">{entry.personAppreciation}</div>
+                </div>
+              )}
+              
+              {entry.selectedAffirmation && (
+                <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border-l-4 border-purple-500">
+                  <div className="text-sm font-medium text-purple-800 dark:text-purple-300 mb-1">✨ Affirmation</div>
+                  <div className="text-purple-700 dark:text-purple-300 italic">&ldquo;{entry.selectedAffirmation}&rdquo;</div>
+                </div>
+              )}
+            </div>
+          )}
+        />
       </div>
     </div>
   );

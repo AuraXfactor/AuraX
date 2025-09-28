@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
+import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
 const RELATIONSHIP_TYPES = [
   { label: 'Partner/Spouse', value: 'partner', icon: '💕' },
@@ -492,6 +493,62 @@ export default function RelationshipJournal() {
             )}
           </div>
         </div>
+
+        {/* Journal History */}
+        <SpecializedJournalHistory
+          journalType="relationship"
+          title="Connection Matters"
+          icon="💕"
+          renderEntry={(entry) => (
+            <div className="space-y-3">
+              {entry.relationshipType && entry.personName && (
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">
+                    {RELATIONSHIP_TYPES.find(rt => rt.value === entry.relationshipType)?.icon || '👤'}
+                  </span>
+                  <div>
+                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                      {entry.personName}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {RELATIONSHIP_TYPES.find(rt => rt.value === entry.relationshipType)?.label || 'Relationship'}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {entry.interactionQuality && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quality:</span>
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(num => (
+                      <div key={num} className={`w-4 h-4 rounded-full ${
+                        num <= entry.interactionQuality ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}></div>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    ({entry.interactionQuality}/5)
+                  </span>
+                </div>
+              )}
+              
+              {entry.interactionDescription && (
+                <div className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Interaction: </span>
+                  {entry.interactionDescription}
+                </div>
+              )}
+              
+              {entry.appreciationNote && (
+                <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border-l-4 border-purple-500">
+                  <div className="text-sm font-medium text-purple-800 dark:text-purple-300 mb-1">💝 Appreciation</div>
+                  <div className="text-purple-700 dark:text-purple-300">{entry.appreciationNote}</div>
+                </div>
+              )}
+            </div>
+          )}
+        />
       </div>
     </div>
   );
