@@ -140,12 +140,12 @@ export function getFriendRequestsRef() {
   return collection(db, 'friendRequests');
 }
 
-export function getFriendsCollectionRef(userId: string) {
-  return collection(db, 'friends', userId);
+export function getFriendDocRef(userId: string, friendId: string) {
+  return doc(db, 'friends', userId, 'friendships', friendId);
 }
 
-export function getFriendDocRef(userId: string, friendId: string) {
-  return doc(db, 'friends', userId, friendId);
+export function getFriendsCollectionRef(userId: string) {
+  return collection(db, 'friends', userId, 'friendships');
 }
 
 export function getGroupsRef() {
@@ -495,19 +495,18 @@ export async function getFriendSuggestions(params: {
 // Friends Management
 export async function getFriends(userId: string): Promise<Friendship[]> {
   try {
-    const friendsSnapshot = await getDocs(
-      query(getFriendsCollectionRef(userId), orderBy('friendSince', 'desc'))
-    );
+    const friendsSnapshot = await getDocs(getFriendsCollectionRef(userId));
     
     const friends: Friendship[] = [];
     
     for (const friendDoc of friendsSnapshot.docs) {
       const friendData = friendDoc.data() as Friendship;
-      const friendProfile = await getPublicProfile(friendData.friendId);
+      const friendProfile = await getPublicProfile(friendDoc.id); // friendDoc.id is the friendId
       
       friends.push({
         ...friendData,
         id: friendDoc.id,
+        friendId: friendDoc.id,
         friendProfile: friendProfile || undefined,
       });
     }
