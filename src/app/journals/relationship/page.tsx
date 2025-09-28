@@ -130,6 +130,7 @@ export default function RelationshipJournal() {
             }
           },
           description: `💕 Relationship reflection completed (+${relationshipBonus} connection bonus)`,
+          uniqueId: `relationship-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);

@@ -104,6 +104,7 @@ export default function CBTTherapyJournal() {
             }
           },
           description: `🧠 CBT Thought Reframe completed (+${progressBonus} progress bonus)`,
+          uniqueId: `cbt-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);

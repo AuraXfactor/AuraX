@@ -205,6 +205,7 @@ export default function GoalAchievementJournal() {
             }
           },
           description: `🎯 Goal progress tracked (+${progressBonus + motivationBonus} achievement bonus)`,
+          uniqueId: `goal-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);

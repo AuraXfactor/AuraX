@@ -133,6 +133,7 @@ export default function GratitudeJournal() {
             }
           },
           description: `🙏 Gratitude practice completed (+${gratitudeBonus} gratitude bonus)`,
+          uniqueId: `gratitude-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);

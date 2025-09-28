@@ -205,7 +205,7 @@ export function getRewardsRef() {
   return collection(db, 'rewards');
 }
 
-// Core point earning function with "Proof of Care" validation
+// Universal Aura Points Algorithm - Prevents overlaps and ensures consistency
 export async function awardAuraPoints(params: {
   user: User;
   activity: AuraPointActivity;
@@ -214,8 +214,9 @@ export async function awardAuraPoints(params: {
   multiplier?: number;
   questId?: string;
   squadId?: string;
+  uniqueId?: string; // Prevents duplicate awarding for same activity instance
 }): Promise<{ success: boolean; points: number; message: string }> {
-  const { user, activity, proof, description, multiplier = 1, questId, squadId } = params;
+  const { user, activity, proof, description, multiplier = 1, questId, squadId, uniqueId } = params;
   
   try {
     // Get or initialize user stats
@@ -228,28 +229,62 @@ export async function awardAuraPoints(params: {
     const stats = (statsDoc.data() as UserAuraStats) || ({} as UserAuraStats);
     const today = new Date().toISOString().split('T')[0];
     
-    // Check daily caps
-    if (stats.lastActivityDate === today) {
-      const todayTransactions = await getDocs(
+    // Prevent duplicate awarding using uniqueId (e.g., sessionId, postId, etc.)
+    if (uniqueId) {
+      const duplicateCheck = await getDocs(
         query(
           getPointTransactionsRef(user.uid),
-          where('activity', '==', activity),
-          where('createdAt', '>=', Timestamp.fromDate(new Date(today))),
-          limit(DAILY_CAPS[activity] || 1)
+          where('proof.metadata.uniqueId', '==', uniqueId),
+          limit(1)
         )
       );
       
-      if (todayTransactions.size >= (DAILY_CAPS[activity] || 1)) {
+      if (duplicateCheck.size > 0) {
         return {
           success: false,
           points: 0,
-          message: `Daily limit reached for ${activity}. Try again tomorrow! 🌅`
+          message: 'Points already awarded for this activity! ✅'
         };
       }
     }
     
-    // Check overall daily cap
-    if (stats.lastActivityDate === today && stats.dailyPointsEarned >= DAILY_POINT_CAP) {
+    // Enhanced daily cap checking with better time zone handling
+    const todayStart = new Date(today + 'T00:00:00.000Z');
+    const todayEnd = new Date(today + 'T23:59:59.999Z');
+    
+    // Check activity-specific daily caps
+    const todayActivityTransactions = await getDocs(
+      query(
+        getPointTransactionsRef(user.uid),
+        where('activity', '==', activity),
+        where('createdAt', '>=', Timestamp.fromDate(todayStart)),
+        where('createdAt', '<=', Timestamp.fromDate(todayEnd))
+      )
+    );
+    
+    if (todayActivityTransactions.size >= (DAILY_CAPS[activity] || 1)) {
+      return {
+        success: false,
+        points: 0,
+        message: `Daily limit reached for ${getActivityDisplayName(activity)}. Try again tomorrow! 🌅`
+      };
+    }
+    
+    // Check overall daily point cap
+    const todayAllTransactions = await getDocs(
+      query(
+        getPointTransactionsRef(user.uid),
+        where('createdAt', '>=', Timestamp.fromDate(todayStart)),
+        where('createdAt', '<=', Timestamp.fromDate(todayEnd))
+      )
+    );
+    
+    const todayPointsEarned = todayAllTransactions.docs.reduce((total, doc) => {
+      const data = doc.data() as AuraPointTransaction;
+      return total + (data.points || 0);
+    }, 0);
+    
+    if (todayPointsEarned >= DAILY_POINT_CAP) {
       return {
         success: false,
         points: 0,
@@ -257,8 +292,8 @@ export async function awardAuraPoints(params: {
       };
     }
     
-    // Validate proof based on activity type
-    const validationResult = validateProofOfCare(activity, proof);
+    // Validate proof based on activity type using enhanced validation
+    const validationResult = validateProofOfCare(activity, proof, uniqueId);
     if (!validationResult.valid) {
       return {
         success: false,
@@ -267,34 +302,54 @@ export async function awardAuraPoints(params: {
       };
     }
     
-    // Calculate points with multiplier
+    // Calculate points with multiplier and apply smart bonuses
     const basePoints = POINT_VALUES[activity];
-    const earnedPoints = Math.round(basePoints * multiplier);
+    const smartBonus = calculateSmartBonus(activity, proof, stats);
+    const earnedPoints = Math.round((basePoints + smartBonus) * multiplier);
     
-    // Create transaction record
+    // Ensure we don't exceed daily cap with this transaction
+    if (todayPointsEarned + earnedPoints > DAILY_POINT_CAP) {
+      const remainingPoints = DAILY_POINT_CAP - todayPointsEarned;
+      return {
+        success: false,
+        points: 0,
+        message: `Only ${remainingPoints} points remaining today. Complete this tomorrow! 🌙`
+      };
+    }
+    
+    // Create enhanced transaction record with metadata for tracking
+    const enhancedProof = proof ? {
+      ...proof,
+      metadata: {
+        ...proof.metadata,
+        uniqueId,
+        timestamp: Date.now(),
+        userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        smartBonus
+      }
+    } : undefined;
+    
     const transaction = {
       userUid: user.uid,
       activity,
       points: earnedPoints,
       description: description || getDefaultDescription(activity, earnedPoints),
-      proof,
+      proof: enhancedProof,
       multiplier: multiplier !== 1 ? multiplier : undefined,
       questId,
       squadId,
       createdAt: serverTimestamp(),
     };
     
-    // Use batch to update both transaction and stats
+    // Use atomic batch operations
     const batch = writeBatch(db);
     
     // Add transaction
     const transactionRef = doc(getPointTransactionsRef(user.uid));
     batch.set(transactionRef, transaction);
     
-    // Update user stats
-    const newDailyPoints = stats.lastActivityDate === today 
-      ? stats.dailyPointsEarned + earnedPoints 
-      : earnedPoints;
+    // Update user stats with proper calculations
+    const newDailyPoints = todayPointsEarned + earnedPoints;
     
     const updateData: Record<string, unknown> = {
       totalPoints: stats.totalPoints + earnedPoints,
@@ -305,29 +360,50 @@ export async function awardAuraPoints(params: {
       updatedAt: serverTimestamp(),
     };
     
-    // Update streak if it's a journal entry
+    // Enhanced streak management for journal entries
     if (activity === 'journal_entry') {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
       if (stats.lastActivityDate === yesterday) {
         const newStreak = stats.currentStreak + 1;
         updateData.currentStreak = newStreak;
         updateData.longestStreak = Math.max(stats.longestStreak, newStreak);
+        
+        // Award streak bonus at intervals (7, 14, 21, 30, etc.)
+        if (newStreak % 7 === 0) {
+          // Schedule streak bonus - prevent immediate recursion
+          setTimeout(() => {
+            awardAuraPoints({
+              user,
+              activity: 'streak_7_days',
+              proof: {
+                type: 'streak_count',
+                value: newStreak,
+                metadata: { streakType: '7-day-multiple', baseStreak: newStreak }
+              },
+              description: `🔥 ${newStreak}-day streak milestone!`,
+              uniqueId: `streak-${user.uid}-${today}-${newStreak}`
+            });
+          }, 2000);
+        }
       } else if (stats.lastActivityDate !== today) {
         updateData.currentStreak = 1; // Reset streak if gap > 1 day
       }
-      
-      // Award streak bonus
-      const currentStreak = updateData.currentStreak as number;
-      if (currentStreak && currentStreak % 7 === 0) {
-        // Recursive call for streak bonus
-        setTimeout(() => {
-          awardAuraPoints({
-            user,
-            activity: 'streak_7_days',
-            description: `🔥 ${currentStreak}-day streak bonus!`,
-          });
-        }, 1000);
-      }
+    }
+    
+    // Calculate level progression
+    const newLevel = calculateLevel(stats.lifetimeEarned + earnedPoints);
+    if (newLevel > stats.level) {
+      updateData.level = newLevel;
+      // Award level up bonus
+      setTimeout(() => {
+        awardAuraPoints({
+          user,
+          activity: 'first_time_bonus',
+          description: `🎉 Level ${newLevel} achieved!`,
+          uniqueId: `level-up-${user.uid}-${newLevel}`
+        });
+      }, 3000);
     }
     
     batch.update(statsRef, updateData);
@@ -336,7 +412,7 @@ export async function awardAuraPoints(params: {
     return {
       success: true,
       points: earnedPoints,
-      message: getCelebrationMessage(activity, earnedPoints, multiplier > 1)
+      message: getCelebrationMessage(activity, earnedPoints, multiplier > 1, smartBonus > 0)
     };
     
   } catch (error) {
@@ -349,10 +425,103 @@ export async function awardAuraPoints(params: {
   }
 }
 
-// Proof of Care validation
+// Helper function to get user-friendly activity names
+function getActivityDisplayName(activity: AuraPointActivity): string {
+  const displayNames: Record<AuraPointActivity, string> = {
+    journal_entry: 'Journal Writing',
+    streak_7_days: 'Streak Bonus',
+    meditation_complete: 'Meditation',
+    workout_complete: 'Workout',
+    aura_post: 'Aura Sharing',
+    friend_support: 'Friend Support',
+    group_challenge: 'Group Challenge',
+    weekly_quest: 'Weekly Quest',
+    daily_streak: 'Daily Streak',
+    first_time_bonus: 'First Time Bonus',
+  };
+  return displayNames[activity] || activity;
+}
+
+// Calculate smart bonuses based on user behavior and activity quality
+function calculateSmartBonus(
+  activity: AuraPointActivity,
+  proof?: AuraPointTransaction['proof'],
+  stats?: UserAuraStats
+): number {
+  let bonus = 0;
+  
+  if (!proof || !stats) return bonus;
+  
+  switch (activity) {
+    case 'journal_entry':
+      // Bonus for longer, more thoughtful entries
+      if (proof.type === 'journal_length' && typeof proof.value === 'number') {
+        if (proof.value >= 200) bonus += 3; // 200+ words
+        else if (proof.value >= 100) bonus += 2; // 100+ words
+        else if (proof.value >= 75) bonus += 1; // 75+ words
+        
+        // Bonus for including activities, voice memo, or affirmation
+        if (proof.metadata?.hasVoice) bonus += 1;
+        if (proof.metadata?.affirmation) bonus += 1;
+        if (proof.metadata?.activities && Array.isArray(proof.metadata.activities) && proof.metadata.activities.length >= 3) bonus += 1;
+      }
+      break;
+      
+    case 'meditation_complete':
+    case 'workout_complete':
+      // Bonus for higher completion rates
+      if (proof.type === 'video_completion' && typeof proof.value === 'number') {
+        if (proof.value >= 95) bonus += 2; // Near perfect completion
+        else if (proof.value >= 90) bonus += 1; // Excellent completion
+      }
+      
+      // Bonus for longer sessions
+      if (proof.metadata?.duration) {
+        const minutes = (proof.metadata.duration as number) / 60;
+        if (minutes >= 15) bonus += 2;
+        else if (minutes >= 10) bonus += 1;
+      }
+      break;
+      
+    case 'aura_post':
+      // Bonus for meaningful posts (length and engagement)
+      if (proof.metadata?.length && (proof.metadata.length as number) >= 100) bonus += 1;
+      if (proof.metadata?.hasMedia) bonus += 1;
+      break;
+      
+    case 'friend_support':
+      // Bonus for consecutive days of supporting friends
+      if (stats.currentStreak >= 7) bonus += 1;
+      break;
+  }
+  
+  // Global consistency bonus
+  if (stats.currentStreak >= 14) bonus += 1; // 2+ week streak
+  if (stats.currentStreak >= 30) bonus += 2; // 1+ month streak
+  
+  return Math.min(bonus, 5); // Cap smart bonus at 5 points
+}
+
+// Calculate user level based on lifetime points
+function calculateLevel(lifetimePoints: number): number {
+  // Level progression: 0-999=1, 1000-2999=2, 3000-5999=3, etc.
+  if (lifetimePoints < 1000) return 1;
+  if (lifetimePoints < 3000) return 2;
+  if (lifetimePoints < 6000) return 3;
+  if (lifetimePoints < 10000) return 4;
+  if (lifetimePoints < 15000) return 5;
+  if (lifetimePoints < 25000) return 6;
+  if (lifetimePoints < 40000) return 7;
+  if (lifetimePoints < 60000) return 8;
+  if (lifetimePoints < 100000) return 9;
+  return 10; // Max level
+}
+
+// Enhanced Proof of Care validation
 function validateProofOfCare(
   activity: AuraPointActivity, 
-  proof?: AuraPointTransaction['proof']
+  proof?: AuraPointTransaction['proof'],
+  uniqueId?: string
 ): { valid: boolean; message?: string } {
   switch (activity) {
     case 'journal_entry':
@@ -500,12 +669,14 @@ function getDefaultDescription(activity: AuraPointActivity, points: number): str
   return descriptions[activity];
 }
 
-function getCelebrationMessage(activity: AuraPointActivity, points: number, hasMultiplier: boolean): string {
+function getCelebrationMessage(activity: AuraPointActivity, points: number, hasMultiplier: boolean, hasSmartBonus: boolean): string {
   const base = getDefaultDescription(activity, points);
   
-  if (hasMultiplier) {
-    return `${base} 🌟 BONUS POINTS!`;
-  }
+  const bonusIndicators = [];
+  if (hasMultiplier) bonusIndicators.push('🌟 MULTIPLIER');
+  if (hasSmartBonus) bonusIndicators.push('🎯 QUALITY BONUS');
+  
+  const bonusText = bonusIndicators.length > 0 ? ` ${bonusIndicators.join(' ')}!` : '';
   
   // Add encouraging messages based on activity
   const encouragements: Record<AuraPointActivity, string[]> = {
@@ -525,7 +696,7 @@ function getCelebrationMessage(activity: AuraPointActivity, points: number, hasM
     Math.floor(Math.random() * encouragements[activity].length)
   ];
   
-  return `${base} ${randomEncouragement}`;
+  return `${base}${bonusText} ${randomEncouragement}`;
 }
 
 // Listen to user stats updates
