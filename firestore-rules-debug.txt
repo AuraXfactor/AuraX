@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ⚠️ TEMPORARY DEBUG RULES - VERY PERMISSIVE ⚠️
+    // Use these rules temporarily to identify the issue, then restore proper security
+    
+    // Allow all authenticated users to do anything (for debugging)
+    match /{document=**} {
+      allow read, write, create, update, delete: if request.auth != null;
+    }
+  }
+}
+
+// NOTES FOR DEBUGGING:
+// 1. These rules are EXTREMELY permissive and should ONLY be used for debugging
+// 2. After identifying the issue, immediately restore proper security rules
+// 3. These rules allow any authenticated user to read/write any document
+// 4. Never use these rules in production

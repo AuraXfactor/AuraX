@@ -1,0 +1,216 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // USER DOCUMENTS AND SUBCOLLECTIONS
+    // ============================================================================
+    
+    // Core user documents - MUST have this for your app to work
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        resource.data.isPublic == true
+      );
+      allow write, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User subcollections - friend requests stored under users
+    match /users/{userId}/friendRequests/{requestId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User subcollections - friends stored under users  
+    match /users/{userId}/friends/{friendId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User subcollections - journal entries
+    match /users/{userId}/journalEntries/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // CHAT SYSTEMS (Multiple systems in your app)
+    // ============================================================================
+
+    // LEGACY CHAT SYSTEM - users/{userId}/chats/{chatId}/messages/{messageId}
+    match /users/{userId}/chats/{chatId}/messages/{messageId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // LEGACY CHAT METADATA
+    match /users/{userId}/chatMeta/{chatId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // LEGACY CHAT TYPING INDICATORS
+    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // SOCIAL SYSTEM CHATS - chats/{chatId}/messages/{messageId}
+    match /chats/{chatId}/messages/{messageId} {
+      // Allow if user is in participants map OR temporarily allow all authenticated users for debugging
+      allow read, write, create, update, delete: if request.auth != null;
+      // TODO: Restore this after debugging: && resource.data.participants[request.auth.uid] == true;
+    }
+
+    // ENHANCED ENCRYPTED CHATS - enhancedChats/{chatId}
+    match /enhancedChats/{chatId} {
+      allow read, write, create, update, delete: if request.auth != null;
+    }
+
+    // ENHANCED CHAT MESSAGES - enhancedChats/{chatId}/messages/{messageId}
+    match /enhancedChats/{chatId}/messages/{messageId} {
+      allow read, write, create, update, delete: if request.auth != null;
+    }
+
+    // ============================================================================
+    // GROUP SYSTEM
+    // ============================================================================
+
+    // GROUP CHATS - groupChats/{groupId}
+    match /groupChats/{groupId} {
+      allow read: if request.auth != null;
+      // Temporarily allow all operations for debugging
+      allow write, create, update, delete: if request.auth != null;
+      // TODO: Restore this after debugging:
+      // allow read: if request.auth != null && request.auth.uid in resource.data.members;
+      // allow write, update, delete: if request.auth != null && (
+      //   request.auth.uid == resource.data.createdBy ||
+      //   request.auth.uid in resource.data.admins
+      // );
+      // allow create: if request.auth != null;
+    }
+    
+    // GROUP CHAT MESSAGES - groupChats/{groupId}/messages/{messageId}
+    match /groupChats/{groupId}/messages/{messageId} {
+      // Temporarily allow all operations for debugging
+      allow read, write, create, update, delete: if request.auth != null;
+      // TODO: Restore this after debugging:
+      // allow read, write, create: if request.auth != null && 
+      //   request.auth.uid in get(/databases/$(database)/documents/groupChats/$(groupId)).data.members;
+    }
+
+    // ============================================================================
+    // SOCIAL FEATURES
+    // ============================================================================
+
+    // Public user profiles for search/suggestions
+    match /publicProfiles/{userId} {
+      allow read: if true;
+      allow write, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Friend requests system (global collection)
+    match /friendRequests/{requestId} {
+      allow read, write, create, update, delete: if request.auth != null;
+    }
+
+    // Friends relationships (global collection with subcollections)
+    match /friends/{userId}/friendships/{friendId} {
+      allow read, write, create, update, delete: if request.auth != null;
+    }
+
+    // Groups system (global collection)
+    match /groups/{groupId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+      // TODO: Add proper permissions after debugging
+    }
+
+    // ============================================================================
+    // SOCIAL POSTS AND AURA SYSTEM
+    // ============================================================================
+
+    // Aura Posts - social ephemeral posts
+    match /auraPosts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorUid;
+    }
+    
+    // Aura Post Reactions
+    match /auraPosts/{postId}/reactions/{reactionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userUid;
+    }
+    
+    // Aura Post Replies  
+    match /auraPosts/{postId}/replies/{replyId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userUid;
+    }
+
+    // Social posts (global collection)
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
+
+    // ============================================================================
+    // JOURNAL AND USER DATA
+    // ============================================================================
+
+    // Journal entries - users can read/write their own journals
+    match /journals/{userId}/entries/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Specialized journals - users can read/write their own specialized journal entries
+    match /specialized-journals/{userId}/{journalType}/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User goals - users can read/write their own goals
+    match /user-goals/{userId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User quest progress
+    match /users/{userId}/questProgress/{questId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // BOOST AND REWARD SYSTEM
+    // ============================================================================
+
+    // Boosts - readable by all, but not writable
+    match /boosts/{boostId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // User-specific boosts
+    match /userBoosts/{userId}/entries/{entryId} {
+      allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Weekly quests
+    match /weeklyQuests/{questId} {
+      allow read: if request.auth != null;
+      allow write, create, update: if false; // Server-only for now
+    }
+
+    // ============================================================================
+    // ANALYTICS AND ADMIN
+    // ============================================================================
+
+    // Analytics - server only
+    match /analytics/{collection=**} {
+      allow read, write: if false;
+    }
+
+    // Group memberships (if you use this pattern)
+    match /groupMembers/{groupId}/{userId} {
+      allow read: if request.auth != null;
+      allow write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
