@@ -178,25 +178,37 @@ export async function updateUserProfile(user: User, profileData: {
   
   // Update main user document
   const userRef = doc(db, 'users', user.uid);
-  batch.update(userRef, {
-    ...profileData,
+  batch.set(userRef, {
+    email: user.email,
+    name: profileData.name || user.displayName || user.email?.split('@')[0] || 'Anonymous',
+    username: profileData.username || user.email?.split('@')[0] || `user${user.uid.slice(-4)}`,
+    bio: profileData.bio || 'AuraX community member',
+    avatar: user.photoURL,
+    interests: profileData.interests || ['wellness'],
+    location: profileData.location,
+    focusAreas: profileData.focusAreas || ['personal growth'],
+    isPublic: profileData.isPublic !== false, // Default to true
     updatedAt: serverTimestamp(),
-  });
+    createdAt: serverTimestamp(), // Set if not exists
+  }, { merge: true });
 
-  // Update public profile if user is public
+  // Always create/update public profile unless explicitly set to private
   if (profileData.isPublic !== false) {
     const publicProfileRef = doc(getPublicProfilesRef(), user.uid);
     const publicData: Partial<PublicProfile> = {
       userId: user.uid,
-      name: profileData.name || user.displayName || 'Anonymous',
-      username: profileData.username,
-      bio: profileData.bio,
+      name: profileData.name || user.displayName || user.email?.split('@')[0] || 'Anonymous',
+      username: profileData.username || user.email?.split('@')[0] || `user${user.uid.slice(-4)}`,
+      bio: profileData.bio || 'AuraX community member',
       avatar: user.photoURL || undefined,
-      interests: profileData.interests || [],
+      interests: profileData.interests || ['wellness'],
       location: profileData.location,
-      focusAreas: profileData.focusAreas,
+      focusAreas: profileData.focusAreas || ['personal growth'],
       isOnline: true,
       lastSeen: serverTimestamp(),
+      friendsCount: 0,
+      postsCount: 0,
+      joinedAt: serverTimestamp(),
     };
     batch.set(publicProfileRef, publicData, { merge: true });
   }
@@ -335,11 +347,14 @@ export async function searchUsers(params: {
   try {
     const searchTerm = searchQuery.toLowerCase().trim();
     
+    // First, try to search public profiles
+    let results: PublicProfile[] = [];
+    
     if (!searchTerm) {
       // Return random public profiles
       const q = query(getPublicProfilesRef(), limit(limitCount));
       const snapshot = await getDocs(q);
-      return snapshot.docs
+      results = snapshot.docs
         .filter(doc => doc.id !== currentUserId)
         .map(doc => {
           const data = doc.data();
@@ -359,72 +374,74 @@ export async function searchUsers(params: {
             focusAreas: data.focusAreas || [],
           } as PublicProfile;
         });
+    } else {
+      // Search public profiles first
+      const publicProfilesQuery = query(getPublicProfilesRef(), limit(50));
+      const publicSnapshot = await getDocs(publicProfilesQuery);
+      
+      results = publicSnapshot.docs
+        .filter(doc => doc.id !== currentUserId)
+        .map(doc => {
+          const data = doc.data();
+          return {
+            userId: doc.id,
+            name: data.name || '',
+            username: data.username,
+            bio: data.bio,
+            avatar: data.avatar,
+            interests: data.interests || [],
+            location: data.location,
+            isOnline: data.isOnline || false,
+            lastSeen: data.lastSeen,
+            friendsCount: data.friendsCount || 0,
+            postsCount: data.postsCount || 0,
+            joinedAt: data.joinedAt,
+            focusAreas: data.focusAreas || [],
+          } as PublicProfile;
+        })
+        .filter(profile => 
+          profile.name.toLowerCase().includes(searchTerm) ||
+          profile.username?.toLowerCase().includes(searchTerm) ||
+          profile.bio?.toLowerCase().includes(searchTerm)
+        );
     }
-
-    // Search by username first
-    const usernameQuery = query(
-      getPublicProfilesRef(),
-      where('username', '>=', searchTerm),
-      where('username', '<=', searchTerm + '\uf8ff'),
-      limit(limitCount)
-    );
     
-    const usernameSnapshot = await getDocs(usernameQuery);
-    const usernameResults = usernameSnapshot.docs
-      .filter(doc => doc.id !== currentUserId)
-      .map(doc => {
-        const data = doc.data();
-        return {
-          userId: doc.id,
-          name: data.name || '',
-          username: data.username,
-          bio: data.bio,
-          avatar: data.avatar,
-          interests: data.interests || [],
-          location: data.location,
-          isOnline: data.isOnline || false,
-          lastSeen: data.lastSeen,
-          friendsCount: data.friendsCount || 0,
-          postsCount: data.postsCount || 0,
-          joinedAt: data.joinedAt,
-          focusAreas: data.focusAreas || [],
-        } as PublicProfile;
-      });
-
-    if (usernameResults.length > 0) {
-      return usernameResults;
+    // If no results from public profiles, fallback to users collection
+    if (results.length === 0 && searchTerm) {
+      const usersQuery = query(collection(db, 'users'), limit(50));
+      const usersSnapshot = await getDocs(usersQuery);
+      
+      const userResults = usersSnapshot.docs
+        .filter(doc => doc.id !== currentUserId)
+        .map(doc => {
+          const data = doc.data();
+          return {
+            userId: doc.id,
+            name: data.name || data.displayName || data.email?.split('@')[0] || 'Anonymous',
+            username: data.username || data.email?.split('@')[0] || `user${doc.id.slice(-4)}`,
+            bio: data.bio || 'AuraX community member',
+            avatar: data.avatar || data.photoURL,
+            interests: data.interests || data.focusAreas || ['wellness'],
+            location: data.location,
+            isOnline: true,
+            lastSeen: serverTimestamp(),
+            friendsCount: 0,
+            postsCount: 0,
+            joinedAt: data.createdAt || serverTimestamp(),
+            focusAreas: data.focusAreas || ['personal growth'],
+          } as PublicProfile;
+        })
+        .filter((profile, index) => {
+          const originalData = usersSnapshot.docs[index]?.data();
+          return profile.name.toLowerCase().includes(searchTerm) ||
+            profile.username?.toLowerCase().includes(searchTerm) ||
+            (originalData?.email && originalData.email.toLowerCase().includes(searchTerm));
+        });
+      
+      results = userResults;
     }
-
-    // Fallback to name search (client-side filtering due to Firestore limitations)
-    const allProfilesQuery = query(getPublicProfilesRef(), limit(100));
-    const allSnapshot = await getDocs(allProfilesQuery);
     
-    return allSnapshot.docs
-      .filter(doc => doc.id !== currentUserId)
-      .map(doc => {
-        const data = doc.data();
-        return {
-          userId: doc.id,
-          name: data.name || '',
-          username: data.username,
-          bio: data.bio,
-          avatar: data.avatar,
-          interests: data.interests || [],
-          location: data.location,
-          isOnline: data.isOnline || false,
-          lastSeen: data.lastSeen,
-          friendsCount: data.friendsCount || 0,
-          postsCount: data.postsCount || 0,
-          joinedAt: data.joinedAt,
-          focusAreas: data.focusAreas || [],
-        } as PublicProfile;
-      })
-      .filter(profile => 
-        profile.name.toLowerCase().includes(searchTerm) ||
-        profile.username?.toLowerCase().includes(searchTerm) ||
-        profile.bio?.toLowerCase().includes(searchTerm)
-      )
-      .slice(0, limitCount);
+    return results.slice(0, limitCount);
       
   } catch (error) {
     console.error('Error searching users:', error);

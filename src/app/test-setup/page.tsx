@@ -14,6 +14,7 @@ import {
   searchUsers,
   updateUserProfile
 } from '@/lib/socialSystem';
+import { migrateExistingUsersToPublicProfiles } from '@/utils/migrateUsers';
 
 export default function TestSetupPage() {
   const { user } = useAuth();
@@ -32,6 +33,11 @@ export default function TestSetupPage() {
     try {
       addLog('🚀 Starting comprehensive test setup...');
       
+      // First migrate existing users
+      addLog('🔄 Migrating existing users to public profiles...');
+      await migrateExistingUsersToPublicProfiles();
+      addLog('✅ User migration complete');
+      
       const { alice, bob } = await runTestSetup();
       addLog(`✅ Created test accounts: ${alice.email} and ${bob.email}`);
       
@@ -40,13 +46,27 @@ export default function TestSetupPage() {
       addLog('📤 Friend request sent from Alice to Bob');
       
       addLog('🎉 Test setup complete! Now test manually:');
-              addLog('1. Sign in as Bob and accept Alice&apos;s friend request');
-              addLog('2. Both accounts can now see each other&apos;s posts');
-              addLog('3. Test messaging between friends');
-              addLog('4. Create and join groups');
+      addLog('1. Sign in as Bob and accept Alice&apos;s friend request');
+      addLog('2. Both accounts can now see each other&apos;s posts');
+      addLog('3. Test messaging between friends');
+      addLog('4. Create and join groups');
       
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       addLog(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMigrateUsers = async () => {
+    setLoading(true);
+    
+    try {
+      addLog('🔄 Migrating existing users to public profiles...');
+      await migrateExistingUsersToPublicProfiles();
+      addLog('✅ User migration complete - all existing users now have public profiles');
+    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      addLog(`❌ Error migrating users: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -154,6 +174,14 @@ export default function TestSetupPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Test Account Creation
               </h2>
+              
+              <button
+                onClick={handleMigrateUsers}
+                disabled={loading}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all disabled:opacity-50 font-medium mb-4"
+              >
+                {loading ? 'Migrating...' : '🔄 Migrate Existing Users'}
+              </button>
               
               <button
                 onClick={handleFullSetup}
