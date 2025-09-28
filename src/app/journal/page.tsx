@@ -79,9 +79,6 @@ export default function JournalPage() {
   const [reminderTime, setReminderTime] = useState('20:00');
   const [customActivities, setCustomActivities] = useState<string[]>([]);
   const [newActivity, setNewActivity] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const [filterMood, setFilterMood] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -212,29 +209,6 @@ export default function JournalPage() {
     [selectedActivities.length, moodTag, affirmation, notes]
   );
 
-  const filteredEntries = useMemo(() => {
-    let filtered = entries;
-    
-    // Filter by mood
-    if (filterMood !== 'all') {
-      filtered = filtered.filter(entry => entry.moodTag === filterMood);
-    }
-    
-    // Filter by search term
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(entry => 
-        entry.entryText.toLowerCase().includes(term) ||
-        entry.affirmation?.toLowerCase().includes(term) ||
-        entry.activities?.some(activity => 
-          defaultActivities.find(d => d.key === activity)?.label.toLowerCase().includes(term) ||
-          activity.toLowerCase().includes(term)
-        )
-      );
-    }
-    
-    return filtered;
-  }, [entries, filterMood, searchTerm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

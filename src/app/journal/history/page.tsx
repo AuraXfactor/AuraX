@@ -9,7 +9,6 @@ import {
   onSnapshot,
   Timestamp,
   DocumentData,
-  where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -349,7 +348,7 @@ export default function JournalHistoryPage() {
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
                     {entries.length === 0 
                       ? 'Start your wellness journey by creating your first journal entry!'
-                      : 'Try adjusting your filters to find the entries you\'re looking for.'
+                      : 'Try adjusting your filters to find the entries you&apos;re looking for.'
                     }
                   </p>
                   <button
@@ -370,8 +369,10 @@ export default function JournalHistoryPage() {
                         </div>
                         <div>
                           <div className="font-medium text-gray-700 dark:text-gray-300">
-                            {moods.find((m) => m.value === entry.moodTag)?.value.charAt(0).toUpperCase() + 
-                             moods.find((m) => m.value === entry.moodTag)?.value.slice(1) ?? 'Neutral'}
+                            {(() => {
+                              const mood = moods.find((m) => m.value === entry.moodTag);
+                              return mood ? mood.value.charAt(0).toUpperCase() + mood.value.slice(1) : 'Neutral';
+                            })()}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
                             {entry.createdAt?.toDate?.().toLocaleDateString('en-US', {
@@ -397,7 +398,7 @@ export default function JournalHistoryPage() {
                     {entry.affirmation && (
                       <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border-l-4 border-purple-500">
                         <div className="text-sm font-medium text-purple-800 dark:text-purple-300 mb-1">💫 Affirmation</div>
-                        <div className="text-purple-700 dark:text-purple-300 italic">"{entry.affirmation}"</div>
+                        <div className="text-purple-700 dark:text-purple-300 italic">&ldquo;{entry.affirmation}&rdquo;</div>
                       </div>
                     )}
 

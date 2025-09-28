@@ -32,8 +32,9 @@ export default function TestAllPage() {
       });
       
       addResult(`Post created successfully (ID: ${postId})`, true);
-    } catch (error: any) {
-      addResult(`Post creation failed: ${error.message}`, false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`Post creation failed: ${errorMessage}`, false);
     }
   };
 
@@ -54,8 +55,9 @@ export default function TestAllPage() {
       });
       
       addResult(`Chat message sent successfully (ID: ${messageId})`, true);
-    } catch (error: any) {
-      addResult(`Chat test failed: ${error.message}`, false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`Chat test failed: ${errorMessage}`, false);
     }
   };
 
@@ -75,8 +77,9 @@ export default function TestAllPage() {
       });
       
       addResult('Journal entry created successfully', true);
-    } catch (error: any) {
-      addResult(`Journal entry failed: ${error.message}`, false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addResult(`Journal entry failed: ${errorMessage}`, false);
     }
   };
 
