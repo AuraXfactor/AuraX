@@ -140,8 +140,12 @@ export function getFriendRequestsRef() {
   return collection(db, 'friendRequests');
 }
 
-export function getFriendsRef(userId: string) {
+export function getFriendsCollectionRef(userId: string) {
   return collection(db, 'friends', userId);
+}
+
+export function getFriendDocRef(userId: string, friendId: string) {
+  return doc(db, 'friends', userId, friendId);
 }
 
 export function getGroupsRef() {
@@ -254,7 +258,7 @@ export async function sendFriendRequest(params: {
   }
 
   // Check if already friends
-  const friendshipDoc = await getDoc(doc(getFriendsRef(fromUser.uid), toUserId));
+  const friendshipDoc = await getDoc(getFriendDocRef(fromUser.uid, toUserId));
   if (friendshipDoc.exists()) {
     throw new Error('Already friends with this user');
   }
@@ -297,8 +301,8 @@ export async function respondToFriendRequest(params: {
     const requestData = requestDoc.data() as EnhancedFriendRequest;
     
     // Create bidirectional friendship
-    const friendship1Ref = doc(getFriendsRef(user.uid), requestData.fromUserId);
-    const friendship2Ref = doc(getFriendsRef(requestData.fromUserId), user.uid);
+    const friendship1Ref = getFriendDocRef(user.uid, requestData.fromUserId);
+    const friendship2Ref = getFriendDocRef(requestData.fromUserId, user.uid);
     
     const friendshipTimestamp = serverTimestamp();
     
@@ -438,7 +442,7 @@ export async function getFriendSuggestions(params: {
     // Get user's interests and friends
     const [userDoc, friendsSnapshot] = await Promise.all([
       getDoc(doc(db, 'users', userId)),
-      getDocs(getFriendsRef(userId))
+      getDocs(getFriendsCollectionRef(userId))
     ]);
     
     const userInterests = userDoc.data()?.interests || [];
@@ -492,7 +496,7 @@ export async function getFriendSuggestions(params: {
 export async function getFriends(userId: string): Promise<Friendship[]> {
   try {
     const friendsSnapshot = await getDocs(
-      query(getFriendsRef(userId), orderBy('friendSince', 'desc'))
+      query(getFriendsCollectionRef(userId), orderBy('friendSince', 'desc'))
     );
     
     const friends: Friendship[] = [];
@@ -524,8 +528,8 @@ export async function removeFriend(params: {
   const batch = writeBatch(db);
   
   // Remove bidirectional friendship
-  batch.delete(doc(getFriendsRef(userId), friendId));
-  batch.delete(doc(getFriendsRef(friendId), userId));
+  batch.delete(getFriendDocRef(userId, friendId));
+  batch.delete(getFriendDocRef(friendId, userId));
   
   await batch.commit();
 }
@@ -679,11 +683,15 @@ export async function createPost(params: {
   
   const docRef = await addDoc(getPostsRef(), postData);
   
-  // Update user's post count
+  // Update user's post count in public profile
   const publicProfileRef = doc(getPublicProfilesRef(), user.uid);
-  await updateDoc(publicProfileRef, {
-    postsCount: arrayUnion(docRef.id),
-  });
+  const profileDoc = await getDoc(publicProfileRef);
+  if (profileDoc.exists()) {
+    const currentCount = profileDoc.data().postsCount || 0;
+    await updateDoc(publicProfileRef, {
+      postsCount: currentCount + 1,
+    });
+  }
   
   return docRef.id;
 }
@@ -697,7 +705,7 @@ export async function getSocialFeed(params: {
   
   try {
     // Get user's friends to filter feed
-    const friendsSnapshot = await getDocs(getFriendsRef(userId));
+    const friendsSnapshot = await getDocs(getFriendsCollectionRef(userId));
     const friendIds = friendsSnapshot.docs.map(doc => doc.id);
     friendIds.push(userId); // Include user's own posts
     
