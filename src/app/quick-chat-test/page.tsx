@@ -50,14 +50,22 @@ export default function QuickChatTestPage() {
     }
 
     setSending(true);
-    setLastResult('Creating enhanced chat session...');
+    setLastResult('Testing enhanced chat system...');
     
     try {
-      console.log('🧪 Testing enhanced chat...', { message, targetUser });
+      console.log('🧪 Testing enhanced chat...', { 
+        currentUser: user.uid, 
+        targetUser: targetUser.trim(),
+        message: message.trim()
+      });
       
+      // Step 1: Test chat session creation
+      setLastResult('Step 1/2: Creating chat session...');
       const chatId = await createOrGetChatSession(user.uid, targetUser.trim());
-      setLastResult(`Chat session created: ${chatId}. Sending message...`);
+      console.log('✅ Chat session step completed', { chatId });
       
+      // Step 2: Test message sending
+      setLastResult(`Step 2/2: Sending message to chat ${chatId}...`);
       const messageId = await sendEncryptedMessage({
         user,
         chatId,
@@ -65,14 +73,23 @@ export default function QuickChatTestPage() {
         type: 'text'
       });
       
-      const result = `✅ Enhanced chat message sent! ID: ${messageId}`;
+      const result = `✅ Enhanced chat SUCCESS! Session: ${chatId}, Message: ${messageId}`;
       setLastResult(result);
       console.log(result);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      const result = `❌ Enhanced chat failed: ${errorMsg}`;
+      const result = `❌ Enhanced chat FAILED: ${errorMsg}`;
       setLastResult(result);
       console.error(result, error);
+      
+      // Additional debugging info
+      console.log('🔍 Debug info:', {
+        userLoggedIn: !!user,
+        userUid: user?.uid,
+        targetUserUid: targetUser.trim(),
+        messageContent: message.trim(),
+        timestamp: new Date().toISOString()
+      });
     } finally {
       setSending(false);
     }

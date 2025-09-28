@@ -64,7 +64,10 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
   };
 
   const handleStartChat = (friendId: string) => {
-    router.push(`/chat/${friendId}`);
+    console.log('🚀 Starting chat from friends list', { friendId });
+    
+    // Use Soul Chat system which is working reliably
+    router.push(`/soulchat/${friendId}`);
   };
 
   const handleViewProfile = (friendId: string) => {

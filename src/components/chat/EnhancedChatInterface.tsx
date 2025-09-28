@@ -80,19 +80,52 @@ export default function EnhancedChatInterface({ otherUserId, onClose }: Enhanced
   }, [chatId, user, otherUserId]);
 
   const initializeChat = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('❌ Cannot initialize chat: user not logged in');
+      setLoading(false);
+      return;
+    }
+    
+    console.log('🔄 Initializing chat session...', { 
+      currentUserId: user.uid, 
+      otherUserId 
+    });
     
     try {
-      // Load other user's profile
-      const profile = await getPublicProfile(otherUserId);
-      setOtherUserProfile(profile);
+      // Load other user's profile (non-blocking)
+      console.log('👤 Loading other user profile...', { otherUserId });
+      try {
+        const profile = await getPublicProfile(otherUserId);
+        setOtherUserProfile(profile);
+        console.log('✅ Profile loaded', { profile: profile?.name || 'No name' });
+      } catch (profileError) {
+        console.warn('⚠️ Profile loading failed, continuing without profile', profileError);
+        setOtherUserProfile(null);
+      }
       
       // Create or get chat session
+      console.log('💬 Creating/getting chat session...');
       const sessionId = await createOrGetChatSession(user.uid, otherUserId);
+      console.log('✅ Chat session ready', { sessionId });
+      
       setChatId(sessionId);
+      setLoading(false);
+      
+      console.log('🎉 Chat initialization completed successfully');
       
     } catch (error) {
-      console.error('Error initializing chat:', error);
+      console.error('❌ Error initializing chat:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // More specific error messages
+      if (errorMessage.includes('permission')) {
+        alert(`❌ Permission error: Please make sure Firestore rules are updated. Error: ${errorMessage}`);
+      } else if (errorMessage.includes('not found')) {
+        alert(`❌ User or data not found: ${errorMessage}`);
+      } else {
+        alert(`❌ Failed to initialize chat: ${errorMessage}`);
+      }
+      
       setLoading(false);
     }
   };

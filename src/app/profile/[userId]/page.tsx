@@ -156,7 +156,11 @@ export default function UserProfilePage() {
       alert('You need to be friends to start a chat');
       return;
     }
-    router.push(`/chat/${userId}`);
+    
+    console.log('🚀 Starting chat with friend', { userId, isFriend });
+    
+    // Use Soul Chat system which is working reliably
+    router.push(`/soulchat/${userId}`);
   };
 
   const formatJoinDate = (timestamp: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any

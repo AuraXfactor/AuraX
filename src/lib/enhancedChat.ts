@@ -68,15 +68,36 @@ export async function createOrGetChatSession(
   const chatId = ChatEncryption.generateChatId(currentUserId, otherUserId);
   const sessionRef = getChatSessionRef(chatId);
   
+  console.log('🔄 createOrGetChatSession called', { 
+    currentUserId, 
+    otherUserId, 
+    chatId 
+  });
+  
   try {
+    console.log('📖 Checking if chat session exists...', { chatId });
     const sessionDoc = await getDoc(sessionRef);
     
     if (!sessionDoc.exists()) {
-      // Create new chat session
-      const [currentProfile, otherProfile] = await Promise.all([
-        getPublicProfile(currentUserId),
-        getPublicProfile(otherUserId)
-      ]);
+      console.log('🆕 Creating new chat session...', { chatId });
+      
+      // Try to load profiles but don't fail if they don't exist
+      let currentProfile = null;
+      let otherProfile = null;
+      
+      try {
+        console.log('📋 Loading participant profiles...');
+        [currentProfile, otherProfile] = await Promise.all([
+          getPublicProfile(currentUserId),
+          getPublicProfile(otherUserId)
+        ]);
+        console.log('✅ Profiles loaded', { 
+          currentProfile: currentProfile?.name || 'No current profile',
+          otherProfile: otherProfile?.name || 'No other profile'
+        });
+      } catch (profileError) {
+        console.warn('⚠️ Profile loading failed, creating session without profiles', profileError);
+      }
       
       const sessionData: Partial<ChatSession> = {
         id: chatId,
@@ -97,13 +118,17 @@ export async function createOrGetChatSession(
         messageCount: 0,
       };
       
+      console.log('💾 Saving chat session to Firestore...', { chatId, sessionData });
       await setDoc(sessionRef, sessionData);
-      console.log('✅ Created new chat session:', chatId);
+      console.log('✅ New chat session created successfully', { chatId });
+    } else {
+      console.log('✅ Existing chat session found', { chatId });
     }
     
+    console.log('🎉 Chat session ready to use', { chatId });
     return chatId;
   } catch (error) {
-    console.error('Error creating/getting chat session:', error);
+    console.error('❌ Error creating/getting chat session:', error);
     throw error;
   }
 }
