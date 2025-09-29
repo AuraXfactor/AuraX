@@ -22,7 +22,7 @@ interface DailyTask {
 }
 
 export default function GoalAchievementJournal() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   
   // Form state
@@ -53,16 +53,20 @@ export default function GoalAchievementJournal() {
     }
   }, [user]);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   const loadCurrentGoal = async () => {
     try {
-      const goalDoc = await getDoc(doc(db, 'user-goals', user.uid));
+      const goalDoc = await getDoc(doc(db, 'users', user.uid));
       if (goalDoc.exists()) {
-        setCurrentGoal({ id: goalDoc.id, ...goalDoc.data() } as Goal);
+        const data = goalDoc.data() as { currentGoal?: Goal };
+        if (data.currentGoal) setCurrentGoal({ id: user.uid, ...data.currentGoal } as Goal);
       }
     } catch (error) {
       console.error('Error loading goal:', error);
@@ -86,8 +90,7 @@ export default function GoalAchievementJournal() {
         createdAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'user-goals', user.uid), goalData);
-      
+      await setDoc(doc(db, 'users', user.uid), { currentGoal: goalData }, { merge: true });
       setCurrentGoal({ id: user.uid, ...goalData });
       setIsSettingNewGoal(false);
       setNewGoalTitle('');
@@ -115,10 +118,7 @@ export default function GoalAchievementJournal() {
     if (!currentGoal) return;
 
     try {
-      await setDoc(doc(db, 'user-goals', user.uid), 
-        { ...currentGoal, progress: newProgress }, 
-        { merge: true }
-      );
+    await setDoc(doc(db, 'users', user.uid), { currentGoal: { ...currentGoal, progress: newProgress } }, { merge: true });
       
       setCurrentGoal(prev => prev ? { ...prev, progress: newProgress } : null);
     } catch (error) {
@@ -180,8 +180,8 @@ export default function GoalAchievementJournal() {
         productivityScore: calculateProductivityScore(),
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'goal-achievement'), entryData);
+      // Save to Firestore unified journals path
+      await addDoc(collection(db, 'journals', user.uid, 'entries'), entryData);
 
       // Award points with goal progress bonus
       try {

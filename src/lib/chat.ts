@@ -234,7 +234,7 @@ export async function saveChatExcerptToJournal(params: {
   notes: string;
 }): Promise<void> {
   const { user, mood, notes } = params;
-  const entryRef = doc(collection(doc(db, 'users', user.uid), 'journalEntries'));
+  const entryRef = doc(collection(db, 'journals', user.uid, 'entries'));
   await setDoc(entryRef, {
     date: serverTimestamp(),
     mood: mood ?? null,

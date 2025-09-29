@@ -13,7 +13,7 @@ import {
   listenToFriendRequests,
   FriendRequest 
 } from '@/lib/friends';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface Friend {
@@ -82,16 +82,42 @@ export default function FriendsPage() {
   const loadFriends = async () => {
     if (!user) return;
     try {
-      const friendsRef = collection(db, 'users', user.uid, 'friends');
-      const q = query(friendsRef, orderBy('lastInteraction', 'desc'));
-      const snapshot = await getDocs(q);
+      // Friends are stored globally in `/friends` with `accepted` status
+      const acceptedFrom = await getDocs(query(collection(db, 'friends'), where('fromUid', '==', user.uid), where('status', '==', 'accepted')));
+      const acceptedTo = await getDocs(query(collection(db, 'friends'), where('toUid', '==', user.uid), where('status', '==', 'accepted')));
+      const list: Friend[] = [];
+      acceptedFrom.docs.forEach((d) => {
+        const data = d.data() as {
+          toUid: string;
+          toUserName: string;
+          toUserAvatar?: string;
+          updatedAt?: { toDate?: () => Date } | null;
+        };
+        list.push({
+          uid: data.toUid,
+          name: data.toUserName,
+          username: undefined,
+          avatar: data.toUserAvatar,
+          lastInteraction: data.updatedAt || null,
+        });
+      });
+      acceptedTo.docs.forEach((d) => {
+        const data = d.data() as {
+          fromUid: string;
+          fromUserName: string;
+          fromUserAvatar?: string;
+          updatedAt?: { toDate?: () => Date } | null;
+        };
+        list.push({
+          uid: data.fromUid,
+          name: data.fromUserName,
+          username: undefined,
+          avatar: data.fromUserAvatar,
+          lastInteraction: data.updatedAt || null,
+        });
+      });
       
-      const friendsList = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-      })) as Friend[];
-      
-      setFriends(friendsList);
+      setFriends(list);
     } catch (error) {
       console.error('Error loading friends:', error);
     } finally {
@@ -112,22 +138,8 @@ export default function FriendsPage() {
   const loadDiscoverableUsers = async () => {
     if (!user) return;
     try {
-      const allUsers = await getAllUsersForDiscovery(user.uid);
-      const currentFriends = new Set(friends.map(f => f.uid));
-      
-      const discoverableUsers = allUsers
-        .filter(user => !currentFriends.has(user.uid))
-        .slice(0, 10)
-        .map(user => ({
-          ...user,
-          isFriend: false,
-          requestSent: false,
-        }));
-      
-      // If no search results yet, show discoverable users by default
-      if (searchResults.length === 0 && !searchQuery) {
-        setSearchResults(discoverableUsers);
-      }
+      // Discovery disabled under strict rules; clear results
+      if (searchResults.length === 0 && !searchQuery) setSearchResults([]);
     } catch (error) {
       console.error('Error loading discoverable users:', error);
     }
@@ -142,16 +154,8 @@ export default function FriendsPage() {
 
     setSearching(true);
     try {
-      const results = await searchUsersByUsername(searchQuery);
-      const currentFriends = new Set(friends.map(f => f.uid));
-      
-      const enhancedResults = results.map(result => ({
-        ...result,
-        isFriend: currentFriends.has(result.uid),
-        requestSent: false, // Would need to check sent requests
-      }));
-      
-      setSearchResults(enhancedResults);
+      // Search disabled due to rules; show empty
+      setSearchResults([]);
     } catch (error) {
       console.error('Error searching users:', error);
       alert('Error searching users. Please try again.');

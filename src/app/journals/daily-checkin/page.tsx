@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ const SELF_CARE_ACTIVITIES = [
 ];
 
 export default function DailyCheckInJournal() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   
   // Form state
@@ -46,10 +46,13 @@ export default function DailyCheckInJournal() {
   const [todoItems, setTodoItems] = useState<string[]>(['']);
   const [saving, setSaving] = useState(false);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   const toggleActivity = (activity: string) => {
     setSelectedActivities(prev => 
@@ -108,8 +111,8 @@ export default function DailyCheckInJournal() {
         completionScore: calculateCompletionScore(),
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'daily-checkin'), entryData);
+      // Save to Firestore unified journals path
+      await addDoc(collection(db, 'journals', user.uid, 'entries'), entryData);
 
       // Award points
       try {

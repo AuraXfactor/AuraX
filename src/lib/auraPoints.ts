@@ -16,6 +16,7 @@ import {
   writeBatch,
   arrayUnion,
   increment,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -187,11 +188,13 @@ export const DAILY_POINT_CAP = 50; // Maximum points per day from standard activ
 
 // Helper functions
 export function getAuraStatsRef(userUid: string) {
-  return doc(db, 'users', userUid, 'auraStats', 'main');
+  // Store Aura stats on the user's root profile document per rules
+  return doc(db, 'users', userUid);
 }
 
 export function getPointTransactionsRef(userUid: string) {
-  return collection(db, 'users', userUid, 'pointTransactions');
+  // Transactions storage not supported under provided rules; no-op placeholder
+  return collection(db, 'users', userUid, '__deprecated');
 }
 
 export function getWeeklyQuestsRef() {
@@ -219,39 +222,16 @@ export async function awardAuraPoints(params: {
   const { user, activity, proof, description, multiplier = 1, questId, squadId } = params;
   
   try {
-    // Get current user stats
+    // Get current user stats (from user profile doc)
     const statsRef = getAuraStatsRef(user.uid);
     const statsDoc = await getDoc(statsRef);
-    
-    if (!statsDoc.exists()) {
-      await initializeUserAuraStats(user);
-    }
-    
-    const stats = statsDoc.data() as UserAuraStats;
+    const stats = (statsDoc.exists() ? statsDoc.data() : {}) as Partial<UserAuraStats>;
     const today = new Date().toISOString().split('T')[0];
     
-    // Check daily caps
-    if (stats.lastActivityDate === today) {
-      const todayTransactions = await getDocs(
-        query(
-          getPointTransactionsRef(user.uid),
-          where('activity', '==', activity),
-          where('createdAt', '>=', Timestamp.fromDate(new Date(today))),
-          limit(DAILY_CAPS[activity] || 1)
-        )
-      );
-      
-      if (todayTransactions.size >= (DAILY_CAPS[activity] || 1)) {
-        return {
-          success: false,
-          points: 0,
-          message: `Daily limit reached for ${activity}. Try again tomorrow! 🌅`
-        };
-      }
-    }
+    // Per-activity caps cannot be enforced without a transactions log; skip
     
     // Check overall daily cap
-    if (stats.lastActivityDate === today && stats.dailyPointsEarned >= DAILY_POINT_CAP) {
+    if (stats.lastActivityDate === today && (stats.dailyPointsEarned || 0) >= DAILY_POINT_CAP) {
       return {
         success: false,
         points: 0,
@@ -273,35 +253,15 @@ export async function awardAuraPoints(params: {
     const basePoints = POINT_VALUES[activity];
     const earnedPoints = Math.round(basePoints * multiplier);
     
-    // Create transaction record
-    const transaction = {
-      userUid: user.uid,
-      activity,
-      points: earnedPoints,
-      description: description || getDefaultDescription(activity, earnedPoints),
-      proof,
-      multiplier: multiplier !== 1 ? multiplier : undefined,
-      questId,
-      squadId,
-      createdAt: serverTimestamp(),
-    };
-    
-    // Use batch to update both transaction and stats
-    const batch = writeBatch(db);
-    
-    // Add transaction
-    const transactionRef = doc(getPointTransactionsRef(user.uid));
-    batch.set(transactionRef, transaction);
-    
-    // Update user stats
+    // Update user stats directly on profile document
     const newDailyPoints = stats.lastActivityDate === today 
-      ? stats.dailyPointsEarned + earnedPoints 
+      ? (stats.dailyPointsEarned || 0) + earnedPoints 
       : earnedPoints;
     
     const updateData: Record<string, unknown> = {
-      totalPoints: stats.totalPoints + earnedPoints,
-      availablePoints: stats.availablePoints + earnedPoints,
-      lifetimeEarned: stats.lifetimeEarned + earnedPoints,
+      totalPoints: (stats.totalPoints || 0) + earnedPoints,
+      availablePoints: (stats.availablePoints || 0) + earnedPoints,
+      lifetimeEarned: (stats.lifetimeEarned || 0) + earnedPoints,
       lastActivityDate: today,
       dailyPointsEarned: newDailyPoints,
       updatedAt: serverTimestamp(),
@@ -309,11 +269,13 @@ export async function awardAuraPoints(params: {
     
     // Update streak if it's a journal entry
     if (activity === 'journal_entry') {
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
       if (stats.lastActivityDate === yesterday) {
-        const newStreak = stats.currentStreak + 1;
+        const newStreak = (stats.currentStreak || 0) + 1;
         updateData.currentStreak = newStreak;
-        updateData.longestStreak = Math.max(stats.longestStreak, newStreak);
+        updateData.longestStreak = Math.max(stats.longestStreak || 0, newStreak);
       } else if (stats.lastActivityDate !== today) {
         updateData.currentStreak = 1; // Reset streak if gap > 1 day
       }
@@ -332,8 +294,7 @@ export async function awardAuraPoints(params: {
       }
     }
     
-    batch.update(statsRef, updateData);
-    await batch.commit();
+    await updateDoc(statsRef, updateData);
     
     return {
       success: true,
@@ -418,7 +379,10 @@ export async function initializeUserAuraStats(user: User): Promise<void> {
     updatedAt: serverTimestamp(),
   };
   
-  await updateDoc(statsRef, initialStats);
+  await updateDoc(statsRef, initialStats).catch(async () => {
+    // If user document doesn't exist yet, create it
+    await setDoc(statsRef, initialStats, { merge: true });
+  });
 }
 
 // Get user's current Aura stats
@@ -426,7 +390,7 @@ export async function getUserAuraStats(userUid: string): Promise<UserAuraStats |
   try {
     const statsDoc = await getDoc(getAuraStatsRef(userUid));
     if (statsDoc.exists()) {
-      return statsDoc.data() as UserAuraStats;
+      return statsDoc.data() as unknown as UserAuraStats;
     }
     return null;
   } catch (error) {
@@ -503,9 +467,9 @@ function getCelebrationMessage(activity: AuraPointActivity, points: number, hasM
 
 // Listen to user stats updates
 export function listenToUserAuraStats(userUid: string, callback: (stats: UserAuraStats | null) => void) {
-  return onSnapshot(getAuraStatsRef(userUid), (doc) => {
-    if (doc.exists()) {
-      callback(doc.data() as UserAuraStats);
+  return onSnapshot(getAuraStatsRef(userUid), (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as unknown as UserAuraStats);
     } else {
       callback(null);
     }
