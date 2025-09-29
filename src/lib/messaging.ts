@@ -175,13 +175,13 @@ export async function createDirectChat(
           userId: currentUserId,
           role: 'member',
           joinedAt: serverTimestamp(),
-          profile: currentProfile || undefined,
+          ...(currentProfile && { profile: currentProfile }),
         },
         [otherUserId]: {
           userId: otherUserId,
           role: 'member',
           joinedAt: serverTimestamp(),
-          profile: otherProfile || undefined,
+          ...(otherProfile && { profile: otherProfile }),
         },
       },
       createdBy: currentUserId,
@@ -246,11 +246,12 @@ export async function createGroupChat(params: {
     // Build participants object
     const participants: { [userId: string]: ChatParticipant } = {};
     [creatorId, ...participantIds].forEach((userId, index) => {
+      const profile = participantProfiles[index];
       participants[userId] = {
         userId,
         role: userId === creatorId ? 'owner' : 'member',
         joinedAt: serverTimestamp(),
-        profile: participantProfiles[index] || undefined,
+        ...(profile && { profile }),
       };
     });
     
@@ -330,11 +331,12 @@ export async function addParticipantsToGroup(params: {
     // Add each participant
     participantIds.forEach((userId, index) => {
       if (!chatData.participants[userId]) {
+        const profile = profiles[index];
         const participantData: ChatParticipant = {
           userId,
           role: 'member',
           joinedAt: serverTimestamp(),
-          profile: profiles[index] || undefined,
+          ...(profile && { profile }),
         };
         
         batch.update(chatRef, {
