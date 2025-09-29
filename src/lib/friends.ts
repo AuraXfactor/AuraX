@@ -313,7 +313,7 @@ export async function createAuraPost(params: {
     ...(user.photoURL && { authorAvatar: user.photoURL }),
     content,
     type,
-    mediaUrl,
+    ...(mediaUrl && { mediaUrl }),
     moodTag,
     emoji,
     isEphemeral: true,
