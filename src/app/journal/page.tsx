@@ -37,7 +37,7 @@ const defaultActivities: { key: string; label: string }[] = [
 const moods = [
   { label: '🤩', value: 'excited', color: 'from-pink-500 to-rose-500' },
   { label: '😊', value: 'happy', color: 'from-yellow-400 to-amber-500' },
-  { label: '😌', value: 'calm', color: 'from-teal-400 to-emerald-500' },
+  { label: '😌', value: 'fine', color: 'from-teal-400 to-emerald-500' },
   { label: '😐', value: 'neutral', color: 'from-slate-300 to-slate-400' },
   { label: '😔', value: 'sad', color: 'from-blue-300 to-indigo-400' },
   { label: '😩', value: 'stressed', color: 'from-orange-400 to-red-400' },
