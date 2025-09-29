@@ -1,11 +1,27 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserProfile } from "@/lib/userProfile";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (user) {
+      setProfileLoading(true);
+      getUserProfile(user).then(profile => {
+        setUserProfile(profile);
+        setProfileLoading(false);
+      }).catch(() => {
+        setProfileLoading(false);
+      });
+    }
+  }, [user]);
+
+  if (loading || profileLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
@@ -24,7 +40,7 @@ export default function Home() {
         {user ? (
           <div className="space-y-4">
             <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pop">
-              <span>Welcome back, {user.email} 🎉</span>
+              <span>Welcome back, {userProfile?.name || userProfile?.username || user.displayName || user.email} 🎉</span>
             </div>
             
             {/* NEW: Prominent Messaging CTA */}
@@ -53,8 +69,8 @@ export default function Home() {
         {[
           { title: 'Secure Messages', desc: 'End-to-end encrypted WhatsApp-style messaging 💬', href: '/messages', emoji: '🔒', colors: 'from-purple-500 to-pink-500' },
           { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
-          { title: 'Breath Toolkit', desc: '4-7-8 breathing with haptics and motion 🌬️', href: '/toolkit', emoji: '🧘', colors: 'from-cyan-400 to-blue-500' },
-          { title: 'PWA Offline', desc: 'Works offline with sync when back online ⚡', href: '/', emoji: '📶', colors: 'from-emerald-400 to-teal-500' },
+          { title: 'DIY', desc: 'Do it yourself - meditations, workouts, tools 🛠️', href: '/toolkit', emoji: '🔧', colors: 'from-cyan-400 to-blue-500' },
+          { title: 'Recovery Hub', desc: 'Addiction recovery support and wellness tools 🔄', href: '/recovery', emoji: '🔄', colors: 'from-emerald-400 to-teal-500' },
         ].map((c) => (
           <Link key={c.title} href={c.href} className="group block p-5 rounded-2xl border border-white/20 bg-white/60 dark:bg-white/5 backdrop-blur hover:shadow-2xl transition transform hover:-translate-y-1">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow bg-gradient-to-br ${c.colors} text-white animate-pop`}>{c.emoji}</div>
