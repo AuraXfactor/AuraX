@@ -7,10 +7,10 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['firebase'],
   },
   eslint: {
-    ignoreDuringBuilds: true, // Allow deployment with ESLint warnings
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: false, // Keep TypeScript error checking
+    ignoreBuildErrors: false,
   },
   headers: async () => {
     return [

@@ -2,7 +2,7 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import DirectMessageInterface from '@/components/messaging/DirectMessageInterface';
+import EnhancedChatInterface from '@/components/chat/EnhancedChatInterface';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -28,7 +28,7 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20 p-4">
       <div className="max-w-5xl mx-auto h-[calc(100vh-2rem)]">
-        <DirectMessageInterface
+        <EnhancedChatInterface
           otherUserId={otherUserId}
           onClose={() => router.back()}
         />
