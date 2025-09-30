@@ -917,7 +917,8 @@ export function listenToPostComments(
       let authorProfile: PublicProfile | undefined;
       try {
         // First try to get the public profile
-        authorProfile = await getPublicProfile(commentData.authorId);
+        const profile = await getPublicProfile(commentData.authorId);
+        authorProfile = profile || undefined;
         
         // If no profile found, try to get from users collection
         if (!authorProfile) {
@@ -930,6 +931,13 @@ export function listenToPostComments(
               username: userData.username || userData.email?.split('@')[0] || `user${commentData.authorId.slice(-4)}`,
               bio: userData.bio || '',
               avatar: userData.avatar || userData.photoURL,
+              interests: userData.interests || [],
+              isOnline: userData.isOnline || false,
+              lastSeen: userData.lastSeen || null,
+              friendsCount: userData.friendsCount || 0,
+              postsCount: userData.postsCount || 0,
+              joinedAt: userData.joinedAt || null,
+              focusAreas: userData.focusAreas || [],
             };
           }
         }
@@ -937,16 +945,23 @@ export function listenToPostComments(
         console.warn('Failed to fetch author profile for comment:', error);
       }
       
-      // Final fallback if still no profile
-      if (!authorProfile) {
-        authorProfile = {
-          userId: commentData.authorId,
-          name: 'Unknown User',
-          username: `user${commentData.authorId.slice(-4)}`,
-          bio: '',
-          avatar: undefined,
-        };
-      }
+        // Final fallback if still no profile
+        if (!authorProfile) {
+          authorProfile = {
+            userId: commentData.authorId,
+            name: 'Unknown User',
+            username: `user${commentData.authorId.slice(-4)}`,
+            bio: '',
+            avatar: undefined,
+            interests: [],
+            isOnline: false,
+            lastSeen: null,
+            friendsCount: 0,
+            postsCount: 0,
+            joinedAt: null,
+            focusAreas: [],
+          };
+        }
       
       return {
         ...commentData,
