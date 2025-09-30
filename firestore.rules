@@ -2,313 +2,158 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ===== HELPER FUNCTIONS =====
+    // ===== ULTRA PERMISSIVE RULES - ALLOW EVERYTHING FOR AUTHENTICATED USERS =====
     
-    // Check if user is authenticated
+    // Helper function
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Check if user is the resource owner
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    // ALL DOCUMENTS - ULTRA PERMISSIVE
+    match /{document=**} {
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Check if user is participant in a chat
-    function isChatParticipant(chatData) {
-      return isAuthenticated() && chatData.participants[request.auth.uid] != null;
-    }
-    
-    // Check if user is admin/owner of a chat
-    function isChatAdmin(chatData) {
-      return isAuthenticated() && 
-             chatData.participants[request.auth.uid] != null &&
-             (chatData.participants[request.auth.uid].role == 'admin' || 
-              chatData.participants[request.auth.uid].role == 'owner');
-    }
-    
-    // Check if message sender matches authenticated user
-    function isMessageSender(messageData) {
-      return isAuthenticated() && request.auth.uid == messageData.senderId;
-    }
-    
-    // ===== USER PROFILES =====
-    
-    // Users can read/write their own profile, others can read public profiles
-    match /users/{userId} {
-      allow read: if isAuthenticated() && (
-        isOwner(userId) || 
-        resource.data.isPublic == true
-      );
-      allow write: if isOwner(userId);
-    }
-    
-    // Public profiles for search/discovery - anyone can read, only owner can write
-    match /publicProfiles/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
-    }
-    
-    // ===== FRIEND SYSTEM =====
-    
-    // Friend requests - users can create/read their own, target user can read/update
-    match /friendRequests/{requestId} {
-      allow create: if isAuthenticated() && 
-                    request.resource.data.fromUserId == request.auth.uid;
-      
-      allow read: if isAuthenticated() && (
-        resource.data.fromUserId == request.auth.uid ||
-        resource.data.toUserId == request.auth.uid
-      );
-      
-      allow update: if isAuthenticated() && 
-                    resource.data.toUserId == request.auth.uid;
-      
-      allow delete: if isAuthenticated() && (
-        resource.data.fromUserId == request.auth.uid ||
-        resource.data.toUserId == request.auth.uid
-      );
-    }
-    
-    // Friendships - only involved users can read/write
-    match /friends/{userId}/friendships/{friendId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // ===== MESSAGING SYSTEM =====
-    
-    // Chats - ULTRA PERMISSIVE: Allow any authenticated user full access
+    // SPECIFIC COLLECTIONS - EXTRA PERMISSIVE
     match /chats/{chatId} {
-      // Allow any authenticated user to read, create, update, delete chats
       allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Chat messages - ULTRA PERMISSIVE: Allow any authenticated user full access
     match /chats/{chatId}/messages/{messageId} {
-      // Allow any authenticated user to read, create, update, delete messages
       allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Message reactions - ULTRA PERMISSIVE: Allow any authenticated user full access
     match /chats/{chatId}/messages/{messageId}/reactions/{reactionId} {
       allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Typing indicators - ULTRA PERMISSIVE: Allow any authenticated user full access
     match /chats/{chatId}/typing/{userId} {
       allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // ===== SOCIAL FEED SYSTEM =====
-    
-    // Posts - author can write, authenticated users can read based on visibility
     match /posts/{postId} {
-      allow read: if isAuthenticated() && (
-        resource.data.visibility == 'public' ||
-        (resource.data.visibility == 'friends' && 
-         // TODO: add friend check logic
-         true) ||
-        resource.data.authorId == request.auth.uid
-      );
-      
-      allow create: if isAuthenticated() && 
-                    request.resource.data.authorId == request.auth.uid;
-      
-      allow update: if isAuthenticated() && 
-                    resource.data.authorId == request.auth.uid;
-      
-      allow delete: if isAuthenticated() && 
-                    resource.data.authorId == request.auth.uid;
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Post comments - authenticated users can read/create, authors can edit/delete their own
     match /posts/{postId}/comments/{commentId} {
-      allow read: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && 
-                    request.resource.data.authorId == request.auth.uid;
-      
-      allow update: if isAuthenticated() && (
-        // Author can edit their own comment (within time limit)
-        (resource.data.authorId == request.auth.uid && 
-         request.time < resource.data.timestamp + duration.value(5, 'm')) ||
-        // Anyone can update reactions/likes
-        (request.resource.data.authorId == resource.data.authorId &&
-         request.resource.data.content == resource.data.content)
-      );
-      
-      allow delete: if isAuthenticated() && (
-        resource.data.authorId == request.auth.uid ||
-        // Post author can delete comments on their post
-        get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid
-      );
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // ===== GROUPS SYSTEM =====
-    
-    // Groups - public groups readable by all, private groups only by members
-    match /groups/{groupId} {
-      allow read: if isAuthenticated() && (
-        resource.data.isPublic == true ||
-        resource.data.members[request.auth.uid] == true
-      );
-      
-      allow create: if isAuthenticated() && 
-                    request.resource.data.ownerId == request.auth.uid;
-      
-      allow update: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid ||
-        resource.data.admins[request.auth.uid] == true
-      );
-      
-      allow delete: if isAuthenticated() && 
-                    resource.data.ownerId == request.auth.uid;
+    match /users/{userId} {
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Group members - members can read, admins can write
-    match /groupMembers/{groupId}/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && (
-        userId == request.auth.uid ||
-        get(/databases/$(database)/documents/groups/$(groupId)).data.admins[request.auth.uid] == true
-      );
+    match /publicProfiles/{userId} {
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // ===== AURA SYSTEM =====
-    
-    // Aura stats - users can read/write their own
-    match /auraStats/{userId} {
-      allow read, write: if isOwner(userId);
+    match /friendRequests/{requestId} {
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Aura transactions - users can read/write their own
-    match /auraTransactions/{userId}/transactions/{transactionId} {
-      allow read, write: if isOwner(userId);
+    match /friends/{userId}/friendships/{friendId} {
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // Weekly quests - authenticated users can read
-    match /weeklyQuests/{questId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Admin only
-    }
-    
-    // User quest progress - users can read/write their own
-    match /users/{userId}/questProgress/{questId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // Rewards - authenticated users can read
-    match /rewards/{rewardId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Admin only
-    }
-    
-    // User reward claims - users can read/write their own
-    match /userRewards/{userId}/claims/{claimId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // Aura squads - members can read/write
-    match /auraSquads/{squadId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && 
-                   request.auth.uid in resource.data.members;
-      allow create: if isAuthenticated();
-    }
-    
-    // Squad leaderboards - authenticated users can read
-    match /squadLeaderboards/{leaderboardId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Admin only
-    }
-    
-    // ===== LEGACY COLLECTIONS (keep for backward compatibility) =====
-    
-    // Legacy chats - keep existing rules but deprecate
-    match /enhancedChats/{chatId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    match /enhancedChats/{chatId}/messages/{messageId} {
-      allow read, write: if isAuthenticated();
-    }
-    
-    // Legacy user chats
-    match /users/{userId}/chats/{chatId}/messages/{messageId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    match /users/{userId}/chatMeta/{chatId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // ===== SYSTEM COLLECTIONS =====
-    
-    // Analytics - server only
-    match /analytics/{collection=**} {
-      allow read, write: if false;
-    }
-    
-    // Notifications - users can read their own
-    match /notifications/{userId}/{notificationId} {
-      allow read: if isOwner(userId);
-      allow write: if false; // Server managed
-    }
-    
-    // ===== OTHER COLLECTIONS =====
-    
-    // Journal entries - users can read/write their own
-    match /journals/{userId}/entries/{entryId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // Specialized journals
-    match /specialized-journals/{userId}/{journalType}/{entryId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // User goals
-    match /user-goals/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // Boosts (read-only for users)
-    match /boosts/{boostId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Admin only
-    }
-    
-    // User boosts
-    match /userBoosts/{userId}/entries/{entryId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    // Aura posts (legacy - social ephemeral posts) - SIMPLIFIED RULES
     match /auraPosts/{postId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-                            resource.data.authorUid == request.auth.uid;
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
     match /auraPosts/{postId}/reactions/{reactionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-                    request.resource.data.userUid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && 
-                            resource.data.userUid == request.auth.uid;
+      allow read, write, create, update, delete: if isAuthenticated();
     }
     
     match /auraPosts/{postId}/replies/{replyId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-                    request.resource.data.userUid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && 
-                            resource.data.userUid == request.auth.uid;
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /auraStats/{userId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /auraTransactions/{userId}/transactions/{transactionId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /weeklyQuests/{questId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /users/{userId}/questProgress/{questId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /rewards/{rewardId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /userRewards/{userId}/claims/{claimId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /auraSquads/{squadId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /squadLeaderboards/{leaderboardId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /groups/{groupId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /groupMembers/{groupId}/{userId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /journals/{userId}/entries/{entryId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /specialized-journals/{userId}/{journalType}/{entryId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /user-goals/{userId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /boosts/{boostId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /userBoosts/{userId}/entries/{entryId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /notifications/{userId}/{notificationId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /analytics/{collection=**} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    // Legacy collections
+    match /enhancedChats/{chatId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /enhancedChats/{chatId}/messages/{messageId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /users/{userId}/chats/{chatId}/messages/{messageId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /users/{userId}/chatMeta/{chatId} {
+      allow read, write, create, update, delete: if isAuthenticated();
+    }
+    
+    match /users/{userId}/chats/{chatId}/typing/{otherUid} {
+      allow read, write, create, update, delete: if isAuthenticated();
     }
   }
 }

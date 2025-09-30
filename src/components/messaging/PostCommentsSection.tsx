@@ -91,6 +91,32 @@ export default function PostCommentsSection({
     return fallbackProfile;
   };
 
+  // Load user profiles for all reactions when comments change
+  useEffect(() => {
+    const loadAllReactionProfiles = async () => {
+      const allUserIds = new Set<string>();
+      
+      comments.forEach(comment => {
+        Object.keys(comment.reactions || {}).forEach(userId => {
+          allUserIds.add(userId);
+        });
+      });
+      
+      const profilePromises = Array.from(allUserIds).map(userId => {
+        if (!userProfiles[userId]) {
+          return loadUserProfile(userId);
+        }
+        return Promise.resolve(userProfiles[userId]);
+      });
+      
+      await Promise.all(profilePromises);
+    };
+    
+    if (comments.length > 0) {
+      loadAllReactionProfiles();
+    }
+  }, [comments, userProfiles]);
+
   // Load comments
   useEffect(() => {
     if (!postId) return;

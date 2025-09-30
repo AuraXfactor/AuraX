@@ -154,6 +154,7 @@ export async function createDirectChat(
   const chatRef = getChatRef(chatId);
   
   try {
+    console.log('🔍 Checking if chat exists...', { chatId });
     // Check if chat already exists
     const existingChat = await getDoc(chatRef);
     if (existingChat.exists()) {
@@ -161,12 +162,26 @@ export async function createDirectChat(
       return chatId;
     }
     
-    // Load participant profiles
-    const [currentProfile, otherProfile] = await Promise.all([
-      getPublicProfile(currentUserId),
-      getPublicProfile(otherUserId)
-    ]);
+    console.log('👥 Loading participant profiles...');
+    // Load participant profiles with error handling
+    let currentProfile = null;
+    let otherProfile = null;
     
+    try {
+      currentProfile = await getPublicProfile(currentUserId);
+      console.log('✅ Current user profile loaded:', currentProfile?.name || 'No name');
+    } catch (error) {
+      console.warn('⚠️ Failed to load current user profile:', error);
+    }
+    
+    try {
+      otherProfile = await getPublicProfile(otherUserId);
+      console.log('✅ Other user profile loaded:', otherProfile?.name || 'No name');
+    } catch (error) {
+      console.warn('⚠️ Failed to load other user profile:', error);
+    }
+    
+    console.log('📝 Preparing chat data...');
     const chatData: Partial<Chat> = {
       id: chatId,
       type: 'direct',
@@ -197,12 +212,20 @@ export async function createDirectChat(
       },
     };
     
+    console.log('💾 Saving chat to Firestore...', { chatId });
     await setDoc(chatRef, chatData);
     console.log('✅ Direct chat created successfully', { chatId });
     
     return chatId;
   } catch (error) {
     console.error('❌ Error creating direct chat:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      currentUserId,
+      otherUserId,
+      chatId
+    });
     throw error;
   }
 }
