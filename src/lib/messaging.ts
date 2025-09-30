@@ -883,18 +883,35 @@ export function listenToPostComments(
   return onSnapshot(q, async (snapshot) => {
     const comments: PostComment[] = [];
     
-    for (const commentDoc of snapshot.docs) {
+    // Process comments in parallel for better performance
+    const commentPromises = snapshot.docs.map(async (commentDoc) => {
       const commentData = commentDoc.data() as PostComment;
-      const authorProfile = await getPublicProfile(commentData.authorId);
       
-      comments.push({
+      // Fetch author profile
+      let authorProfile: PublicProfile | undefined;
+      try {
+        authorProfile = await getPublicProfile(commentData.authorId);
+      } catch (error) {
+        console.warn('Failed to fetch author profile for comment:', error);
+        // Create a fallback profile with basic info
+        authorProfile = {
+          userId: commentData.authorId,
+          name: 'Unknown User',
+          username: `user${commentData.authorId.slice(-4)}`,
+          bio: '',
+          avatar: undefined,
+        };
+      }
+      
+      return {
         ...commentData,
         id: commentDoc.id,
-        authorProfile: authorProfile || undefined,
-      });
-    }
+        authorProfile,
+      };
+    });
     
-    callback(comments);
+    const resolvedComments = await Promise.all(commentPromises);
+    callback(resolvedComments);
   });
 }
 

@@ -274,8 +274,12 @@ export default function PostCommentsSection({
                       userId === user?.uid ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700'
                     }`}
                     onClick={() => handleReactionClick(comment.id, reaction)}
+                    title={userId === user?.uid ? 'You' : `User ${userId.slice(-4)}`}
                   >
                     <span className="mr-1">{getEmojiForReaction(reaction)}</span>
+                    <span className="text-xs">
+                      {userId === user?.uid ? 'You' : `User ${userId.slice(-4)}`}
+                    </span>
                   </div>
                 ))}
               </div>
