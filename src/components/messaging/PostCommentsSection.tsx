@@ -11,6 +11,8 @@ import {
   formatMessageTime
 } from '@/lib/messaging';
 import { getPublicProfile, PublicProfile } from '@/lib/socialSystem';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface PostCommentsSectionProps {
   postId: string;
@@ -36,6 +38,7 @@ export default function PostCommentsSection({
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [userProfiles, setUserProfiles] = useState<{ [userId: string]: PublicProfile }>({});
   
   // Refs
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -43,6 +46,50 @@ export default function PostCommentsSection({
   
   // Available reactions
   const availableReactions: ReactionType[] = ['like', 'love', 'laugh', 'wow', 'sad', 'angry', 'celebrate', 'support'];
+
+  // Function to load user profile for reactions
+  const loadUserProfile = async (userId: string): Promise<PublicProfile> => {
+    if (userProfiles[userId]) {
+      return userProfiles[userId];
+    }
+
+    try {
+      // First try to get from public profiles
+      let profile = await getPublicProfile(userId);
+      if (profile) {
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+
+      // If not found, try to get from users collection
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        profile = {
+          userId,
+          name: userData.name || userData.displayName || 'Unknown User',
+          username: userData.username || userData.email?.split('@')[0] || `user${userId.slice(-4)}`,
+          bio: userData.bio || '',
+          avatar: userData.avatar || userData.photoURL,
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+    } catch (error) {
+      console.warn('Failed to load user profile:', error);
+    }
+
+    // Final fallback
+    const fallbackProfile: PublicProfile = {
+      userId,
+      name: 'Unknown User',
+      username: `user${userId.slice(-4)}`,
+      bio: '',
+      avatar: undefined,
+    };
+    setUserProfiles(prev => ({ ...prev, [userId]: fallbackProfile }));
+    return fallbackProfile;
+  };
 
   // Load comments
   useEffect(() => {
@@ -267,21 +314,31 @@ export default function PostCommentsSection({
             {/* Reactions display */}
             {commentReactions.length > 0 && (
               <div className="flex gap-1 mt-2">
-                {commentReactions.map(([userId, reaction]) => (
-                  <div
-                    key={userId}
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition ${
-                      userId === user?.uid ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700'
-                    }`}
-                    onClick={() => handleReactionClick(comment.id, reaction)}
-                    title={userId === user?.uid ? 'You' : `User ${userId.slice(-4)}`}
-                  >
-                    <span className="mr-1">{getEmojiForReaction(reaction)}</span>
-                    <span className="text-xs">
-                      {userId === user?.uid ? 'You' : `User ${userId.slice(-4)}`}
-                    </span>
-                  </div>
-                ))}
+                {commentReactions.map(([userId, reaction]) => {
+                  const isCurrentUser = userId === user?.uid;
+                  const userProfile = userProfiles[userId];
+                  const displayName = isCurrentUser ? 'You' : 
+                    (userProfile?.username || userProfile?.name || `user${userId.slice(-4)}`);
+                  
+                  // Load profile if not already loaded
+                  if (!isCurrentUser && !userProfile) {
+                    loadUserProfile(userId);
+                  }
+                  
+                  return (
+                    <div
+                      key={userId}
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition ${
+                        isCurrentUser ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700'
+                      }`}
+                      onClick={() => handleReactionClick(comment.id, reaction)}
+                      title={displayName}
+                    >
+                      <span className="mr-1">{getEmojiForReaction(reaction)}</span>
+                      <span className="text-xs">{displayName}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
             

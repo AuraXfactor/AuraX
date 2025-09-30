@@ -887,13 +887,32 @@ export function listenToPostComments(
     const commentPromises = snapshot.docs.map(async (commentDoc) => {
       const commentData = commentDoc.data() as PostComment;
       
-      // Fetch author profile
+      // Fetch author profile with multiple fallback strategies
       let authorProfile: PublicProfile | undefined;
       try {
+        // First try to get the public profile
         authorProfile = await getPublicProfile(commentData.authorId);
+        
+        // If no profile found, try to get from users collection
+        if (!authorProfile) {
+          const userDoc = await getDoc(doc(db, 'users', commentData.authorId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            authorProfile = {
+              userId: commentData.authorId,
+              name: userData.name || userData.displayName || 'Unknown User',
+              username: userData.username || userData.email?.split('@')[0] || `user${commentData.authorId.slice(-4)}`,
+              bio: userData.bio || '',
+              avatar: userData.avatar || userData.photoURL,
+            };
+          }
+        }
       } catch (error) {
         console.warn('Failed to fetch author profile for comment:', error);
-        // Create a fallback profile with basic info
+      }
+      
+      // Final fallback if still no profile
+      if (!authorProfile) {
         authorProfile = {
           userId: commentData.authorId,
           name: 'Unknown User',
