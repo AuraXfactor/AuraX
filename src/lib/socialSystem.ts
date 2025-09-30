@@ -712,7 +712,7 @@ export async function createPost(params: {
     likes: [],
     comments: 0,
     shares: 0,
-    tags: tags || [],
+    ...(tags && tags.length > 0 && { tags }),
     ...(mood && { mood }),
     ...(location && { location }),
   };

@@ -528,9 +528,16 @@ export async function sendMessage(params: {
       reactions: {},
       readBy: { [senderId]: serverTimestamp() },
       deliveredTo: { [senderId]: serverTimestamp() },
-      metadata: {
-        mentions: mentions || [],
-        ...(dimensions && { dimensions }),
+      ...(mentions && mentions.length > 0 && {
+        metadata: {
+          mentions,
+          ...(dimensions && { dimensions }),
+        }
+      }),
+      ...(!mentions || mentions.length === 0) && dimensions && {
+        metadata: {
+          dimensions,
+        }
       },
     };
     

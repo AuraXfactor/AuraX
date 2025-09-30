@@ -314,8 +314,8 @@ export async function createAuraPost(params: {
     content,
     type,
     ...(mediaUrl && { mediaUrl }),
-    moodTag,
-    emoji,
+    ...(moodTag && { moodTag }),
+    ...(emoji && { emoji }),
     isEphemeral: true,
     expiresAt,
     createdAt: serverTimestamp(),
@@ -323,7 +323,7 @@ export async function createAuraPost(params: {
     likeCount: 0,
     replyCount: 0,
     visibility,
-    tags,
+    ...(tags && tags.length > 0 && { tags }),
   };
   
   const docRef = await addDoc(getAuraPostsRef(), postData);
