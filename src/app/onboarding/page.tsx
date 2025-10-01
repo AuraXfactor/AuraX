@@ -34,6 +34,14 @@ export default function Onboarding() {
   const [reminderTime, setReminderTime] = useState<'Morning'|'Afternoon'|'Evening'>('Morning');
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState({
+    dataCollection: true,
+    analytics: true,
+    personalization: true,
+    notifications: true,
+    dataSharing: false
+  });
 
   const steps = useMemo(() => [
     'Profile',
@@ -42,6 +50,7 @@ export default function Onboarding() {
     'Therapy Style',
     'Journaling Reminder',
     'Avatar',
+    'Terms & Privacy',
     'Summary',
   ], []);
 
@@ -71,8 +80,9 @@ export default function Onboarding() {
     if (step === 3) return true; // optional
     if (step === 4) return ['Morning','Afternoon','Evening'].includes(reminderTime);
     if (step === 5) return true; // optional
+    if (step === 6) return termsAccepted; // terms acceptance required
     return true;
-  }, [step, name, username, moodBaseline, focusAreas, reminderTime]);
+  }, [step, name, username, moodBaseline, focusAreas, reminderTime, termsAccepted]);
 
   const handleFile = (file: File) => {
     const reader = new FileReader();
@@ -93,6 +103,8 @@ export default function Onboarding() {
         preferredTherapy: preferredTherapy ?? null,
         reminderTime,
         moodBaseline,
+        termsAccepted,
+        privacyConsent,
       });
       router.push('/');
     } finally {
@@ -110,7 +122,7 @@ export default function Onboarding() {
     <main className="min-h-screen py-10 px-4 flex items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-black dark:to-gray-900">
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
-          <div className="text-2xl font-extrabold">Aura X Onboarding</div>
+          <div className="text-2xl font-extrabold">AuraZ Onboarding</div>
           <div className="text-sm opacity-70">Step {step+1} / {steps.length}</div>
         </div>
 
@@ -194,6 +206,64 @@ export default function Onboarding() {
 
           {step === 6 && stepCard(
             <div>
+              <div className="text-lg font-semibold mb-4">Terms & Privacy Consent</div>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">📋 Terms of Service</h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                    By using AuraZ, you agree to our Terms of Service. We're committed to your privacy and wellness journey.
+                  </p>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      I agree to the <a href="/terms" className="underline hover:no-underline">Terms of Service</a> and <a href="/privacy" className="underline hover:no-underline">Privacy Policy</a>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">🔒 Privacy Settings</h3>
+                  <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                    You can change these settings anytime in your profile. We respect your privacy choices.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {[
+                      { key: 'dataCollection', label: 'Data Collection', desc: 'Allow us to collect your wellness data to provide personalized insights' },
+                      { key: 'analytics', label: 'Analytics', desc: 'Help us improve the app with anonymous usage analytics' },
+                      { key: 'personalization', label: 'Personalization', desc: 'Enable personalized recommendations and content' },
+                      { key: 'notifications', label: 'Notifications', desc: 'Receive wellness reminders and motivational messages' },
+                      { key: 'dataSharing', label: 'Data Sharing', desc: 'Share anonymized data for research (optional)' }
+                    ].map(item => (
+                      <label key={item.key} className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={privacyConsent[item.key as keyof typeof privacyConsent]}
+                          onChange={(e) => setPrivacyConsent(prev => ({
+                            ...prev,
+                            [item.key]: e.target.checked
+                          }))}
+                          className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-sm text-green-800 dark:text-green-200">{item.label}</div>
+                          <div className="text-xs text-green-600 dark:text-green-400">{item.desc}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 7 && stepCard(
+            <div>
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
                 <div className="flex items-center gap-3">
@@ -212,6 +282,14 @@ export default function Onboarding() {
                 <div className="mt-3 text-sm">Mood: {moodBaseline.join(' ')}</div>
                 <div className="mt-1 text-sm">Preferred Therapy: {preferredTherapy || '—'}</div>
                 <div className="mt-1 text-sm">Reminder: {reminderTime}</div>
+                <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">Privacy Consent:</div>
+                  <div className="text-xs text-green-700 dark:text-green-300">
+                    {Object.entries(privacyConsent).filter(([_, value]) => value).map(([key, _]) => 
+                      key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
+                    ).join(', ')}
+                  </div>
+                </div>
                 <div className="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold">Starting Aura Points: 0</div>
                 <div className="mt-4 text-lg">Welcome, {name}. Your Aura journey starts now 🌟</div>
               </div>

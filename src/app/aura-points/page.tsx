@@ -25,6 +25,7 @@ import {
   Reward,
 } from '@/lib/rewardsStore';
 import { getUserSquads, getSquadLeaderboards, AuraSquad } from '@/lib/auraSquads';
+import AuraBoost from '@/components/AuraBoost';
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: '✨' },
@@ -53,6 +54,7 @@ export default function AuraPointsPage() {
     topSquads?: Array<AuraSquad & { rank: number }>;
   }>({});
   const [loading, setLoading] = useState(true);
+  const [boostPoints, setBoostPoints] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -140,6 +142,13 @@ export default function AuraPointsPage() {
     }
   };
 
+  const handleBoostComplete = (points: number) => {
+    setBoostPoints(prev => prev + points);
+    // Here you would typically update the user's points in the database
+    // For now, we'll just show a success message
+    alert(`🎉 Aura Boost Complete! You earned ${points} bonus points!`);
+  };
+
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -160,6 +169,25 @@ export default function AuraPointsPage() {
           <div className="text-3xl font-bold">{userStats?.badges?.length || 0}</div>
           <div className="text-yellow-100">Badges Earned</div>
         </div>
+      </div>
+
+      {/* Aura Boost Feature */}
+      <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+        <h2 className="text-2xl font-bold mb-4">⚡ Aura Boost</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          Enhance your wellness energy with guided activities and earn bonus points!
+        </p>
+        <AuraBoost onBoostComplete={handleBoostComplete} />
+        {boostPoints > 0 && (
+          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2">
+              <span className="text-green-600 dark:text-green-400">✨</span>
+              <span className="text-sm font-semibold text-green-800 dark:text-green-200">
+                Today's Boost Points: +{boostPoints}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Level Progress */}

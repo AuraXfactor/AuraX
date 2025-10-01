@@ -1,20 +1,34 @@
+import React from 'react';
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 import SlimNavbar from "@/components/SlimNavbar";
 import SmartBottomNav from "@/components/SmartBottomNav";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
+import ClientAppWrapper from "@/components/ClientAppWrapper";
+import SwipeDetector from "@/components/SwipeDetector";
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: "AuraX - Your Vibe, Your Tribe",
-  description: "A gamified lifestyle app for mental wellness",
+  title: "AuraZ - Your Vibe, Your Tribe",
+  description: "A gamified lifestyle app for mental wellness - AuraZ",
   manifest: "/manifest.webmanifest",
 };
 
 export const viewport = {
   themeColor: '#0ea5e9',
 };
+
+function AppContent({ children }: { children: ReactNode }) {
+  return (
+    <SwipeDetector>
+      <SlimNavbar />
+      {children}
+      <SmartBottomNav />
+      <AuraPointsWidget />
+    </SwipeDetector>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -33,10 +47,10 @@ export default function RootLayout({
       <body className="bg-fun">
         <AuthProvider>
           <ThemeProvider>
-            <SlimNavbar />
-            {children}
-            <SmartBottomNav />
-            <AuraPointsWidget />
+            <AppContent>{children}</AppContent>
+            <ClientAppWrapper>
+              <div></div>
+            </ClientAppWrapper>
           </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
