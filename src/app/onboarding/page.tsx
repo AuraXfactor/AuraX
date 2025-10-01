@@ -27,6 +27,8 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [location, setLocation] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const [moodBaseline, setMoodBaseline] = useState<string[]>([]);
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
@@ -37,6 +39,7 @@ export default function Onboarding() {
 
   const steps = useMemo(() => [
     'Profile',
+    'Personal Info',
     'Mood Baseline',
     'Focus Areas',
     'Therapy Style',
@@ -66,13 +69,14 @@ export default function Onboarding() {
 
   const canContinue = useMemo(() => {
     if (step === 0) return name.trim().length > 0 && username.trim().length > 0;
-    if (step === 1) return moodBaseline.length === 3;
-    if (step === 2) return focusAreas.length >= 2 && focusAreas.length <= 3;
-    if (step === 3) return true; // optional
-    if (step === 4) return ['Morning','Afternoon','Evening'].includes(reminderTime);
-    if (step === 5) return true; // optional
+    if (step === 1) return dateOfBirth.trim().length > 0 && location.trim().length > 0;
+    if (step === 2) return moodBaseline.length === 3;
+    if (step === 3) return focusAreas.length >= 2 && focusAreas.length <= 3;
+    if (step === 4) return true; // optional
+    if (step === 5) return ['Morning','Afternoon','Evening'].includes(reminderTime);
+    if (step === 6) return true; // optional
     return true;
-  }, [step, name, username, moodBaseline, focusAreas, reminderTime]);
+  }, [step, name, username, dateOfBirth, location, moodBaseline, focusAreas, reminderTime]);
 
   const handleFile = (file: File) => {
     const reader = new FileReader();
@@ -88,6 +92,8 @@ export default function Onboarding() {
         name: name.trim(),
         username: username.trim(),
         email: user.email ?? null,
+        dateOfBirth: dateOfBirth.trim(),
+        location: location.trim(),
         avatar: uploadPreview || avatar,
         focusAreas,
         preferredTherapy: preferredTherapy ?? null,
@@ -110,7 +116,7 @@ export default function Onboarding() {
     <main className="min-h-screen py-10 px-4 flex items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-black dark:to-gray-900">
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
-          <div className="text-2xl font-extrabold">Aura X Onboarding</div>
+          <div className="text-2xl font-extrabold">Aura Z Onboarding</div>
           <div className="text-sm opacity-70">Step {step+1} / {steps.length}</div>
         </div>
 
@@ -137,6 +143,39 @@ export default function Onboarding() {
 
           {step === 1 && stepCard(
             <div>
+              <div className="text-lg font-semibold mb-2">Personal Information</div>
+              <div className="text-sm opacity-75 mb-4">This helps us personalize your experience and provide relevant resources</div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Date of Birth</label>
+                  <input 
+                    type="date" 
+                    value={dateOfBirth} 
+                    onChange={(e) => setDateOfBirth(e.target.value)} 
+                    className="w-full px-3 py-2 rounded-md border" 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Location (City, Country)</label>
+                  <input 
+                    type="text" 
+                    value={location} 
+                    onChange={(e) => setLocation(e.target.value)} 
+                    placeholder="e.g., New York, USA" 
+                    className="w-full px-3 py-2 rounded-md border" 
+                    required 
+                  />
+                </div>
+                <div className="text-xs text-gray-500">
+                  <p><strong>Privacy Note:</strong> Your personal information is encrypted and used only to provide personalized mental health resources. We follow strict privacy guidelines and never share your data without consent.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && stepCard(
+            <div>
               <div className="text-lg font-semibold mb-2">Mood Baseline</div>
               <div className="text-sm opacity-75 mb-3">Select 3 emojis representing your vibe</div>
               <div className="grid grid-cols-8 gap-2 text-2xl">
@@ -148,7 +187,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 2 && stepCard(
+          {step === 3 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Wellness Focus Areas</div>
               <div className="text-sm opacity-75 mb-3">Choose top 2-3</div>
@@ -160,7 +199,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 3 && stepCard(
+          {step === 4 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Preferred Therapy Style (optional)</div>
               <div className="grid sm:grid-cols-2 gap-2">
@@ -171,7 +210,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 4 && stepCard(
+          {step === 5 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Journaling Reminder</div>
               <div className="flex gap-2">
@@ -182,7 +221,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 5 && stepCard(
+          {step === 6 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Profile Picture (optional)</div>
               <div className="flex items-center gap-4">
@@ -192,7 +231,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 6 && stepCard(
+          {step === 7 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
@@ -209,11 +248,13 @@ export default function Onboarding() {
                     <div className="text-sm opacity-70">Focus: {focusAreas.join(', ')}</div>
                   </div>
                 </div>
-                <div className="mt-3 text-sm">Mood: {moodBaseline.join(' ')}</div>
+                <div className="mt-3 text-sm">Date of Birth: {dateOfBirth}</div>
+                <div className="mt-1 text-sm">Location: {location}</div>
+                <div className="mt-1 text-sm">Mood: {moodBaseline.join(' ')}</div>
                 <div className="mt-1 text-sm">Preferred Therapy: {preferredTherapy || '—'}</div>
                 <div className="mt-1 text-sm">Reminder: {reminderTime}</div>
                 <div className="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold">Starting Aura Points: 0</div>
-                <div className="mt-4 text-lg">Welcome, {name}. Your Aura journey starts now 🌟</div>
+                <div className="mt-4 text-lg">Welcome, {name}. Your Aura Z journey starts now 🌟</div>
               </div>
             </div>
           )}
