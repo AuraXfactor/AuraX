@@ -348,9 +348,58 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Privacy Consent Management */}
+          <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+            <h2 className="text-2xl font-semibold mb-4">🔒 Privacy & Consent Management</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Manage your privacy preferences and consent settings. You can change these anytime.
+            </p>
+            
+            <div className="space-y-4">
+              {[
+                { key: 'dataCollection', label: 'Data Collection', desc: 'Allow us to collect your wellness data to provide personalized insights', icon: '📊' },
+                { key: 'analytics', label: 'Analytics', desc: 'Help us improve the app with anonymous usage analytics', icon: '📈' },
+                { key: 'personalization', label: 'Personalization', desc: 'Enable personalized recommendations and content', icon: '🎯' },
+                { key: 'notifications', label: 'Notifications', desc: 'Receive wellness reminders and motivational messages', icon: '🔔' },
+                { key: 'dataSharing', label: 'Data Sharing', desc: 'Share anonymized data for research (optional)', icon: '🤝' }
+              ].map((item) => (
+                <div key={item.key} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{item.icon}</div>
+                    <div>
+                      <h3 className="font-medium">{item.label}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{item.desc}</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.privacy?.[item.key as keyof typeof settings.privacy] || false}
+                      onChange={(e) => updateSetting(`privacy.${item.key}`, e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+                ✅ Your Rights
+              </h4>
+              <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                <li>• You can change these settings anytime</li>
+                <li>• Your data is encrypted and secure</li>
+                <li>• You can export or delete your data</li>
+                <li>• We never sell your personal information</li>
+              </ul>
+            </div>
+          </div>
+
           {/* Security Settings */}
           <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-            <h2 className="text-2xl font-semibold mb-4">🔒 Security & Privacy</h2>
+            <h2 className="text-2xl font-semibold mb-4">🔐 Security Settings</h2>
             
             {/* Password Change */}
             <div className="mb-6">

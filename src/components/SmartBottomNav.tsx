@@ -29,8 +29,7 @@ const NAV_TABS: NavTab[] = [
     items: [
       { label: 'Write Entry', href: '/journal', icon: '✍️', description: 'Create a new journal entry' },
       { label: 'Recent Entries', href: '/journal', icon: '📄', description: 'View your latest entries' },
-      { label: 'Toolkit', href: '/toolkit', icon: '🧰', description: 'Meditations, workouts, tools' },
-      { label: 'Recovery Hub', href: '/recovery', icon: '🔄', description: 'Addiction support tools' },
+      { label: 'Journal History', href: '/journal/history', icon: '📚', description: 'Browse past entries' },
     ],
   },
   {
@@ -43,6 +42,42 @@ const NAV_TABS: NavTab[] = [
       { label: 'Friends', href: '/friends', icon: '👥', description: 'Manage your network' },
       { label: 'Groups', href: '/groups', icon: '💬', description: 'Group conversations' },
       { label: 'Messages', href: '/messages', icon: '💬', description: 'Secure encrypted messaging' },
+    ],
+  },
+  {
+    id: 'chat',
+    label: 'Chat AI',
+    icon: '🤖',
+    color: 'from-cyan-500 to-blue-500',
+    items: [
+      { label: 'AI Assistant', href: '/chat', icon: '🤖', description: 'Get instant wellness support' },
+      { label: 'Mood Check', href: '/chat?mode=mood', icon: '😊', description: 'Quick mood assessment' },
+      { label: 'Crisis Support', href: '/chat?mode=crisis', icon: '🆘', description: 'Emergency support chat' },
+      { label: 'Wellness Tips', href: '/chat?mode=tips', icon: '💡', description: 'Daily wellness advice' },
+    ],
+  },
+  {
+    id: 'diy',
+    label: 'DIY',
+    icon: '🛠️',
+    color: 'from-green-500 to-emerald-500',
+    items: [
+      { label: 'Toolkit', href: '/toolkit', icon: '🧰', description: 'Meditations, workouts, tools' },
+      { label: 'Breathing Exercises', href: '/toolkit/breathing', icon: '🫁', description: 'Calm your mind' },
+      { label: 'Workouts', href: '/toolkit/workouts', icon: '💪', description: 'Physical wellness' },
+      { label: 'Meditations', href: '/toolkit/meditations', icon: '🧘', description: 'Mindfulness practice' },
+    ],
+  },
+  {
+    id: 'recovery',
+    label: 'Recovery',
+    icon: '🔄',
+    color: 'from-orange-500 to-red-500',
+    items: [
+      { label: 'Recovery Hub', href: '/recovery', icon: '🔄', description: 'Addiction support tools' },
+      { label: 'Sobriety Tracker', href: '/recovery/tracker', icon: '📊', description: 'Track your progress' },
+      { label: 'Support Groups', href: '/recovery/groups', icon: '👥', description: 'Find support community' },
+      { label: 'Crisis Resources', href: '/recovery/crisis', icon: '🆘', description: 'Emergency resources' },
     ],
   },
   {
@@ -83,11 +118,20 @@ export default function SmartBottomNav() {
 
   // Determine active tab based on current route
   const getActiveTab = () => {
-    if (pathname.startsWith('/journal') || pathname.startsWith('/toolkit') || pathname.startsWith('/recovery')) {
+    if (pathname.startsWith('/journal')) {
       return 'journal';
     }
     if (pathname.startsWith('/aura') || pathname.startsWith('/friends') || pathname.startsWith('/groups') || pathname.startsWith('/soulchat')) {
       return 'connect';
+    }
+    if (pathname.startsWith('/chat')) {
+      return 'chat';
+    }
+    if (pathname.startsWith('/toolkit')) {
+      return 'diy';
+    }
+    if (pathname.startsWith('/recovery')) {
+      return 'recovery';
     }
     if (pathname.startsWith('/aura-points') || pathname.startsWith('/squads')) {
       return 'points';

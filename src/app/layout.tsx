@@ -1,9 +1,13 @@
+import React from 'react';
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 import SlimNavbar from "@/components/SlimNavbar";
 import SmartBottomNav from "@/components/SmartBottomNav";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
+import TourGuide, { useTourGuide } from "@/components/TourGuide";
+import LeftSwipeMenu, { useLeftSwipeMenu } from "@/components/LeftSwipeMenu";
+import SwipeDetector from "@/components/SwipeDetector";
 import type { ReactNode } from 'react';
 
 export const metadata = {
@@ -15,6 +19,41 @@ export const metadata = {
 export const viewport = {
   themeColor: '#0ea5e9',
 };
+
+function AppContent({ children }: { children: ReactNode }) {
+  const { isActive: tourActive, startTour, completeTour, skipTour, shouldShowTour } = useTourGuide();
+  const { isOpen: menuOpen, openMenu, closeMenu } = useLeftSwipeMenu();
+
+  // Auto-start tour for new users
+  React.useEffect(() => {
+    if (shouldShowTour()) {
+      const timer = setTimeout(() => startTour(), 2000); // Start tour after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShowTour, startTour]);
+
+  return (
+    <>
+      <SwipeDetector>
+        <SlimNavbar />
+        {children}
+        <SmartBottomNav />
+        <AuraPointsWidget />
+      </SwipeDetector>
+      
+      <TourGuide 
+        isActive={tourActive} 
+        onComplete={completeTour} 
+        onSkip={skipTour} 
+      />
+      
+      <LeftSwipeMenu 
+        isOpen={menuOpen} 
+        onClose={closeMenu} 
+      />
+    </>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -33,10 +72,7 @@ export default function RootLayout({
       <body className="bg-fun">
         <AuthProvider>
           <ThemeProvider>
-            <SlimNavbar />
-            {children}
-            <SmartBottomNav />
-            <AuraPointsWidget />
+            <AppContent>{children}</AppContent>
           </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
