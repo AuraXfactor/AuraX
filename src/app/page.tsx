@@ -79,6 +79,7 @@ export default function Home() {
           { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
           { title: 'DIY', desc: 'Do it yourself - meditations, workouts, tools 🛠️', href: '/toolkit', emoji: '🔧', colors: 'from-cyan-400 to-blue-500' },
           { title: 'Recovery Hub', desc: 'Addiction recovery support and wellness tools 🔄', href: '/recovery', emoji: '🔄', colors: 'from-emerald-400 to-teal-500' },
+          { title: 'Mood Tracker', desc: 'Track your daily mood and discover patterns in your emotional well-being 📊', href: '/mood-tracker', emoji: '📊', colors: 'from-blue-400 to-purple-500' },
           { title: 'Aura AI Chat', desc: 'Your mental wellness companion with high capacity for insights and life skills ✨', href: '#', emoji: '🤖', colors: 'from-indigo-500 to-purple-500', onClick: () => setShowAuraAI(true) },
         ].map((c) => (
           c.onClick ? (

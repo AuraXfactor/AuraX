@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import AutoAIInsights from '@/components/journal/AutoAIInsights';
 
 const RELATIONSHIP_TYPES = [
   { label: 'Partner/Spouse', value: 'partner', icon: '💕' },
@@ -46,6 +47,8 @@ export default function RelationshipJournal() {
   const [futureIntentions, setFutureIntentions] = useState('');
   const [memoryKeeper, setMemoryKeeper] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAutoAI, setShowAutoAI] = useState(false);
+  const [lastSavedEntry, setLastSavedEntry] = useState<any>(null);
 
   if (!user) {
     router.push('/login');
@@ -136,6 +139,10 @@ export default function RelationshipJournal() {
       }
 
       alert('Relationship journal saved successfully! 💕');
+      
+      // Trigger auto AI insights
+      setLastSavedEntry(entryData);
+      setShowAutoAI(true);
       
       // Reset form
       resetForm();
@@ -550,6 +557,18 @@ export default function RelationshipJournal() {
           )}
         />
       </div>
+
+      {/* Auto AI Insights */}
+      {showAutoAI && lastSavedEntry && (
+        <AutoAIInsights
+          journalType="relationship"
+          entryData={lastSavedEntry}
+          onClose={() => {
+            setShowAutoAI(false);
+            setLastSavedEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }

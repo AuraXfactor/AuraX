@@ -29,6 +29,7 @@ const NAV_TABS: NavTab[] = [
     items: [
       { label: 'Write Entry', href: '/journal', icon: '✍️', description: 'Create a new journal entry' },
       { label: 'Recent Entries', href: '/journal', icon: '📄', description: 'View your latest entries' },
+      { label: 'Mood Tracker', href: '/mood-tracker', icon: '📊', description: 'Track mood and discover patterns' },
       { label: 'Toolkit', href: '/toolkit', icon: '🧰', description: 'Meditations, workouts, tools' },
       { label: 'Recovery Hub', href: '/recovery', icon: '🔄', description: 'Addiction support tools' },
     ],
@@ -83,7 +84,7 @@ export default function SmartBottomNav() {
 
   // Determine active tab based on current route
   const getActiveTab = () => {
-    if (pathname.startsWith('/journal') || pathname.startsWith('/toolkit') || pathname.startsWith('/recovery')) {
+    if (pathname.startsWith('/journal') || pathname.startsWith('/toolkit') || pathname.startsWith('/recovery') || pathname.startsWith('/mood-tracker')) {
       return 'journal';
     }
     if (pathname.startsWith('/aura') || pathname.startsWith('/friends') || pathname.startsWith('/groups') || pathname.startsWith('/soulchat')) {

@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
+import AutoAIInsights from '@/components/journal/AutoAIInsights';
 
 const EMOTIONS = [
   { label: 'Angry', value: 'angry', color: 'bg-red-500' },
@@ -36,6 +37,8 @@ export default function CBTTherapyJournal() {
   const [actionStep, setActionStep] = useState('');
   const [saving, setSaving] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [showAutoAI, setShowAutoAI] = useState(false);
+  const [lastSavedEntry, setLastSavedEntry] = useState<any>(null);
 
   if (!user) {
     router.push('/login');
@@ -112,6 +115,10 @@ export default function CBTTherapyJournal() {
       }
 
       alert('CBT Thought Reframe saved successfully! 🧠✨');
+      
+      // Trigger auto AI insights
+      setLastSavedEntry(entryData);
+      setShowAutoAI(true);
       
       // Reset form
       resetForm();
@@ -506,6 +513,18 @@ export default function CBTTherapyJournal() {
             />
           </div>
         </div>
+      )}
+
+      {/* Auto AI Insights */}
+      {showAutoAI && lastSavedEntry && (
+        <AutoAIInsights
+          journalType="cbt-therapy"
+          entryData={lastSavedEntry}
+          onClose={() => {
+            setShowAutoAI(false);
+            setLastSavedEntry(null);
+          }}
+        />
       )}
     </div>
   );

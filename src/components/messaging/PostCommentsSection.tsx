@@ -287,7 +287,9 @@ export default function PostCommentsSection({
               {/* Author and timestamp */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-semibold text-gray-900 dark:text-white text-sm">
-                  {comment.authorProfile?.name || 'Unknown User'}
+                  {comment.authorProfile?.name && comment.authorProfile.name !== 'Anonymous' && comment.authorProfile.name !== 'Unknown User' 
+                    ? comment.authorProfile.name 
+                    : comment.authorProfile?.username || 'Unknown User'}
                 </span>
                 {isPostAuthor && (
                   <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs px-2 py-0.5 rounded-full font-medium">
@@ -357,12 +359,25 @@ export default function PostCommentsSection({
                 {commentReactions.map(([userId, reaction]) => {
                   const isCurrentUser = userId === user?.uid;
                   const userProfile = userProfiles[userId];
-                  const displayName = isCurrentUser ? 'You' : 
-                    (userProfile?.username || userProfile?.name || `user${userId.slice(-4)}`);
                   
-                  // Load profile if not already loaded
-                  if (!isCurrentUser && !userProfile) {
+                  // Enhanced display name logic with better fallbacks
+                  let displayName = 'Unknown User';
+                  
+                  if (isCurrentUser) {
+                    displayName = 'You';
+                  } else if (userProfile) {
+                    // Prioritize name over username, but use username if name is generic
+                    if (userProfile.name && userProfile.name !== 'Anonymous' && userProfile.name !== 'Unknown User') {
+                      displayName = userProfile.name;
+                    } else if (userProfile.username && userProfile.username !== `user${userId.slice(-4)}`) {
+                      displayName = userProfile.username;
+                    } else {
+                      displayName = userProfile.name || userProfile.username || 'Unknown User';
+                    }
+                  } else {
+                    // Load profile if not already loaded
                     loadUserProfile(userId);
+                    displayName = `user${userId.slice(-4)}`;
                   }
                   
                   return (
@@ -372,10 +387,10 @@ export default function PostCommentsSection({
                         isCurrentUser ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700'
                       }`}
                       onClick={() => handleReactionClick(comment.id, reaction)}
-                      title={displayName}
+                      title={`${displayName} reacted with ${reaction}`}
                     >
                       <span className="mr-1">{getEmojiForReaction(reaction)}</span>
-                      <span className="text-xs">{displayName}</span>
+                      <span className="text-xs font-medium">{displayName}</span>
                     </div>
                   );
                 })}

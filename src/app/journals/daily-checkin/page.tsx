@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import AutoAIInsights from '@/components/journal/AutoAIInsights';
 
 const MOOD_OPTIONS = [
   { emoji: '😢', label: 'Very Sad', value: 'very_sad', color: 'from-blue-400 to-blue-600' },
@@ -46,6 +47,8 @@ export default function DailyCheckInJournal() {
   const [lettingGo, setLettingGo] = useState('');
   const [todoItems, setTodoItems] = useState<string[]>(['']);
   const [saving, setSaving] = useState(false);
+  const [showAutoAI, setShowAutoAI] = useState(false);
+  const [lastSavedEntry, setLastSavedEntry] = useState<any>(null);
 
   if (!user) {
     router.push('/login');
@@ -133,6 +136,10 @@ export default function DailyCheckInJournal() {
       }
 
       alert('Daily Check-In saved successfully! 🎉');
+      
+      // Trigger auto AI insights
+      setLastSavedEntry(entryData);
+      setShowAutoAI(true);
       
       // Reset form
       resetForm();
@@ -519,6 +526,18 @@ export default function DailyCheckInJournal() {
           )}
         />
       </div>
+
+      {/* Auto AI Insights */}
+      {showAutoAI && lastSavedEntry && (
+        <AutoAIInsights
+          journalType="daily-checkin"
+          entryData={lastSavedEntry}
+          onClose={() => {
+            setShowAutoAI(false);
+            setLastSavedEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 import {
   addDoc,
   collection,
@@ -582,6 +583,12 @@ export default function JournalPage() {
           >
             ✨ Aura AI Chat
           </button>
+          <Link
+            href="/mood-tracker"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+          >
+            📊 Mood Tracker
+          </Link>
         </div>
 
         {/* AI Insights Component */}

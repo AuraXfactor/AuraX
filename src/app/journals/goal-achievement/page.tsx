@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'fireba
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import AutoAIInsights from '@/components/journal/AutoAIInsights';
 
 interface Goal {
   id?: string;
@@ -46,6 +47,8 @@ export default function GoalAchievementJournal() {
   const [motivationSource, setMotivationSource] = useState('');
   const [celebrationNote, setCelebrationNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAutoAI, setShowAutoAI] = useState(false);
+  const [lastSavedEntry, setLastSavedEntry] = useState<any>(null);
   const [loadingGoal, setLoadingGoal] = useState(true);
 
   useEffect(() => {
@@ -211,6 +214,10 @@ export default function GoalAchievementJournal() {
       }
 
       alert('Goal progress saved successfully! 🎯');
+      
+      // Trigger auto AI insights
+      setLastSavedEntry(entryData);
+      setShowAutoAI(true);
       
       // Reset form but keep goal
       resetForm();
@@ -727,7 +734,18 @@ export default function GoalAchievementJournal() {
             </div>
           </>
         ) : null}
-      </div>
+
+      {/* Auto AI Insights */}
+      {showAutoAI && lastSavedEntry && (
+        <AutoAIInsights
+          journalType="goal-achievement"
+          entryData={lastSavedEntry}
+          onClose={() => {
+            setShowAutoAI(false);
+            setLastSavedEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }

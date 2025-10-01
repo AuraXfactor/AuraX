@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
+import AutoAIInsights from '@/components/journal/AutoAIInsights';
 
 const ABUNDANCE_CATEGORIES = ['Physical', 'Emotional', 'Relational'];
 
@@ -45,6 +46,8 @@ export default function GratitudeJournal() {
   const [customAffirmation, setCustomAffirmation] = useState('');
   const [saving, setSaving] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [showAutoAI, setShowAutoAI] = useState(false);
+  const [lastSavedEntry, setLastSavedEntry] = useState<any>(null);
 
   if (!user) {
     router.push('/login');
@@ -141,6 +144,10 @@ export default function GratitudeJournal() {
       }
 
       alert('Gratitude journal saved successfully! 🙏✨');
+      
+      // Trigger auto AI insights
+      setLastSavedEntry(entryData);
+      setShowAutoAI(true);
       
       // Reset form
       resetForm();
@@ -502,6 +509,18 @@ export default function GratitudeJournal() {
             />
           </div>
         </div>
+      )}
+
+      {/* Auto AI Insights */}
+      {showAutoAI && lastSavedEntry && (
+        <AutoAIInsights
+          journalType="gratitude"
+          entryData={lastSavedEntry}
+          onClose={() => {
+            setShowAutoAI(false);
+            setLastSavedEntry(null);
+          }}
+        />
       )}
     </div>
   );

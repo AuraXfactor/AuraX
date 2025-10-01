@@ -19,6 +19,7 @@ import {
   formatMessageTime
 } from '@/lib/messaging';
 import { getPublicProfile, PublicProfile } from '@/lib/socialSystem';
+import ChatConnectionMonitor from './ChatConnectionMonitor';
 
 interface DirectMessageInterfaceProps {
   otherUserId: string;
@@ -57,15 +58,28 @@ export default function DirectMessageInterface({
   // Available reactions
   const availableReactions: ReactionType[] = ['like', 'love', 'laugh', 'wow', 'sad', 'angry', 'celebrate', 'support'];
 
-  // Initialize chat
+  // Initialize chat with enhanced cleanup
   useEffect(() => {
     if (!user || !otherUserId) return;
     
     initializeChat();
     
     return () => {
+      // Clean up typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      
+      // Clean up typing status if user is typing
+      if (isTyping && chatId) {
+        setTypingStatus({
+          chatId,
+          userId: user.uid,
+          isTyping: false,
+        }).catch(error => {
+          console.warn('⚠️ Failed to clear typing status on cleanup:', error);
+        });
       }
     };
   }, [user, otherUserId]);
@@ -75,49 +89,81 @@ export default function DirectMessageInterface({
     scrollToBottom();
   }, [messages]);
 
-  // Set up real-time listeners
+  // Set up real-time listeners with enhanced stability
   useEffect(() => {
     if (!chatId || !user) return;
     
     console.log('🔄 Setting up real-time listeners...', { chatId });
     
-    // Listen to messages
-    const unsubscribeMessages = listenToMessages(chatId, user.uid, (newMessages) => {
-      console.log('📬 Received messages update:', newMessages.length);
-      setMessages(newMessages);
-      setLoading(false);
-      
-      // Mark unread messages as read
-      newMessages.forEach(message => {
-        if (message.senderId !== user.uid && !message.readBy[user.uid]) {
-          markMessageAsRead({
-            chatId,
-            messageId: message.id,
-            userId: user.uid,
-          });
-        }
-      });
-    });
+    let isMounted = true;
+    const listeners: (() => void)[] = [];
     
-    // Listen to chat updates
-    const unsubscribeChat = listenToChat(chatId, (updatedChat) => {
-      console.log('💬 Chat updated:', updatedChat);
-      if (updatedChat) {
-        setChat(updatedChat);
+    // Listen to messages with error handling
+    const unsubscribeMessages = listenToMessages(chatId, user.uid, (newMessages) => {
+      if (!isMounted) return;
+      
+      try {
+        console.log('📬 Received messages update:', newMessages.length);
+        setMessages(newMessages);
+        setLoading(false);
+        
+        // Mark unread messages as read with error handling
+        newMessages.forEach(message => {
+          if (message.senderId !== user.uid && !message.readBy[user.uid]) {
+            markMessageAsRead({
+              chatId,
+              messageId: message.id,
+              userId: user.uid,
+            }).catch(error => {
+              console.warn('⚠️ Failed to mark message as read:', error);
+            });
+          }
+        });
+      } catch (error) {
+        console.error('❌ Error processing messages:', error);
+        setError('Failed to load messages. Please refresh the page.');
       }
     });
+    listeners.push(unsubscribeMessages);
     
-    // Listen to typing indicators
-    const unsubscribeTyping = listenToTypingIndicators(chatId, user.uid, (typingUsers) => {
-      console.log('⌨️ Typing users:', typingUsers);
-      setOtherUserTyping(typingUsers.includes(otherUserId));
+    // Listen to chat updates with error handling
+    const unsubscribeChat = listenToChat(chatId, (updatedChat) => {
+      if (!isMounted) return;
+      
+      try {
+        console.log('💬 Chat updated:', updatedChat);
+        if (updatedChat) {
+          setChat(updatedChat);
+        }
+      } catch (error) {
+        console.error('❌ Error processing chat update:', error);
+      }
     });
+    listeners.push(unsubscribeChat);
+    
+    // Listen to typing indicators with error handling
+    const unsubscribeTyping = listenToTypingIndicators(chatId, user.uid, (typingUsers) => {
+      if (!isMounted) return;
+      
+      try {
+        console.log('⌨️ Typing users:', typingUsers);
+        setOtherUserTyping(typingUsers.includes(otherUserId));
+      } catch (error) {
+        console.error('❌ Error processing typing indicators:', error);
+      }
+    });
+    listeners.push(unsubscribeTyping);
     
     return () => {
       console.log('🔄 Cleaning up listeners...');
-      unsubscribeMessages();
-      unsubscribeChat();
-      unsubscribeTyping();
+      isMounted = false;
+      listeners.forEach(unsubscribe => {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.warn('⚠️ Error cleaning up listener:', error);
+        }
+      });
     };
   }, [chatId, user, otherUserId]);
 
@@ -251,30 +297,16 @@ export default function DirectMessageInterface({
     
     if (!chatId || !user) return;
     
-    // Handle typing indicators
-    if (value.trim() && !isTyping) {
-      setIsTyping(true);
-      await setTypingStatus({
-        chatId,
-        userId: user.uid,
-        isTyping: true,
-      });
-    } else if (!value.trim() && isTyping) {
-      setIsTyping(false);
-      await setTypingStatus({
-        chatId,
-        userId: user.uid,
-        isTyping: false,
-      });
-    }
-    
-    // Clear typing after 3 seconds of no input
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    typingTimeoutRef.current = setTimeout(async () => {
-      if (isTyping) {
+    try {
+      // Handle typing indicators with error handling
+      if (value.trim() && !isTyping) {
+        setIsTyping(true);
+        await setTypingStatus({
+          chatId,
+          userId: user.uid,
+          isTyping: true,
+        });
+      } else if (!value.trim() && isTyping) {
         setIsTyping(false);
         await setTypingStatus({
           chatId,
@@ -282,7 +314,33 @@ export default function DirectMessageInterface({
           isTyping: false,
         });
       }
-    }, 3000);
+    } catch (error) {
+      console.warn('⚠️ Failed to update typing status:', error);
+    }
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    
+    // Set new timeout for auto-clearing typing status
+    if (value.trim()) {
+      typingTimeoutRef.current = setTimeout(async () => {
+        try {
+          if (isTyping) {
+            setIsTyping(false);
+            await setTypingStatus({
+              chatId,
+              userId: user.uid,
+              isTyping: false,
+            });
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to clear typing status:', error);
+        }
+      }, 3000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -590,7 +648,18 @@ export default function DirectMessageInterface({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden relative">
+      {/* Connection Monitor */}
+      <ChatConnectionMonitor 
+        onConnectionChange={(isConnected) => {
+          if (!isConnected) {
+            setError('Connection lost. Messages may not be delivered.');
+          } else {
+            setError(null);
+          }
+        }}
+        showStatus={true}
+      />
       {/* Chat Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
         <div className="flex items-center gap-4">

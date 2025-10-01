@@ -855,42 +855,76 @@ export function listenToMessages(
   );
   
   return onSnapshot(q, async (snapshot) => {
-    const messages: Message[] = [];
-    
-    // Get chat info for decryption
-    const chatDoc = await getDoc(getChatRef(chatId));
-    const chatData = chatDoc.exists() ? chatDoc.data() as Chat : null;
-    
-    for (const messageDoc of snapshot.docs) {
-      const messageData = messageDoc.data() as Message;
-      const message: Message = {
-        ...messageData,
-        id: messageDoc.id,
-      };
+    try {
+      const messages: Message[] = [];
       
-      // Decrypt message if encrypted
-      if (chatData?.isEncrypted && message.encryptionIV && message.type === 'text') {
+      // Get chat info for decryption with error handling
+      let chatData: Chat | null = null;
+      try {
+        const chatDoc = await getDoc(getChatRef(chatId));
+        chatData = chatDoc.exists() ? chatDoc.data() as Chat : null;
+      } catch (chatError) {
+        console.warn('⚠️ Failed to load chat data for decryption:', chatError);
+      }
+      
+      for (const messageDoc of snapshot.docs) {
         try {
-          const participantIds = Object.keys(chatData.participants).filter(id => id !== currentUserId);
-          if (participantIds.length > 0) {
-            const sharedKey = await ChatEncryption.generateSharedKey(currentUserId, participantIds[0]);
-            const decrypted = await ChatEncryption.decrypt(
-              message.content,
-              message.encryptionIV,
-              sharedKey
-            );
-            message.content = decrypted;
+          const messageData = messageDoc.data() as Message;
+          const message: Message = {
+            ...messageData,
+            id: messageDoc.id,
+          };
+          
+          // Decrypt message if encrypted with enhanced error handling
+          if (chatData?.isEncrypted && message.encryptionIV && message.type === 'text') {
+            try {
+              const participantIds = Object.keys(chatData.participants).filter(id => id !== currentUserId);
+              if (participantIds.length > 0) {
+                const sharedKey = await ChatEncryption.generateSharedKey(currentUserId, participantIds[0]);
+                const decrypted = await ChatEncryption.decrypt(
+                  message.content,
+                  message.encryptionIV,
+                  sharedKey
+                );
+                message.content = decrypted;
+              }
+            } catch (decryptionError) {
+              console.error('❌ Failed to decrypt message:', decryptionError);
+              message.content = '[Unable to decrypt message]';
+            }
           }
-        } catch (decryptionError) {
-          console.error('❌ Failed to decrypt message:', decryptionError);
-          message.content = '[Unable to decrypt message]';
+          
+          messages.push(message);
+        } catch (messageError) {
+          console.warn('⚠️ Failed to process message:', messageError);
+          // Add a fallback message to prevent complete failure
+          messages.push({
+            id: messageDoc.id,
+            chatId,
+            senderId: 'system',
+            content: '[Message could not be loaded]',
+            type: 'text',
+            timestamp: new Date(),
+            readBy: {},
+            reactions: {},
+            isEdited: false,
+            editedAt: null,
+            replyTo: null,
+            encryptionIV: null
+          });
         }
       }
       
-      messages.push(message);
+      callback(messages.reverse());
+    } catch (error) {
+      console.error('❌ Error in listenToMessages:', error);
+      // Call callback with empty array to prevent UI from breaking
+      callback([]);
     }
-    
-    callback(messages.reverse());
+  }, (error) => {
+    console.error('❌ Firestore listener error:', error);
+    // Call callback with empty array to prevent UI from breaking
+    callback([]);
   });
 }
 
@@ -902,18 +936,34 @@ export function listenToTypingIndicators(
   const typingRef = getTypingRef(chatId);
   
   return onSnapshot(typingRef, (snapshot) => {
-    const typingUsers = snapshot.docs
-      .map(doc => doc.data() as TypingIndicator)
-      .filter(indicator => 
-        indicator.userId !== currentUserId && 
-        indicator.isTyping &&
-        indicator.lastUpdated &&
-        // Only consider recent typing indicators (within 5 seconds)
-        Date.now() - (indicator.lastUpdated as Timestamp).toMillis() < 5000
-      )
-      .map(indicator => indicator.userId);
-    
-    callback(typingUsers);
+    try {
+      const typingUsers = snapshot.docs
+        .map(doc => {
+          try {
+            return doc.data() as TypingIndicator;
+          } catch (error) {
+            console.warn('⚠️ Failed to parse typing indicator:', error);
+            return null;
+          }
+        })
+        .filter((indicator): indicator is TypingIndicator => 
+          indicator !== null &&
+          indicator.userId !== currentUserId && 
+          indicator.isTyping &&
+          indicator.lastUpdated &&
+          // Only consider recent typing indicators (within 5 seconds)
+          Date.now() - (indicator.lastUpdated as Timestamp).toMillis() < 5000
+        )
+        .map(indicator => indicator.userId);
+      
+      callback(typingUsers);
+    } catch (error) {
+      console.error('❌ Error processing typing indicators:', error);
+      callback([]);
+    }
+  }, (error) => {
+    console.error('❌ Firestore typing indicators listener error:', error);
+    callback([]);
   });
 }
 
