@@ -159,6 +159,10 @@ export default function TourGuide({ isActive, onComplete, onSkip }: TourGuidePro
   const skipTour = () => {
     setIsVisible(false);
     onSkip();
+    // Mark tour as completed in user preferences when skipped
+    if (user && typeof window !== 'undefined') {
+      localStorage.setItem(`tour_completed_${user.uid}`, 'true');
+    }
   };
 
   const handleAction = () => {

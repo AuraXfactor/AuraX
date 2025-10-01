@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { addShadowBox, addWhisper, logCraving, setUserAddiction } from '@/lib/userProfile';
+import Link from 'next/link';
 
 const affirmations = [
   'I am stronger than my cravings.',
@@ -166,12 +167,12 @@ export default function RecoveryHub() {
         <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
           <div className="font-semibold mb-2">Distraction Vault</div>
           <div className="grid sm:grid-cols-3 gap-3 text-sm">
-            <button className="px-3 py-2 rounded-lg border">Puzzle</button>
-            <button className="px-3 py-2 rounded-lg border">Coloring</button>
-            <button className="px-3 py-2 rounded-lg border">Breathing Visual</button>
-            <button className="px-3 py-2 rounded-lg border">Matching</button>
-            <button className="px-3 py-2 rounded-lg border">Cards</button>
-            <button className="px-3 py-2 rounded-lg border">Call a Friend</button>
+            <Link href="/toolkit/breathing" className="px-3 py-2 rounded-lg border hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-center">🫁 Breathing</Link>
+            <Link href="/toolkit/meditations" className="px-3 py-2 rounded-lg border hover:bg-purple-50 dark:hover:bg-purple-900/20 transition text-center">🧘 Meditation</Link>
+            <Link href="/toolkit/workouts" className="px-3 py-2 rounded-lg border hover:bg-green-50 dark:hover:bg-green-900/20 transition text-center">💪 Workout</Link>
+            <Link href="/chat" className="px-3 py-2 rounded-lg border hover:bg-pink-50 dark:hover:bg-pink-900/20 transition text-center">🤖 AI Chat</Link>
+            <Link href="/journal" className="px-3 py-2 rounded-lg border hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition text-center">📔 Journal</Link>
+            <button className="px-3 py-2 rounded-lg border hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition">📞 Call Support</button>
           </div>
           <div className="mt-3 text-sm opacity-70">Try a 30-second motivational clip.</div>
         </div>
@@ -192,6 +193,61 @@ export default function RecoveryHub() {
             ))}
           </div>
           <div className="mt-2 text-sm opacity-70">Glow brighter on hard days survived.</div>
+        </div>
+
+        <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
+          <div className="font-semibold mb-2">Crisis Support</div>
+          <div className="space-y-3">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="font-medium text-red-800 dark:text-red-200">🚨 Emergency Resources</div>
+              <div className="text-sm text-red-700 dark:text-red-300 mt-1">
+                National Suicide Prevention Lifeline: 988
+              </div>
+              <div className="text-sm text-red-700 dark:text-red-300">
+                Crisis Text Line: Text HOME to 741741
+              </div>
+            </div>
+            <Link href="/chat" className="block w-full p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-center">
+              <div className="font-medium text-blue-800 dark:text-blue-200">🤖 AI Crisis Support</div>
+              <div className="text-sm text-blue-700 dark:text-blue-300">Get immediate AI assistance</div>
+            </Link>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
+          <div className="font-semibold mb-2">Support Groups</div>
+          <div className="space-y-2">
+            <Link href="/groups" className="block p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition">
+              <div className="font-medium text-green-800 dark:text-green-200">👥 Join Recovery Groups</div>
+              <div className="text-sm text-green-700 dark:text-green-300">Connect with others on similar journeys</div>
+            </Link>
+            <Link href="/therapy-support" className="block p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
+              <div className="font-medium text-purple-800 dark:text-purple-200">🫂 Professional Support</div>
+              <div className="text-sm text-purple-700 dark:text-purple-300">Access therapy and counseling resources</div>
+            </Link>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
+          <div className="font-semibold mb-2">Recovery Tools</div>
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/toolkit/breathing" className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800 hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition text-center">
+              <div className="text-2xl mb-1">🫁</div>
+              <div className="text-sm font-medium">Breathing</div>
+            </Link>
+            <Link href="/toolkit/meditations" className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition text-center">
+              <div className="text-2xl mb-1">🧘</div>
+              <div className="text-sm font-medium">Meditation</div>
+            </Link>
+            <Link href="/toolkit/grounding" className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition text-center">
+              <div className="text-2xl mb-1">🌱</div>
+              <div className="text-sm font-medium">Grounding</div>
+            </Link>
+            <Link href="/journal" className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition text-center">
+              <div className="text-2xl mb-1">📔</div>
+              <div className="text-sm font-medium">Journal</div>
+            </Link>
+          </div>
         </div>
       </section>
 
