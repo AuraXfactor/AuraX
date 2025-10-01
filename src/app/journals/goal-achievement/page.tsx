@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'fireba
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import AutoAIInsights from '@/components/journal/AutoAIInsights';
 
 interface Goal {
   id?: string;
@@ -46,6 +47,8 @@ export default function GoalAchievementJournal() {
   const [motivationSource, setMotivationSource] = useState('');
   const [celebrationNote, setCelebrationNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAutoAI, setShowAutoAI] = useState(false);
+  const [lastSavedEntry, setLastSavedEntry] = useState<any>(null);
   const [loadingGoal, setLoadingGoal] = useState(true);
 
   useEffect(() => {
@@ -54,76 +57,25 @@ export default function GoalAchievementJournal() {
     }
   }, [user]);
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
-
   const loadCurrentGoal = async () => {
+    if (!user) return;
+    
     try {
-      const goalDoc = await getDoc(doc(db, 'user-goals', user.uid));
+      setLoadingGoal(true);
+      const goalRef = doc(db, 'users', user.uid, 'goals', 'current');
+      const goalDoc = await getDoc(goalRef);
+      
       if (goalDoc.exists()) {
-        setCurrentGoal({ id: goalDoc.id, ...goalDoc.data() } as Goal);
+        const goalData = goalDoc.data() as Goal;
+        setCurrentGoal({
+          ...goalData,
+          id: goalDoc.id
+        });
       }
     } catch (error) {
-      console.error('Error loading goal:', error);
+      console.error('Error loading current goal:', error);
     } finally {
       setLoadingGoal(false);
-    }
-  };
-
-  const createNewGoal = async () => {
-    if (!newGoalTitle.trim() || !newGoalDescription.trim() || !newGoalTargetDate) {
-      alert('Please fill in all goal details');
-      return;
-    }
-
-    try {
-      const goalData = {
-        title: newGoalTitle.trim(),
-        description: newGoalDescription.trim(),
-        targetDate: newGoalTargetDate,
-        progress: 0,
-        createdAt: serverTimestamp(),
-      };
-
-      await setDoc(doc(db, 'user-goals', user.uid), goalData);
-      
-      setCurrentGoal({ id: user.uid, ...goalData });
-      setIsSettingNewGoal(false);
-      setNewGoalTitle('');
-      setNewGoalDescription('');
-      setNewGoalTargetDate('');
-      
-      alert('New goal created successfully! 🎯');
-    } catch (error) {
-      console.error('Error creating goal:', error);
-      alert('Failed to create goal. Please try again.');
-    }
-  };
-
-  const updateDailyTask = (index: number, field: 'task' | 'completed', value: string | boolean) => {
-    setDailyProgress(prev => prev.map((task, i) => 
-      i === index ? { ...task, [field]: value } : task
-    ));
-  };
-
-  const updateTomorrowAction = (index: number, value: string) => {
-    setTomorrowActions(prev => prev.map((action, i) => i === index ? value : action));
-  };
-
-  const updateGoalProgress = async (newProgress: number) => {
-    if (!currentGoal) return;
-
-    try {
-      await setDoc(doc(db, 'user-goals', user.uid), 
-        { ...currentGoal, progress: newProgress }, 
-        { merge: true }
-      );
-      
-      setCurrentGoal(prev => prev ? { ...prev, progress: newProgress } : null);
-    } catch (error) {
-      console.error('Error updating goal progress:', error);
     }
   };
 
@@ -212,6 +164,10 @@ export default function GoalAchievementJournal() {
 
       alert('Goal progress saved successfully! 🎯');
       
+      // Trigger auto AI insights
+      setLastSavedEntry(entryData);
+      setShowAutoAI(true);
+      
       // Reset form but keep goal
       resetForm();
       
@@ -234,7 +190,7 @@ export default function GoalAchievementJournal() {
     if (tomorrowActions.some(action => action.trim())) completed++;
     if (motivationSource.trim()) completed++;
     if (celebrationNote.trim()) completed++;
-    if (motivationLevel >= 5) completed++; // Bonus for maintaining motivation
+    if (motivationLevel > 0) completed++;
     
     return Math.round((completed / total) * 100);
   };
@@ -242,21 +198,9 @@ export default function GoalAchievementJournal() {
   const calculateProductivityScore = () => {
     const completedTasks = dailyProgress.filter(task => task.completed).length;
     const totalTasks = dailyProgress.filter(task => task.task.trim()).length;
+    const taskCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
     
-    if (totalTasks === 0) return 0;
-    
-    let score = (completedTasks / totalTasks) * 60; // Base score from task completion
-    
-    // Motivation boost
-    score += (motivationLevel - 5) * 5; // Up to +25 for high motivation
-    
-    // Planning boost
-    if (tomorrowActions.filter(action => action.trim()).length >= 2) score += 10;
-    
-    // Learning boost
-    if (lessonsLearned.trim()) score += 5;
-    
-    return Math.max(0, Math.min(100, Math.round(score)));
+    return Math.round((taskCompletionRate + motivationLevel * 10) / 2);
   };
 
   const resetForm = () => {
@@ -274,460 +218,444 @@ export default function GoalAchievementJournal() {
     setCelebrationNote('');
   };
 
-  const getMotivationColor = (level: number) => {
-    if (level >= 8) return 'bg-green-500';
-    if (level >= 6) return 'bg-yellow-500';
-    if (level >= 4) return 'bg-orange-500';
-    return 'bg-red-500';
+  const addDailyTask = () => {
+    setDailyProgress([...dailyProgress, { task: '', completed: false }]);
   };
 
-  const getMotivationLabel = (level: number) => {
-    if (level >= 9) return 'Unstoppable';
-    if (level >= 7) return 'Highly Motivated';
-    if (level >= 5) return 'Motivated';
-    if (level >= 3) return 'Low Energy';
-    return 'Struggling';
+  const removeDailyTask = (index: number) => {
+    setDailyProgress(dailyProgress.filter((_, i) => i !== index));
   };
+
+  const updateDailyTask = (index: number, field: 'task' | 'completed', value: string | boolean) => {
+    const updated = [...dailyProgress];
+    updated[index] = { ...updated[index], [field]: value };
+    setDailyProgress(updated);
+  };
+
+  const addTomorrowAction = () => {
+    setTomorrowActions([...tomorrowActions, '']);
+  };
+
+  const removeTomorrowAction = (index: number) => {
+    setTomorrowActions(tomorrowActions.filter((_, i) => i !== index));
+  };
+
+  const updateTomorrowAction = (index: number, value: string) => {
+    const updated = [...tomorrowActions];
+    updated[index] = value;
+    setTomorrowActions(updated);
+  };
+
+  const createNewGoal = async () => {
+    if (!user || !newGoalTitle.trim()) return;
+    
+    try {
+      const goalData = {
+        title: newGoalTitle.trim(),
+        description: newGoalDescription.trim(),
+        targetDate: newGoalTargetDate,
+        progress: 0,
+        createdAt: serverTimestamp()
+      };
+      
+      const goalRef = doc(db, 'users', user.uid, 'goals', 'current');
+      await setDoc(goalRef, goalData);
+      
+      setCurrentGoal({
+        id: 'current',
+        ...goalData
+      });
+      
+      setIsSettingNewGoal(false);
+      setNewGoalTitle('');
+      setNewGoalDescription('');
+      setNewGoalTargetDate('');
+      
+      alert('New goal created successfully! 🎯');
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      alert('Failed to create goal. Please try again.');
+    }
+  };
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
 
   if (loadingGoal) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading goal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentGoal) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4">
+            🎯 Goal Achievement Journal
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Track your daily progress toward your goals and celebrate your achievements
+          </p>
+        </div>
+
+        <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-8">
+          <h2 className="text-2xl font-bold mb-6 text-center">Set Your Goal</h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-lg font-semibold mb-2">Goal Title *</label>
+              <input
+                type="text"
+                value={newGoalTitle}
+                onChange={(e) => setNewGoalTitle(e.target.value)}
+                placeholder="e.g., Learn Spanish, Run a Marathon, Start a Business"
+                className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-lg"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-lg font-semibold mb-2">Description</label>
+              <textarea
+                value={newGoalDescription}
+                onChange={(e) => setNewGoalDescription(e.target.value)}
+                placeholder="Describe your goal in detail..."
+                rows={4}
+                className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-lg font-semibold mb-2">Target Date</label>
+              <input
+                type="date"
+                value={newGoalTargetDate}
+                onChange={(e) => setNewGoalTargetDate(e.target.value)}
+                className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              />
+            </div>
+          </div>
+          
+          <div className="text-center mt-8">
+            <button
+              onClick={createNewGoal}
+              disabled={!newGoalTitle.trim()}
+              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl hover:from-green-600 hover:to-emerald-600 transition disabled:opacity-50 font-bold text-lg shadow-lg"
+            >
+              Create Goal 🎯
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6 md:p-10">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/journals"
-              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              ←
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold">🎯 Progress Tracker</h1>
-              <p className="text-gray-600 dark:text-gray-400">Goal achievement & milestone celebration</p>
+    <div className="max-w-4xl mx-auto p-6 space-y-8">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+          🎯 Goal Achievement Journal
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Track your daily progress toward: <strong>{currentGoal.title}</strong>
+        </p>
+      </div>
+
+      {/* Current Goal Overview */}
+      <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Current Goal</h2>
+          <button
+            onClick={() => setIsSettingNewGoal(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+          >
+            Change Goal
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {currentGoal.title}
+          </h3>
+          {currentGoal.description && (
+            <p className="text-gray-600 dark:text-gray-400">
+              {currentGoal.description}
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <span>Target: {currentGoal.targetDate}</span>
+            <span>Progress: {currentGoal.progress}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Daily Progress Form */}
+      <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-8">
+        <h2 className="text-2xl font-bold mb-6 text-center">Today's Progress</h2>
+        
+        <div className="space-y-8">
+          {/* Daily Tasks */}
+          <div>
+            <label className="block text-lg font-semibold mb-4">Daily Tasks</label>
+            <div className="space-y-3">
+              {dailyProgress.map((task, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={(e) => updateDailyTask(index, 'completed', e.target.checked)}
+                    className="w-5 h-5 text-green-500 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={task.task}
+                    onChange={(e) => updateDailyTask(index, 'task', e.target.value)}
+                    placeholder={`Task ${index + 1}`}
+                    className="flex-1 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                  />
+                  {dailyProgress.length > 1 && (
+                    <button
+                      onClick={() => removeDailyTask(index)}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={addDailyTask}
+                className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition text-gray-600 dark:text-gray-400"
+              >
+                + Add Task
+              </button>
             </div>
           </div>
-          
-          {currentGoal && (
-            <button
-              onClick={handleSave}
-              disabled={saving || !dailyProgress.some(task => task.task.trim())}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition disabled:opacity-50 font-semibold"
-            >
-              {saving ? 'Saving...' : 'Save Entry'}
-            </button>
-          )}
-        </div>
 
-        {/* Auto Date/Time Display */}
-        <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-200 dark:border-green-800">
-          <p className="text-green-800 dark:text-green-200 font-medium">
-            📅 {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </p>
-          <p className="text-green-600 dark:text-green-300 text-sm">
-            🕐 {new Date().toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </p>
-        </div>
+          {/* Obstacles Faced */}
+          <div>
+            <label className="block text-lg font-semibold mb-2">Obstacles Faced Today</label>
+            <textarea
+              value={obstaclesFaced}
+              onChange={(e) => setObstaclesFaced(e.target.value)}
+              placeholder="What challenges did you encounter? How did you handle them?"
+              rows={3}
+              className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+            />
+          </div>
 
-        {/* Current Goal Display or Goal Setup */}
-        {!currentGoal && !isSettingNewGoal ? (
-          <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-8 text-center mb-8">
-            <h2 className="text-2xl font-bold mb-4">🎯 Set Your Goal</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Start by setting a goal to track your progress and celebrate achievements!
-            </p>
-            <button
-              onClick={() => setIsSettingNewGoal(true)}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-semibold"
-            >
-              Create New Goal 🚀
-            </button>
-          </section>
-        ) : !currentGoal && isSettingNewGoal ? (
-          <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">🚀 Create New Goal</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Goal Title</label>
-                <input
-                  type="text"
-                  value={newGoalTitle}
-                  onChange={(e) => setNewGoalTitle(e.target.value)}
-                  placeholder="What do you want to achieve?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Goal Description</label>
-                <textarea
-                  value={newGoalDescription}
-                  onChange={(e) => setNewGoalDescription(e.target.value)}
-                  placeholder="Describe your goal in detail. What does success look like?"
-                  className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  rows={3}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Target Date</label>
-                <input
-                  type="date"
-                  value={newGoalTargetDate}
-                  onChange={(e) => setNewGoalTargetDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            
-            <div className="flex gap-3 mt-6">
+          {/* Lessons Learned */}
+          <div>
+            <label className="block text-lg font-semibold mb-2">Lessons Learned</label>
+            <textarea
+              value={lessonsLearned}
+              onChange={(e) => setLessonsLearned(e.target.value)}
+              placeholder="What did you learn today that will help you tomorrow?"
+              rows={3}
+              className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+            />
+          </div>
+
+          {/* Milestone Recognition */}
+          <div>
+            <label className="block text-lg font-semibold mb-2">Milestone Recognition</label>
+            <textarea
+              value={milestoneRecognition}
+              onChange={(e) => setMilestoneRecognition(e.target.value)}
+              placeholder="Any milestones or achievements to celebrate today?"
+              rows={3}
+              className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+            />
+          </div>
+
+          {/* Tomorrow's Actions */}
+          <div>
+            <label className="block text-lg font-semibold mb-4">Tomorrow's Action Plan</label>
+            <div className="space-y-3">
+              {tomorrowActions.map((action, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <span className="text-gray-500 dark:text-gray-400 w-6">{index + 1}.</span>
+                  <input
+                    type="text"
+                    value={action}
+                    onChange={(e) => updateTomorrowAction(index, e.target.value)}
+                    placeholder={`Action ${index + 1}`}
+                    className="flex-1 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                  />
+                  {tomorrowActions.length > 1 && (
+                    <button
+                      onClick={() => removeTomorrowAction(index)}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
               <button
-                onClick={() => setIsSettingNewGoal(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                onClick={addTomorrowAction}
+                className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-gray-600 dark:text-gray-400"
               >
-                Cancel
-              </button>
-              <button
-                onClick={createNewGoal}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition font-semibold"
-              >
-                Create Goal 🎯
+                + Add Action
               </button>
             </div>
-          </section>
-        ) : currentGoal ? (
-          <>
-            {/* Current Goal Display */}
-            <section className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-3xl p-6 mb-8">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold mb-2">🎯 {currentGoal.title}</h2>
-                  <p className="text-white/90 mb-4">{currentGoal.description}</p>
-                  <p className="text-white/80 text-sm">
-                    Target Date: {new Date(currentGoal.targetDate).toLocaleDateString()}
-                  </p>
-                </div>
-                
-                <button
-                  onClick={() => setIsSettingNewGoal(true)}
-                  className="px-3 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition text-sm"
-                >
-                  New Goal
-                </button>
-              </div>
-              
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">Progress</span>
-                  <span className="text-xl font-bold">{currentGoal.progress}%</span>
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-6">
-                  <div 
-                    className="bg-white h-6 rounded-full transition-all duration-500 flex items-center justify-center"
-                    style={{ width: `${currentGoal.progress}%` }}
-                  >
-                    {currentGoal.progress > 15 && (
-                      <span className="text-green-600 font-bold text-sm">
-                        {currentGoal.progress}%
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => updateGoalProgress(Math.max(0, currentGoal.progress - 5))}
-                  className="px-3 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition text-sm"
-                >
-                  -5%
-                </button>
-                <button
-                  onClick={() => updateGoalProgress(Math.min(100, currentGoal.progress + 5))}
-                  className="px-3 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition text-sm"
-                >
-                  +5%
-                </button>
-                <button
-                  onClick={() => updateGoalProgress(Math.min(100, currentGoal.progress + 10))}
-                  className="px-3 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition text-sm"
-                >
-                  +10%
-                </button>
-              </div>
-            </section>
+          </div>
 
-            <div className="space-y-8">
-              {/* Daily Progress */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">📈 Daily Progress</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">What steps did I take toward my goal today?</p>
-                
-                <div className="space-y-3">
-                  {dailyProgress.map((task, index) => (
-                    <div key={index} className="flex gap-3 items-center">
-                      <input
-                        type="checkbox"
-                        checked={task.completed}
-                        onChange={(e) => updateDailyTask(index, 'completed', e.target.checked)}
-                        className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                      />
-                      <input
-                        type="text"
-                        value={task.task}
-                        onChange={(e) => updateDailyTask(index, 'task', e.target.value)}
-                        placeholder={`Task ${index + 1}...`}
-                        className={`flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                          task.completed ? 'line-through text-gray-500' : ''
-                        }`}
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                  <p className="text-green-800 dark:text-green-200 text-sm">
-                    ✅ Completed: {dailyProgress.filter(task => task.completed).length} / {dailyProgress.filter(task => task.task.trim()).length} tasks
-                  </p>
-                </div>
-              </section>
-
-              {/* Obstacles Faced */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">🚧 Obstacles Faced</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">What challenges came up?</p>
-                <textarea
-                  value={obstaclesFaced}
-                  onChange={(e) => setObstaclesFaced(e.target.value)}
-                  placeholder="Describe any challenges, setbacks, or obstacles you encountered today..."
-                  className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-                  rows={4}
-                />
-              </section>
-
-              {/* Lessons Learned */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">🎓 Lessons Learned</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">What did I discover today?</p>
-                <textarea
-                  value={lessonsLearned}
-                  onChange={(e) => setLessonsLearned(e.target.value)}
-                  placeholder="Share insights, learnings, or discoveries from your goal pursuit today..."
-                  className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={4}
-                />
-              </section>
-
-              {/* Milestone Recognition */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">🏆 Milestone Recognition</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">What progress am I proud of?</p>
-                <textarea
-                  value={milestoneRecognition}
-                  onChange={(e) => setMilestoneRecognition(e.target.value)}
-                  placeholder="Celebrate any progress, no matter how small. What achievements are you proud of today?"
-                  className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  rows={4}
-                />
-              </section>
-
-              {/* Tomorrow's Action Plan */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">📋 Tomorrow&apos;s Action Plan</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Specific steps for tomorrow</p>
-                
-                <div className="space-y-3">
-                  {tomorrowActions.map((action, index) => (
-                    <input
-                      key={index}
-                      type="text"
-                      value={action}
-                      onChange={(e) => updateTomorrowAction(index, e.target.value)}
-                      placeholder={`Action ${index + 1}...`}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    />
-                  ))}
-                </div>
-              </section>
-
-              {/* Motivation Level */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">🔥 Motivation Level</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">How motivated are you feeling?</p>
-                
-                <div className="mb-6">
-                  <div className="flex items-center gap-4 mb-4">
-                    <span className="text-sm text-gray-500">1 (Low)</span>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={motivationLevel}
-                      onChange={(e) => setMotivationLevel(Number(e.target.value))}
-                      className="flex-1"
-                    />
-                    <span className="text-sm text-gray-500">10 (High)</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-6 h-6 rounded-full ${getMotivationColor(motivationLevel)}`}></div>
-                    <span className="font-bold text-lg">{motivationLevel}</span>
-                    <span className="text-gray-600">({getMotivationLabel(motivationLevel)})</span>
-                  </div>
-                </div>
-                
-                <input
-                  type="text"
-                  value={motivationSource}
-                  onChange={(e) => setMotivationSource(e.target.value)}
-                  placeholder="What's driving me? What keeps me motivated?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </section>
-
-              {/* Celebration Note */}
-              <section className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-                <h2 className="text-xl font-bold mb-4">🎉 Celebration Note</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">How will I acknowledge my effort?</p>
-                <input
-                  type="text"
-                  value={celebrationNote}
-                  onChange={(e) => setCelebrationNote(e.target.value)}
-                  placeholder="How will you reward yourself for today's progress?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                />
-              </section>
-
-              {/* Progress Summary */}
-              <section className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-3xl p-6">
-                <h2 className="text-xl font-bold mb-4">📊 Today&apos;s Summary</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold">
-                      {dailyProgress.filter(task => task.completed).length}
-                    </div>
-                    <div className="text-sm opacity-80">Tasks Completed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold">{motivationLevel}/10</div>
-                    <div className="text-sm opacity-80">Motivation</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold">{calculateProductivityScore()}</div>
-                    <div className="text-sm opacity-80">Productivity Score</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold">{calculateCompletionScore()}%</div>
-                    <div className="text-sm opacity-80">Complete</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex-1">
-                    <div className="w-full bg-white/20 rounded-full h-4">
-                      <div 
-                        className="bg-white h-4 rounded-full transition-all duration-500"
-                        style={{ width: `${calculateCompletionScore()}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white/10 rounded-xl p-3">
-                  <p className="font-medium">
-                    🎯 Great work today! Every step forward brings you closer to achieving {currentGoal.title}!
-                  </p>
-                </div>
-              </section>
-
-              {/* Save Button */}
-              <div className="text-center">
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !dailyProgress.some(task => task.task.trim())}
-                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl hover:from-green-600 hover:to-emerald-600 transition disabled:opacity-50 font-bold text-lg shadow-lg"
-                >
-                  {saving ? 'Saving Progress...' : 'Complete Progress Check 🎯'}
-                </button>
-                
-                {!dailyProgress.some(task => task.task.trim()) && (
-                  <p className="text-sm text-gray-500 mt-2">Please add at least one daily progress item to save</p>
-                )}
-              </div>
-              
-              {/* Journal History */}
-              <SpecializedJournalHistory
-                journalType="goal-achievement"
-                title="Progress Tracker"
-                icon="🎯"
-                renderEntry={(entry) => (
-                  <div className="space-y-3">
-                    {entry.goal && (
-                      <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border-l-4 border-green-500">
-                        <div className="text-sm font-medium text-green-800 dark:text-green-300 mb-1">🎯 Goal</div>
-                        <div className="font-medium text-green-700 dark:text-green-300">{entry.goal.title}</div>
-                        {entry.goal.description && (
-                          <div className="text-green-600 dark:text-green-400 text-sm">{entry.goal.description}</div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {entry.dailyProgress && entry.dailyProgress.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">📋 Daily Tasks</div>
-                        {entry.dailyProgress.map((taskData: unknown, index: number) => {
-                          const task = taskData as { task?: string; completed?: boolean };
-                          return task.task ? (
-                            <div key={index} className="flex items-center gap-2">
-                              <div className={`w-4 h-4 rounded-full ${task.completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                              <span className={`text-sm ${task.completed ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500'}`}>
-                                {task.task}
-                              </span>
-                            </div>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                    
-                    {entry.motivationLevel && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Motivation:</span>
-                        <div className="flex gap-1">
-                          {[1,2,3,4,5,6,7,8,9,10].map(num => (
-                            <div key={num} className={`w-2 h-4 ${
-                              num <= entry.motivationLevel ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
-                            }`}></div>
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          ({entry.motivationLevel}/10)
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
+          {/* Motivation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-lg font-semibold mb-2">
+                Motivation Level: {motivationLevel}/10
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={motivationLevel}
+                onChange={(e) => setMotivationLevel(Number(e.target.value))}
+                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
             </div>
-          </>
-        ) : null}
+            
+            <div>
+              <label className="block text-lg font-semibold mb-2">Motivation Source</label>
+              <input
+                type="text"
+                value={motivationSource}
+                onChange={(e) => setMotivationSource(e.target.value)}
+                placeholder="What's driving you today?"
+                className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              />
+            </div>
+          </div>
+
+          {/* Celebration Note */}
+          <div>
+            <label className="block text-lg font-semibold mb-2">Celebration Note</label>
+            <textarea
+              value={celebrationNote}
+              onChange={(e) => setCelebrationNote(e.target.value)}
+              placeholder="What are you proud of today? How will you celebrate your progress?"
+              rows={3}
+              className="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+            />
+          </div>
+        </div>
+
+        <div className="text-center mt-8">
+          <button
+            onClick={handleSave}
+            disabled={saving || !dailyProgress.some(task => task.task.trim())}
+            className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl hover:from-green-600 hover:to-emerald-600 transition disabled:opacity-50 font-bold text-lg shadow-lg"
+          >
+            {saving ? 'Saving Progress...' : 'Complete Progress Check 🎯'}
+          </button>
+        </div>
       </div>
+
+      {/* Journal History */}
+      <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+        <h2 className="text-xl font-bold mb-4">Progress History</h2>
+        <SpecializedJournalHistory
+          journalType="goal-achievement"
+          title="Goal Achievement History"
+          icon="🎯"
+          renderEntry={(entry) => (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {entry.goalTitle}
+                </h3>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {new Date(entry.timestamp?.toDate?.() || entry.timestamp).toLocaleDateString()}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <div className="font-medium text-green-800 dark:text-green-300 mb-1">Completion Rate</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {entry.dailyCompletionRate?.toFixed(1) || 0}%
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <div className="font-medium text-blue-800 dark:text-blue-300 mb-1">Motivation</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {entry.motivation?.level || 0}/10
+                  </div>
+                </div>
+                
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                  <div className="font-medium text-purple-800 dark:text-purple-300 mb-1">Productivity</div>
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {entry.productivityScore || 0}
+                  </div>
+                </div>
+              </div>
+              
+              {entry.dailyProgress && entry.dailyProgress.length > 0 && (
+                <div className="space-y-2">
+                  <div className="font-medium text-gray-700 dark:text-gray-300">Tasks Completed:</div>
+                  <div className="space-y-1">
+                    {entry.dailyProgress.map((task: any, index: number) => (
+                      <div key={index} className="flex items-center gap-2 text-sm">
+                        <span className={task.completed ? 'text-green-500' : 'text-gray-400'}>
+                          {task.completed ? '✓' : '○'}
+                        </span>
+                        <span className={task.completed ? 'line-through text-gray-500' : 'text-gray-700 dark:text-gray-300'}>
+                          {task.task}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {entry.obstaclesFaced && (
+                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                  <div className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-1">Obstacles</div>
+                  <div className="text-orange-700 dark:text-orange-300">{entry.obstaclesFaced}</div>
+                </div>
+              )}
+              
+              {entry.lessonsLearned && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Lessons Learned</div>
+                  <div className="text-blue-700 dark:text-blue-300">{entry.lessonsLearned}</div>
+                </div>
+              )}
+              
+              {entry.celebrationNote && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">Celebration</div>
+                  <div className="text-yellow-700 dark:text-yellow-300">{entry.celebrationNote}</div>
+                </div>
+              )}
+            </div>
+          )}
+        />
+      </div>
+
+      {/* Auto AI Insights */}
+      {showAutoAI && lastSavedEntry && (
+        <AutoAIInsights
+          journalType="goal-achievement"
+          entryData={lastSavedEntry}
+          onClose={() => {
+            setShowAutoAI(false);
+            setLastSavedEntry(null);
+          }}
+        />
+      )}
     </div>
   );
 }

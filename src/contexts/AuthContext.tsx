@@ -7,11 +7,13 @@ import { ensureUserProfile } from '@/lib/userProfile';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
   user: null, 
-  loading: true 
+  loading: true,
+  isAuthenticated: false
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -19,19 +21,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔄 Setting up auth state listener...');
+    
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('🔐 Auth state changed:', user ? 'User logged in' : 'User logged out');
+      
       setUser(user);
+      
       if (user) {
-        try { await ensureUserProfile(user); } catch {}
+        try {
+          console.log('👤 Ensuring user profile exists...');
+          await ensureUserProfile(user);
+          console.log('✅ User profile ensured');
+        } catch (error) {
+          console.error('❌ Error ensuring user profile:', error);
+        }
       }
+      
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔄 Cleaning up auth listener');
+      unsubscribe();
+    };
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      isAuthenticated: !!user 
+    }}>
       {children}
     </AuthContext.Provider>
   );

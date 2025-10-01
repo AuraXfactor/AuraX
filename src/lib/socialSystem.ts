@@ -237,6 +237,32 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
         focusAreas: data.focusAreas || [],
       } as PublicProfile;
     }
+    
+    // If no public profile exists, try to get from users collection as fallback
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return {
+          userId,
+          name: userData.name || userData.displayName || 'Unknown User',
+          username: userData.username || userData.email?.split('@')[0] || `user${userId.slice(-4)}`,
+          bio: userData.bio || '',
+          avatar: userData.avatar || userData.photoURL,
+          interests: userData.interests || [],
+          location: userData.location,
+          isOnline: userData.isOnline || false,
+          lastSeen: userData.lastSeen || null,
+          friendsCount: userData.friendsCount || 0,
+          postsCount: userData.postsCount || 0,
+          joinedAt: userData.joinedAt || null,
+          focusAreas: userData.focusAreas || [],
+        } as PublicProfile;
+      }
+    } catch (fallbackError) {
+      console.warn('Failed to load user data as fallback:', fallbackError);
+    }
+    
     return null;
   } catch (error) {
     console.error('Error fetching public profile:', error);
@@ -356,7 +382,7 @@ export async function respondToFriendRequest(params: {
   await batch.commit();
 }
 
-// Friend Discovery and Search
+// Enhanced Friend Discovery and Search with Fallback Methods
 export async function searchUsers(params: {
   query: string;
   currentUserId: string;
@@ -366,109 +392,135 @@ export async function searchUsers(params: {
   
   try {
     const searchTerm = searchQuery.toLowerCase().trim();
-    
-    // First, try to search public profiles
     let results: PublicProfile[] = [];
     
-    if (!searchTerm) {
-      // Return random public profiles
-      const q = query(getPublicProfilesRef(), limit(limitCount));
-      const snapshot = await getDocs(q);
-      results = snapshot.docs
-        .filter(doc => doc.id !== currentUserId)
-        .map(doc => {
-          const data = doc.data();
-          return {
-            userId: doc.id,
-            name: data.name || '',
-            username: data.username,
-            bio: data.bio,
-            avatar: data.avatar,
-            interests: data.interests || [],
-            location: data.location,
-            isOnline: data.isOnline || false,
-            lastSeen: data.lastSeen,
-            friendsCount: data.friendsCount || 0,
-            postsCount: data.postsCount || 0,
-            joinedAt: data.joinedAt,
-            focusAreas: data.focusAreas || [],
-          } as PublicProfile;
-        });
-    } else {
-      // Search public profiles first
-      const publicProfilesQuery = query(getPublicProfilesRef(), limit(50));
-      const publicSnapshot = await getDocs(publicProfilesQuery);
+    console.log('🔍 Searching users with fallback methods...', { searchTerm, currentUserId });
+    
+    // Method 1: Try public profiles first
+    try {
+      if (!searchTerm) {
+        // Return random public profiles
+        const q = query(getPublicProfilesRef(), limit(limitCount));
+        const snapshot = await getDocs(q);
+        results = snapshot.docs
+          .filter(doc => doc.id !== currentUserId)
+          .map(doc => {
+            const data = doc.data();
+            return {
+              userId: doc.id,
+              name: data.name || data.username || 'Anonymous',
+              username: data.username || data.name || `user${doc.id.slice(-4)}`,
+              bio: data.bio || 'AuraX community member',
+              avatar: data.avatar,
+              interests: data.interests || ['wellness'],
+              location: data.location,
+              isOnline: data.isOnline || false,
+              lastSeen: data.lastSeen,
+              friendsCount: data.friendsCount || 0,
+              postsCount: data.postsCount || 0,
+              joinedAt: data.joinedAt,
+              focusAreas: data.focusAreas || ['personal growth'],
+            } as PublicProfile;
+          });
+      } else {
+        // Search public profiles with enhanced filtering
+        const publicProfilesQuery = query(getPublicProfilesRef(), limit(50));
+        const publicSnapshot = await getDocs(publicProfilesQuery);
+        
+        results = publicSnapshot.docs
+          .filter(doc => doc.id !== currentUserId)
+          .map(doc => {
+            const data = doc.data();
+            return {
+              userId: doc.id,
+              name: data.name || data.username || 'Anonymous',
+              username: data.username || data.name || `user${doc.id.slice(-4)}`,
+              bio: data.bio || 'AuraX community member',
+              avatar: data.avatar,
+              interests: data.interests || ['wellness'],
+              location: data.location,
+              isOnline: data.isOnline || false,
+              lastSeen: data.lastSeen,
+              friendsCount: data.friendsCount || 0,
+              postsCount: data.postsCount || 0,
+              joinedAt: data.joinedAt,
+              focusAreas: data.focusAreas || ['personal growth'],
+            } as PublicProfile;
+          })
+          .filter(profile => 
+            profile.name.toLowerCase().includes(searchTerm) ||
+            profile.username?.toLowerCase().includes(searchTerm) ||
+            profile.bio?.toLowerCase().includes(searchTerm) ||
+            profile.interests?.some(interest => interest.toLowerCase().includes(searchTerm)) ||
+            profile.focusAreas?.some(area => area.toLowerCase().includes(searchTerm))
+          );
+      }
       
-      results = publicSnapshot.docs
-        .filter(doc => doc.id !== currentUserId)
-        .map(doc => {
-          const data = doc.data();
-          return {
-            userId: doc.id,
-            name: data.name || '',
-            username: data.username,
-            bio: data.bio,
-            avatar: data.avatar,
-            interests: data.interests || [],
-            location: data.location,
-            isOnline: data.isOnline || false,
-            lastSeen: data.lastSeen,
-            friendsCount: data.friendsCount || 0,
-            postsCount: data.postsCount || 0,
-            joinedAt: data.joinedAt,
-            focusAreas: data.focusAreas || [],
-          } as PublicProfile;
-        })
-        .filter(profile => 
-          profile.name.toLowerCase().includes(searchTerm) ||
-          profile.username?.toLowerCase().includes(searchTerm) ||
-          profile.bio?.toLowerCase().includes(searchTerm)
-        );
+      console.log('✅ Public profiles search completed', { resultsCount: results.length });
+    } catch (error) {
+      console.warn('⚠️ Public profiles search failed, trying fallback:', error);
     }
     
-    // If no results from public profiles, fallback to users collection
-    if (results.length === 0 && searchTerm) {
-      const usersQuery = query(collection(db, 'users'), limit(50));
-      const usersSnapshot = await getDocs(usersQuery);
-      
-      const userResults = usersSnapshot.docs
-        .filter(doc => doc.id !== currentUserId)
-        .map(doc => {
-          const data = doc.data();
-          return {
-            userId: doc.id,
-            name: data.name || data.displayName || data.email?.split('@')[0] || 'Anonymous',
-            username: data.username || data.email?.split('@')[0] || `user${doc.id.slice(-4)}`,
-            bio: data.bio || 'AuraX community member',
-            avatar: data.avatar || data.photoURL,
-            interests: data.interests || data.focusAreas || ['wellness'],
-            location: data.location,
-            isOnline: true,
-            lastSeen: serverTimestamp(),
-            friendsCount: 0,
-            postsCount: 0,
-            joinedAt: data.createdAt || serverTimestamp(),
-            focusAreas: data.focusAreas || ['personal growth'],
-          } as PublicProfile;
-        })
-        .filter((profile, index) => {
-          const originalData = usersSnapshot.docs[index]?.data();
-          return profile.name.toLowerCase().includes(searchTerm) ||
-            profile.username?.toLowerCase().includes(searchTerm) ||
-            (originalData?.email && originalData.email.toLowerCase().includes(searchTerm));
-        });
-      
-      results = userResults;
+    // Method 2: Fallback to users collection if no results or error
+    if (results.length === 0) {
+      try {
+        console.log('🔄 Trying users collection fallback...');
+        const usersQuery = query(collection(db, 'users'), limit(50));
+        const usersSnapshot = await getDocs(usersQuery);
+        
+        const userResults = usersSnapshot.docs
+          .filter(doc => doc.id !== currentUserId)
+          .map(doc => {
+            const data = doc.data();
+            return {
+              userId: doc.id,
+              name: data.name || data.displayName || data.email?.split('@')[0] || 'Anonymous',
+              username: data.username || data.email?.split('@')[0] || `user${doc.id.slice(-4)}`,
+              bio: data.bio || 'AuraX community member',
+              avatar: data.avatar || data.photoURL,
+              interests: data.interests || data.focusAreas || ['wellness'],
+              location: data.location,
+              isOnline: true,
+              lastSeen: serverTimestamp(),
+              friendsCount: 0,
+              postsCount: 0,
+              joinedAt: data.createdAt || serverTimestamp(),
+              focusAreas: data.focusAreas || ['personal growth'],
+            } as PublicProfile;
+          })
+          .filter((profile, index) => {
+            if (!searchTerm) return true;
+            
+            const originalData = usersSnapshot.docs[index]?.data();
+            return profile.name.toLowerCase().includes(searchTerm) ||
+              profile.username?.toLowerCase().includes(searchTerm) ||
+              profile.bio?.toLowerCase().includes(searchTerm) ||
+              (originalData?.email && originalData.email.toLowerCase().includes(searchTerm)) ||
+              profile.interests?.some(interest => interest.toLowerCase().includes(searchTerm)) ||
+              profile.focusAreas?.some(area => area.toLowerCase().includes(searchTerm));
+          });
+        
+        results = userResults;
+        console.log('✅ Users collection fallback completed', { resultsCount: results.length });
+      } catch (error) {
+        console.warn('⚠️ Users collection fallback failed:', error);
+      }
+    }
+    
+    // Method 3: Final fallback - return empty array with error logging
+    if (results.length === 0) {
+      console.warn('⚠️ All search methods failed, returning empty results');
     }
     
     return results.slice(0, limitCount);
       
   } catch (error) {
-    console.error('Error searching users:', error);
+    console.error('❌ Error in searchUsers with fallback methods:', error);
     return [];
   }
 }
 
+// Enhanced Friend Suggestions with Multiple Fallback Methods
 export async function getFriendSuggestions(params: {
   userId: string;
   limitCount?: number;
@@ -476,81 +528,219 @@ export async function getFriendSuggestions(params: {
   const { userId, limitCount = 10 } = params;
   
   try {
-    // Get user's interests and friends
-    const [userDoc, friendsSnapshot] = await Promise.all([
-      getDoc(doc(db, 'users', userId)),
-      getDocs(getFriendsCollectionRef(userId))
-    ]);
+    console.log('🔍 Getting friend suggestions with fallback methods...', { userId });
     
-    const userInterests = userDoc.data()?.interests || [];
-    const userFocusAreas = userDoc.data()?.focusAreas || [];
-    const friendIds = new Set(friendsSnapshot.docs.map(doc => doc.id));
+    let suggestions: PublicProfile[] = [];
     
-    // Get all public profiles and filter for suggestions
-    const profilesQuery = query(getPublicProfilesRef(), limit(50));
-    const profilesSnapshot = await getDocs(profilesQuery);
+    // Method 1: Try to get user's interests and friends for smart suggestions
+    try {
+      const [userDoc, friendsSnapshot] = await Promise.all([
+        getDoc(doc(db, 'users', userId)),
+        getDocs(getFriendsCollectionRef(userId))
+      ]);
+      
+      const userInterests = userDoc.data()?.interests || [];
+      const userFocusAreas = userDoc.data()?.focusAreas || [];
+      const friendIds = new Set(friendsSnapshot.docs.map(doc => doc.id));
+      
+      console.log('📊 User data loaded', { 
+        interests: userInterests.length, 
+        focusAreas: userFocusAreas.length, 
+        friends: friendIds.size 
+      });
+      
+      // Get all public profiles and filter for suggestions
+      const profilesQuery = query(getPublicProfilesRef(), limit(50));
+      const profilesSnapshot = await getDocs(profilesQuery);
+      
+      suggestions = profilesSnapshot.docs
+        .filter(doc => doc.id !== userId && !friendIds.has(doc.id))
+        .map(doc => {
+          const data = doc.data();
+          return {
+            userId: doc.id,
+            name: data.name || data.username || 'Anonymous',
+            username: data.username || data.name || `user${doc.id.slice(-4)}`,
+            bio: data.bio || 'AuraX community member',
+            avatar: data.avatar,
+            interests: data.interests || ['wellness'],
+            location: data.location,
+            isOnline: data.isOnline || false,
+            lastSeen: data.lastSeen,
+            friendsCount: data.friendsCount || 0,
+            postsCount: data.postsCount || 0,
+            joinedAt: data.joinedAt,
+            focusAreas: data.focusAreas || ['personal growth'],
+          } as PublicProfile;
+        })
+        .filter(profile => {
+          // Enhanced matching criteria
+          const hasCommonInterests = profile.interests?.some(interest => 
+            userInterests.includes(interest)
+          );
+          const hasCommonFocusAreas = profile.focusAreas?.some(area => 
+            userFocusAreas.includes(area)
+          );
+          const hasCommonLocation = profile.location && userDoc.data()?.location && 
+            profile.location.toLowerCase() === userDoc.data()?.location.toLowerCase();
+          
+          return hasCommonInterests || hasCommonFocusAreas || hasCommonLocation;
+        })
+        .slice(0, limitCount);
+      
+      console.log('✅ Smart suggestions completed', { suggestionsCount: suggestions.length });
+    } catch (error) {
+      console.warn('⚠️ Smart suggestions failed, trying fallback:', error);
+    }
     
-    const suggestions = profilesSnapshot.docs
-      .filter(doc => doc.id !== userId && !friendIds.has(doc.id))
-      .map(doc => {
-        const data = doc.data();
-        return {
-          userId: doc.id,
-          name: data.name || '',
-          username: data.username,
-          bio: data.bio,
-          avatar: data.avatar,
-          interests: data.interests || [],
-          location: data.location,
-          isOnline: data.isOnline || false,
-          lastSeen: data.lastSeen,
-          friendsCount: data.friendsCount || 0,
-          postsCount: data.postsCount || 0,
-          joinedAt: data.joinedAt,
-          focusAreas: data.focusAreas || [],
-        } as PublicProfile;
-      })
-      .filter(profile => {
-        // Match by interests or focus areas
-        const hasCommonInterests = profile.interests?.some(interest => 
-          userInterests.includes(interest)
-        );
-        const hasCommonFocusAreas = profile.focusAreas?.some(area => 
-          userFocusAreas.includes(area)
-        );
-        return hasCommonInterests || hasCommonFocusAreas;
-      })
-      .slice(0, limitCount);
-
+    // Method 2: Fallback to random public profiles if no smart suggestions
+    if (suggestions.length === 0) {
+      try {
+        console.log('🔄 Trying random public profiles fallback...');
+        const profilesQuery = query(getPublicProfilesRef(), limit(limitCount * 2));
+        const profilesSnapshot = await getDocs(profilesQuery);
+        
+        suggestions = profilesSnapshot.docs
+          .filter(doc => doc.id !== userId)
+          .map(doc => {
+            const data = doc.data();
+            return {
+              userId: doc.id,
+              name: data.name || data.username || 'Anonymous',
+              username: data.username || data.name || `user${doc.id.slice(-4)}`,
+              bio: data.bio || 'AuraX community member',
+              avatar: data.avatar,
+              interests: data.interests || ['wellness'],
+              location: data.location,
+              isOnline: data.isOnline || false,
+              lastSeen: data.lastSeen,
+              friendsCount: data.friendsCount || 0,
+              postsCount: data.postsCount || 0,
+              joinedAt: data.joinedAt,
+              focusAreas: data.focusAreas || ['personal growth'],
+            } as PublicProfile;
+          })
+          .slice(0, limitCount);
+        
+        console.log('✅ Random suggestions completed', { suggestionsCount: suggestions.length });
+      } catch (error) {
+        console.warn('⚠️ Random suggestions failed:', error);
+      }
+    }
+    
+    // Method 3: Final fallback to users collection
+    if (suggestions.length === 0) {
+      try {
+        console.log('🔄 Trying users collection fallback...');
+        const usersQuery = query(collection(db, 'users'), limit(limitCount * 2));
+        const usersSnapshot = await getDocs(usersQuery);
+        
+        suggestions = usersSnapshot.docs
+          .filter(doc => doc.id !== userId)
+          .map(doc => {
+            const data = doc.data();
+            return {
+              userId: doc.id,
+              name: data.name || data.displayName || data.email?.split('@')[0] || 'Anonymous',
+              username: data.username || data.email?.split('@')[0] || `user${doc.id.slice(-4)}`,
+              bio: data.bio || 'AuraX community member',
+              avatar: data.avatar || data.photoURL,
+              interests: data.interests || data.focusAreas || ['wellness'],
+              location: data.location,
+              isOnline: true,
+              lastSeen: serverTimestamp(),
+              friendsCount: 0,
+              postsCount: 0,
+              joinedAt: data.createdAt || serverTimestamp(),
+              focusAreas: data.focusAreas || ['personal growth'],
+            } as PublicProfile;
+          })
+          .slice(0, limitCount);
+        
+        console.log('✅ Users collection fallback completed', { suggestionsCount: suggestions.length });
+      } catch (error) {
+        console.warn('⚠️ Users collection fallback failed:', error);
+      }
+    }
+    
+    if (suggestions.length === 0) {
+      console.warn('⚠️ All suggestion methods failed, returning empty results');
+    }
+    
     return suggestions;
   } catch (error) {
-    console.error('Error getting friend suggestions:', error);
+    console.error('❌ Error in getFriendSuggestions with fallback methods:', error);
     return [];
   }
 }
 
-// Friends Management
+// Enhanced Friends Management with Fallback Methods
 export async function getFriends(userId: string): Promise<Friendship[]> {
   try {
-    const friendsSnapshot = await getDocs(getFriendsCollectionRef(userId));
+    console.log('🔍 Getting friends with fallback methods...', { userId });
     
-    const friends: Friendship[] = [];
+    let friends: Friendship[] = [];
     
-    for (const friendDoc of friendsSnapshot.docs) {
-      const friendData = friendDoc.data() as Friendship;
-      const friendProfile = await getPublicProfile(friendDoc.id); // friendDoc.id is the friendId
+    // Method 1: Try to get friends from friendships collection
+    try {
+      const friendsSnapshot = await getDocs(getFriendsCollectionRef(userId));
       
-      friends.push({
-        ...friendData,
-        id: friendDoc.id,
-        friendId: friendDoc.id,
-        friendProfile: friendProfile || undefined,
-      });
+      console.log('📊 Friends collection loaded', { friendsCount: friendsSnapshot.docs.length });
+      
+      // Process friends with enhanced profile loading
+      for (const friendDoc of friendsSnapshot.docs) {
+        try {
+          const friendData = friendDoc.data() as Friendship;
+          
+          // Try to get public profile with fallback
+          let friendProfile: PublicProfile | null = null;
+          try {
+            friendProfile = await getPublicProfile(friendDoc.id);
+          } catch (profileError) {
+            console.warn('⚠️ Failed to load profile for friend:', friendDoc.id, profileError);
+            // Create a fallback profile
+            friendProfile = {
+              userId: friendDoc.id,
+              name: 'Anonymous',
+              username: `user${friendDoc.id.slice(-4)}`,
+              bio: 'AuraX community member',
+              avatar: undefined,
+              interests: ['wellness'],
+              location: undefined,
+              isOnline: false,
+              lastSeen: null,
+              friendsCount: 0,
+              postsCount: 0,
+              joinedAt: null,
+              focusAreas: ['personal growth'],
+            };
+          }
+          
+          friends.push({
+            ...friendData,
+            id: friendDoc.id,
+            friendId: friendDoc.id,
+            friendProfile: friendProfile || undefined,
+          });
+        } catch (friendError) {
+          console.warn('⚠️ Failed to process friend:', friendDoc.id, friendError);
+          // Continue with other friends
+        }
+      }
+      
+      console.log('✅ Friends loaded successfully', { friendsCount: friends.length });
+    } catch (error) {
+      console.warn('⚠️ Friends collection failed, trying fallback:', error);
+    }
+    
+    // Method 2: Fallback to empty array if no friends found
+    if (friends.length === 0) {
+      console.log('📝 No friends found, returning empty array');
     }
     
     return friends;
   } catch (error) {
-    console.error('Error getting friends:', error);
+    console.error('❌ Error in getFriends with fallback methods:', error);
     return [];
   }
 }
@@ -568,6 +758,141 @@ export async function removeFriend(params: {
   batch.delete(getFriendDocRef(friendId, userId));
   
   await batch.commit();
+}
+
+// Enhanced Friend Discovery with Add Friend Button Functionality
+export async function discoverFriends(params: {
+  userId: string;
+  searchTerm?: string;
+  limitCount?: number;
+  includeSuggestions?: boolean;
+}): Promise<{
+  searchResults: PublicProfile[];
+  suggestions: PublicProfile[];
+  totalFound: number;
+}> {
+  const { userId, searchTerm = '', limitCount = 20, includeSuggestions = true } = params;
+  
+  try {
+    console.log('🔍 Enhanced friend discovery with add friend functionality...', { userId, searchTerm });
+    
+    let searchResults: PublicProfile[] = [];
+    let suggestions: PublicProfile[] = [];
+    
+    // Get search results if search term provided
+    if (searchTerm.trim()) {
+      try {
+        searchResults = await searchUsers({
+          query: searchTerm,
+          currentUserId: userId,
+          limitCount: limitCount
+        });
+        console.log('✅ Search results loaded', { count: searchResults.length });
+      } catch (error) {
+        console.warn('⚠️ Search failed:', error);
+      }
+    }
+    
+    // Get friend suggestions if requested
+    if (includeSuggestions) {
+      try {
+        suggestions = await getFriendSuggestions({
+          userId: userId,
+          limitCount: Math.max(5, limitCount - searchResults.length)
+        });
+        console.log('✅ Friend suggestions loaded', { count: suggestions.length });
+      } catch (error) {
+        console.warn('⚠️ Suggestions failed:', error);
+      }
+    }
+    
+    // Combine and deduplicate results
+    const allResults = [...searchResults, ...suggestions];
+    const uniqueResults = allResults.filter((profile, index, self) => 
+      index === self.findIndex(p => p.userId === profile.userId)
+    );
+    
+    console.log('🎯 Discovery completed', { 
+      searchResults: searchResults.length,
+      suggestions: suggestions.length,
+      total: uniqueResults.length
+    });
+    
+    return {
+      searchResults: searchResults,
+      suggestions: suggestions,
+      totalFound: uniqueResults.length
+    };
+  } catch (error) {
+    console.error('❌ Error in enhanced friend discovery:', error);
+    return {
+      searchResults: [],
+      suggestions: [],
+      totalFound: 0
+    };
+  }
+}
+
+// Enhanced Friend Request Management
+export async function getFriendRequests(userId: string): Promise<EnhancedFriendRequest[]> {
+  try {
+    console.log('🔍 Getting friend requests with enhanced loading...', { userId });
+    
+    const q = query(
+      getFriendRequestsRef(),
+      where('toUserId', '==', userId),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    const requests: EnhancedFriendRequest[] = [];
+    
+    for (const doc of snapshot.docs) {
+      try {
+        const requestData = doc.data() as EnhancedFriendRequest;
+        
+        // Try to get sender profile with fallback
+        let fromProfile: PublicProfile | null = null;
+        try {
+          fromProfile = await getPublicProfile(requestData.fromUserId);
+        } catch (profileError) {
+          console.warn('⚠️ Failed to load sender profile:', requestData.fromUserId, profileError);
+          // Create fallback profile
+          fromProfile = {
+            userId: requestData.fromUserId,
+            name: 'Anonymous',
+            username: `user${requestData.fromUserId.slice(-4)}`,
+            bio: 'AuraX community member',
+            avatar: undefined,
+            interests: ['wellness'],
+            location: undefined,
+            isOnline: false,
+            lastSeen: null,
+            friendsCount: 0,
+            postsCount: 0,
+            joinedAt: null,
+            focusAreas: ['personal growth'],
+          };
+        }
+        
+        requests.push({
+          ...requestData,
+          id: doc.id,
+          fromProfile: fromProfile || undefined,
+        });
+      } catch (requestError) {
+        console.warn('⚠️ Failed to process friend request:', doc.id, requestError);
+        // Continue with other requests
+      }
+    }
+    
+    console.log('✅ Friend requests loaded', { count: requests.length });
+    return requests;
+  } catch (error) {
+    console.error('❌ Error getting friend requests:', error);
+    return [];
+  }
 }
 
 // Groups System

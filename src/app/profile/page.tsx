@@ -125,7 +125,7 @@ export default function ProfilePage() {
     
     try {
       // Generate QR code with profile sharing URL
-      const profileUrl = `${window.location.origin}/friends/add/${user.uid}`;
+      const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/friends/add/${user.uid}` : `/friends/add/${user.uid}`;
       const qrDataUrl = await QRCode.toDataURL(profileUrl, {
         width: 256,
         margin: 2,
@@ -146,7 +146,7 @@ export default function ProfilePage() {
   const shareProfile = async () => {
     if (!user) return;
     
-    const profileUrl = `${window.location.origin}/friends/add/${user.uid}`;
+    const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/friends/add/${user.uid}` : `/friends/add/${user.uid}`;
     const shareText = `Join me on AuraX - Your wellness companion! 🌟`;
     
     if (navigator.share) {
