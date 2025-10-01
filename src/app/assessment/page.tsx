@@ -23,7 +23,7 @@ interface AssessmentResult {
 const ANXIETY_QUESTIONS: AssessmentQuestion[] = [
   {
     id: 'anxiety_1',
-    text: 'I feel nervous, anxious, or on edge',
+    text: 'Feeling nervous, anxious, or on edge',
     category: 'anxiety',
     options: [
       { value: 0, text: 'Not at all' },
@@ -34,7 +34,7 @@ const ANXIETY_QUESTIONS: AssessmentQuestion[] = [
   },
   {
     id: 'anxiety_2',
-    text: 'I am not able to stop or control worrying',
+    text: 'Not being able to stop or control worrying',
     category: 'anxiety',
     options: [
       { value: 0, text: 'Not at all' },
@@ -45,7 +45,7 @@ const ANXIETY_QUESTIONS: AssessmentQuestion[] = [
   },
   {
     id: 'anxiety_3',
-    text: 'I worry too much about different things',
+    text: 'Worrying too much about different things',
     category: 'anxiety',
     options: [
       { value: 0, text: 'Not at all' },
@@ -56,7 +56,7 @@ const ANXIETY_QUESTIONS: AssessmentQuestion[] = [
   },
   {
     id: 'anxiety_4',
-    text: 'I have trouble relaxing',
+    text: 'Trouble relaxing',
     category: 'anxiety',
     options: [
       { value: 0, text: 'Not at all' },
@@ -67,7 +67,29 @@ const ANXIETY_QUESTIONS: AssessmentQuestion[] = [
   },
   {
     id: 'anxiety_5',
-    text: 'I am so restless that it is hard to sit still',
+    text: 'Being so restless that it is hard to sit still',
+    category: 'anxiety',
+    options: [
+      { value: 0, text: 'Not at all' },
+      { value: 1, text: 'Several days' },
+      { value: 2, text: 'More than half the days' },
+      { value: 3, text: 'Nearly every day' }
+    ]
+  },
+  {
+    id: 'anxiety_6',
+    text: 'Becoming easily annoyed or irritable',
+    category: 'anxiety',
+    options: [
+      { value: 0, text: 'Not at all' },
+      { value: 1, text: 'Several days' },
+      { value: 2, text: 'More than half the days' },
+      { value: 3, text: 'Nearly every day' }
+    ]
+  },
+  {
+    id: 'anxiety_7',
+    text: 'Feeling afraid as if something awful might happen',
     category: 'anxiety',
     options: [
       { value: 0, text: 'Not at all' },
@@ -126,6 +148,50 @@ const DEPRESSION_QUESTIONS: AssessmentQuestion[] = [
   {
     id: 'depression_5',
     text: 'Poor appetite or overeating',
+    category: 'depression',
+    options: [
+      { value: 0, text: 'Not at all' },
+      { value: 1, text: 'Several days' },
+      { value: 2, text: 'More than half the days' },
+      { value: 3, text: 'Nearly every day' }
+    ]
+  },
+  {
+    id: 'depression_6',
+    text: 'Feeling bad about yourself or that you are a failure',
+    category: 'depression',
+    options: [
+      { value: 0, text: 'Not at all' },
+      { value: 1, text: 'Several days' },
+      { value: 2, text: 'More than half the days' },
+      { value: 3, text: 'Nearly every day' }
+    ]
+  },
+  {
+    id: 'depression_7',
+    text: 'Trouble concentrating on things',
+    category: 'depression',
+    options: [
+      { value: 0, text: 'Not at all' },
+      { value: 1, text: 'Several days' },
+      { value: 2, text: 'More than half the days' },
+      { value: 3, text: 'Nearly every day' }
+    ]
+  },
+  {
+    id: 'depression_8',
+    text: 'Moving or speaking so slowly that other people could have noticed',
+    category: 'depression',
+    options: [
+      { value: 0, text: 'Not at all' },
+      { value: 1, text: 'Several days' },
+      { value: 2, text: 'More than half the days' },
+      { value: 3, text: 'Nearly every day' }
+    ]
+  },
+  {
+    id: 'depression_9',
+    text: 'Thoughts that you would be better off dead or of hurting yourself',
     category: 'depression',
     options: [
       { value: 0, text: 'Not at all' },
@@ -258,7 +324,7 @@ export default function AssessmentPage() {
     if (currentAssessment === 'anxiety') {
       if (totalScore <= 4) {
         level = 'low';
-        description = 'Minimal anxiety symptoms';
+        description = 'Minimal anxiety symptoms (GAD-7 Score: 0-4)';
         recommendations = [
           'Continue your current wellness routine',
           'Practice mindfulness and stress management',
@@ -266,38 +332,41 @@ export default function AssessmentPage() {
         ];
       } else if (totalScore <= 9) {
         level = 'mild';
-        description = 'Mild anxiety symptoms';
+        description = 'Mild anxiety symptoms (GAD-7 Score: 5-9)';
         recommendations = [
           'Practice breathing exercises daily',
           'Consider journaling to process thoughts',
           'Maintain regular sleep schedule',
-          'Try relaxation techniques'
+          'Try relaxation techniques',
+          'Consider speaking with a mental health professional if symptoms persist'
         ];
       } else if (totalScore <= 14) {
         level = 'moderate';
-        description = 'Moderate anxiety symptoms';
+        description = 'Moderate anxiety symptoms (GAD-7 Score: 10-14)';
         recommendations = [
           'Consider speaking with a mental health professional',
           'Practice daily mindfulness meditation',
           'Limit caffeine and alcohol intake',
           'Establish a consistent daily routine',
-          'Try progressive muscle relaxation'
+          'Try progressive muscle relaxation',
+          'Consider therapy or counseling'
         ];
       } else {
         level = 'severe';
-        description = 'Severe anxiety symptoms';
+        description = 'Severe anxiety symptoms (GAD-7 Score: 15-21)';
         recommendations = [
           'Seek professional mental health support immediately',
           'Consider therapy or counseling',
           'Practice daily breathing exercises',
           'Limit stress triggers when possible',
-          'Consider medication consultation with a doctor'
+          'Consider medication consultation with a doctor',
+          'Contact crisis resources if needed: 988 or Text HOME to 741741'
         ];
       }
     } else if (currentAssessment === 'depression') {
       if (totalScore <= 4) {
         level = 'low';
-        description = 'Minimal depression symptoms';
+        description = 'Minimal depression symptoms (PHQ-9 Score: 0-4)';
         recommendations = [
           'Continue your current wellness routine',
           'Maintain social connections',
@@ -305,16 +374,17 @@ export default function AssessmentPage() {
         ];
       } else if (totalScore <= 9) {
         level = 'mild';
-        description = 'Mild depression symptoms';
+        description = 'Mild depression symptoms (PHQ-9 Score: 5-9)';
         recommendations = [
           'Increase physical activity',
           'Maintain regular sleep schedule',
           'Connect with friends and family',
-          'Try journaling or creative activities'
+          'Try journaling or creative activities',
+          'Consider speaking with a mental health professional if symptoms persist'
         ];
       } else if (totalScore <= 14) {
         level = 'moderate';
-        description = 'Moderate depression symptoms';
+        description = 'Moderate depression symptoms (PHQ-9 Score: 10-14)';
         recommendations = [
           'Consider speaking with a mental health professional',
           'Establish a daily routine',
@@ -322,15 +392,27 @@ export default function AssessmentPage() {
           'Engage in regular exercise',
           'Consider therapy or counseling'
         ];
-      } else {
-        level = 'severe';
-        description = 'Severe depression symptoms';
+      } else if (totalScore <= 19) {
+        level = 'moderate';
+        description = 'Moderately severe depression symptoms (PHQ-9 Score: 15-19)';
         recommendations = [
           'Seek professional mental health support immediately',
           'Consider therapy or counseling',
           'Reach out to trusted friends or family',
           'Consider medication consultation with a doctor',
-          'Practice daily self-care activities'
+          'Practice daily self-care activities',
+          'Contact crisis resources if needed: 988 or Text HOME to 741741'
+        ];
+      } else {
+        level = 'severe';
+        description = 'Severe depression symptoms (PHQ-9 Score: 20-27)';
+        recommendations = [
+          'Seek professional mental health support immediately',
+          'Contact emergency services if having thoughts of self-harm',
+          'Consider therapy or counseling',
+          'Reach out to trusted friends or family',
+          'Consider medication consultation with a doctor',
+          'Contact crisis resources immediately: 988 or Text HOME to 741741'
         ];
       }
     } else {
@@ -583,15 +665,42 @@ export default function AssessmentPage() {
           </motion.div>
         </div>
 
-        <div className="mt-12 text-center">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-              ⚠️ Important Notice
+        <div className="mt-12 space-y-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
+              📚 Assessment Sources & References
             </h3>
-            <p className="text-yellow-700 dark:text-yellow-300">
-              These assessments are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. 
-              If you're experiencing a mental health crisis, please contact emergency services or a mental health professional immediately.
-            </p>
+            <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
+              <p><strong>Anxiety Assessment:</strong> Based on GAD-7 (Generalized Anxiety Disorder 7-item scale) - Spitzer, R. L., Kroenke, K., Williams, J. B., & Löwe, B. (2006). A brief measure for assessing generalized anxiety disorder: the GAD-7. Archives of internal medicine, 166(10), 1092-1097.</p>
+              <p><strong>Depression Assessment:</strong> Based on PHQ-9 (Patient Health Questionnaire-9) - Kroenke, K., Spitzer, R. L., & Williams, J. B. (2001). The PHQ-9: validity of a brief depression severity measure. Journal of general internal medicine, 16(9), 606-613.</p>
+              <p><strong>Personality Assessment:</strong> Based on Big Five personality traits (OCEAN model) - Costa, P. T., & McCrae, R. R. (1992). NEO PI-R professional manual. Psychological Assessment Resources.</p>
+              <p><strong>Clinical Framework:</strong> All assessments align with DSM-5 diagnostic criteria for mental health disorders.</p>
+            </div>
+          </div>
+
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-3">
+              ⚠️ Important Clinical Disclaimers
+            </h3>
+            <div className="text-sm text-red-700 dark:text-red-300 space-y-3">
+              <p><strong>NOT A DIAGNOSIS:</strong> These assessments are screening tools only and cannot diagnose any mental health condition. Only qualified mental health professionals can provide formal diagnoses.</p>
+              <p><strong>SEEK PROFESSIONAL HELP:</strong> If you're experiencing thoughts of self-harm, suicide, or severe mental health symptoms, please contact emergency services (911) or a mental health professional immediately.</p>
+              <p><strong>CRISIS RESOURCES:</strong> National Suicide Prevention Lifeline: 988, Crisis Text Line: Text HOME to 741741</p>
+              <p><strong>PROFESSIONAL EVALUATION:</strong> Consider these results as a starting point for discussion with a qualified mental health professional, not as a substitute for professional evaluation.</p>
+            </div>
+          </div>
+
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-3">
+              💡 How to Use These Results
+            </h3>
+            <div className="text-sm text-green-700 dark:text-green-300 space-y-2">
+              <p>• Share your results with a mental health professional for proper evaluation</p>
+              <p>• Use results to start conversations about your mental health</p>
+              <p>• Track changes over time by retaking assessments periodically</p>
+              <p>• Remember that mental health is complex and these tools are just one piece of the puzzle</p>
+              <p>• Consider the recommendations as starting points, not definitive treatment plans</p>
+            </div>
           </div>
         </div>
       </div>
