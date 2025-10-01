@@ -151,7 +151,7 @@ export default function TourGuide({ isActive, onComplete, onSkip }: TourGuidePro
     setIsVisible(false);
     onComplete();
     // Mark tour as completed in user preferences
-    if (user) {
+    if (user && typeof window !== 'undefined') {
       localStorage.setItem(`tour_completed_${user.uid}`, 'true');
     }
   };
@@ -338,7 +338,7 @@ export function useTourGuide() {
   };
 
   const shouldShowTour = () => {
-    if (!user) return false;
+    if (!user || typeof window === 'undefined') return false;
     return !localStorage.getItem(`tour_completed_${user.uid}`);
   };
 

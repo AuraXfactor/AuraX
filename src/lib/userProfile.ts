@@ -71,6 +71,14 @@ export type OnboardingProfile = {
   preferredTherapy?: string | null;
   reminderTime: 'Morning' | 'Afternoon' | 'Evening';
   moodBaseline: string[]; // emojis
+  termsAccepted: boolean;
+  privacyConsent: {
+    dataCollection: boolean;
+    analytics: boolean;
+    personalization: boolean;
+    notifications: boolean;
+    dataSharing: boolean;
+  };
 };
 
 export async function saveOnboardingProfile(user: User, profile: OnboardingProfile) {
@@ -84,6 +92,8 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
     preferredTherapy: profile.preferredTherapy ?? null,
     reminderTime: profile.reminderTime,
     moodBaseline: profile.moodBaseline,
+    termsAccepted: profile.termsAccepted,
+    privacyConsent: profile.privacyConsent,
     auraPoints: 0,
     createdAt: serverTimestamp(),
     lastLogin: serverTimestamp(),
@@ -146,6 +156,11 @@ export type UserSettings = {
     profileVisibility?: 'private' | 'friends' | 'public';
     journalVisibility?: 'private' | 'anonymous';
     biometricEnabled?: boolean;
+    dataCollection?: boolean;
+    analytics?: boolean;
+    personalization?: boolean;
+    notifications?: boolean;
+    dataSharing?: boolean;
   };
   journals?: {
     primary?: string;

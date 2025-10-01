@@ -5,8 +5,7 @@ import "./globals.css";
 import SlimNavbar from "@/components/SlimNavbar";
 import SmartBottomNav from "@/components/SmartBottomNav";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
-import TourGuide, { useTourGuide } from "@/components/TourGuide";
-import LeftSwipeMenu, { useLeftSwipeMenu } from "@/components/LeftSwipeMenu";
+import ClientAppWrapper from "@/components/ClientAppWrapper";
 import SwipeDetector from "@/components/SwipeDetector";
 import type { ReactNode } from 'react';
 
@@ -21,37 +20,13 @@ export const viewport = {
 };
 
 function AppContent({ children }: { children: ReactNode }) {
-  const { isActive: tourActive, startTour, completeTour, skipTour, shouldShowTour } = useTourGuide();
-  const { isOpen: menuOpen, openMenu, closeMenu } = useLeftSwipeMenu();
-
-  // Auto-start tour for new users
-  React.useEffect(() => {
-    if (shouldShowTour()) {
-      const timer = setTimeout(() => startTour(), 2000); // Start tour after 2 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [shouldShowTour, startTour]);
-
   return (
-    <>
-      <SwipeDetector>
-        <SlimNavbar />
-        {children}
-        <SmartBottomNav />
-        <AuraPointsWidget />
-      </SwipeDetector>
-      
-      <TourGuide 
-        isActive={tourActive} 
-        onComplete={completeTour} 
-        onSkip={skipTour} 
-      />
-      
-      <LeftSwipeMenu 
-        isOpen={menuOpen} 
-        onClose={closeMenu} 
-      />
-    </>
+    <SwipeDetector>
+      <SlimNavbar />
+      {children}
+      <SmartBottomNav />
+      <AuraPointsWidget />
+    </SwipeDetector>
   );
 }
 
@@ -73,6 +48,9 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <AppContent>{children}</AppContent>
+            <ClientAppWrapper>
+              <div></div>
+            </ClientAppWrapper>
           </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
