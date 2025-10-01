@@ -904,13 +904,13 @@ export function listenToMessages(
             senderId: 'system',
             content: '[Message could not be loaded]',
             type: 'text',
-            timestamp: new Date(),
+            timestamp: Timestamp.now(),
             readBy: {},
             reactions: {},
-            isEdited: false,
-            editedAt: null,
-            replyTo: null,
-            encryptionIV: null
+            deliveredTo: {},
+            editedAt: undefined,
+            replyTo: undefined,
+            encryptionIV: undefined
           });
         }
       }

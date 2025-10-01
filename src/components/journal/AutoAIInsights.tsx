@@ -141,7 +141,9 @@ export default function AutoAIInsights({
             /* AI Chat Interface */
             <div className="flex-1">
               <AuraAIChat
-                context={journalType}
+                context={journalType === 'cbt-therapy' ? 'therapy' : 
+                        journalType === 'goal-achievement' ? 'goals' : 
+                        journalType === 'mood-tracker' ? 'mood' : 'journal'}
                 initialMessage={initialMessage}
                 onClose={handleDecline}
               />

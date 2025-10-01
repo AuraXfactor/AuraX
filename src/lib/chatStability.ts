@@ -60,7 +60,7 @@ export class ChatStabilityManager {
 
       return onSnapshot(
         docRef,
-        (snapshot) => {
+        (snapshot: any) => {
           try {
             if (this.isDestroyed) return;
 
@@ -111,7 +111,7 @@ export class ChatStabilityManager {
 
       return onSnapshot(
         query,
-        (snapshot) => {
+        (snapshot: any) => {
           try {
             if (this.isDestroyed) return;
 
@@ -120,7 +120,7 @@ export class ChatStabilityManager {
             this.connectionStatus.retryCount = 0;
             this.connectionStatus.errors = [];
 
-            const data = snapshot.docs.map(doc => ({
+            const data = snapshot.docs.map((doc: any) => ({
               id: doc.id,
               ...doc.data()
             } as T));

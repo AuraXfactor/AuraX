@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, addDoc, serverTimestamp, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, orderBy, getDocs, Timestamp, FieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface MoodEntry {
   id?: string;
   userId: string;
-  timestamp: Timestamp;
+  timestamp: Timestamp | FieldValue;
   dateKey: string;
   mood: {
     value: string;
@@ -226,7 +226,7 @@ export default function MoodTracker() {
     // Calculate mood patterns by day of week
     const dayPatterns: { [key: string]: { sum: number; count: number } } = {};
     entries.forEach(entry => {
-      const date = entry.timestamp.toDate();
+      const date = entry.timestamp instanceof Timestamp ? entry.timestamp.toDate() : new Date();
       const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
       if (!dayPatterns[dayOfWeek]) {
         dayPatterns[dayOfWeek] = { sum: 0, count: 0 };
