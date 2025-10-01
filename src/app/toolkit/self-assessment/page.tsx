@@ -188,6 +188,64 @@ const PHQ9_QUESTIONS: AssessmentQuestion[] = [
   }
 ];
 
+const PERSONALITY_QUESTIONS: AssessmentQuestion[] = [
+  {
+    id: 'pers1',
+    text: 'I enjoy meeting new people and making friends',
+    options: [
+      { value: 1, label: 'Strongly Disagree' },
+      { value: 2, label: 'Disagree' },
+      { value: 3, label: 'Neutral' },
+      { value: 4, label: 'Agree' },
+      { value: 5, label: 'Strongly Agree' }
+    ]
+  },
+  {
+    id: 'pers2',
+    text: 'I prefer to work alone rather than in groups',
+    options: [
+      { value: 1, label: 'Strongly Disagree' },
+      { value: 2, label: 'Disagree' },
+      { value: 3, label: 'Neutral' },
+      { value: 4, label: 'Agree' },
+      { value: 5, label: 'Strongly Agree' }
+    ]
+  },
+  {
+    id: 'pers3',
+    text: 'I am organized and like to plan things in advance',
+    options: [
+      { value: 1, label: 'Strongly Disagree' },
+      { value: 2, label: 'Disagree' },
+      { value: 3, label: 'Neutral' },
+      { value: 4, label: 'Agree' },
+      { value: 5, label: 'Strongly Agree' }
+    ]
+  },
+  {
+    id: 'pers4',
+    text: 'I am sensitive to criticism and rejection',
+    options: [
+      { value: 1, label: 'Strongly Disagree' },
+      { value: 2, label: 'Disagree' },
+      { value: 3, label: 'Neutral' },
+      { value: 4, label: 'Agree' },
+      { value: 5, label: 'Strongly Agree' }
+    ]
+  },
+  {
+    id: 'pers5',
+    text: 'I enjoy trying new experiences and activities',
+    options: [
+      { value: 1, label: 'Strongly Disagree' },
+      { value: 2, label: 'Disagree' },
+      { value: 3, label: 'Neutral' },
+      { value: 4, label: 'Agree' },
+      { value: 5, label: 'Strongly Agree' }
+    ]
+  }
+];
+
 export default function SelfAssessmentPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
@@ -201,6 +259,7 @@ export default function SelfAssessmentPage() {
   const getCurrentQuestions = () => {
     if (currentAssessment === 'gad7') return GAD7_QUESTIONS;
     if (currentAssessment === 'phq9') return PHQ9_QUESTIONS;
+    if (currentAssessment === 'personality') return PERSONALITY_QUESTIONS;
     return [];
   };
 
@@ -377,7 +436,7 @@ export default function SelfAssessmentPage() {
 
       {/* Assessment Selection */}
       {!currentAssessment && !showResults && (
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div 
             className="p-6 rounded-xl border border-white/20 bg-white/60 dark:bg-white/5 cursor-pointer hover:bg-white/80 dark:hover:bg-white/10 transition"
             whileHover={{ scale: 1.02 }}
@@ -413,6 +472,26 @@ export default function SelfAssessmentPage() {
                 Source: Kroenke et al. (2001) • 9 questions • 3-4 minutes
               </div>
               <button className="w-full px-4 py-2 bg-gradient-to-r from-purple-400 to-pink-500 text-white rounded-lg transition hover:opacity-90">
+                Start Assessment
+              </button>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className="p-6 rounded-xl border border-white/20 bg-white/60 dark:bg-white/5 cursor-pointer hover:bg-white/80 dark:hover:bg-white/10 transition"
+            whileHover={{ scale: 1.02 }}
+            onClick={() => startAssessment('personality')}
+          >
+            <div className="text-center space-y-4">
+              <div className="text-4xl">🧠</div>
+              <h3 className="text-xl font-bold">Personality Traits</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Explore your personality characteristics and preferences
+              </p>
+              <div className="text-xs text-gray-500">
+                Based on Big Five model • 5 questions • 2-3 minutes
+              </div>
+              <button className="w-full px-4 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-lg transition hover:opacity-90">
                 Start Assessment
               </button>
             </div>
@@ -503,15 +582,32 @@ export default function SelfAssessmentPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-3">Recommendations:</h3>
-                <ul className="space-y-2">
-                  {assessmentResult.recommendations.map((rec, index) => (
-                    <li key={index} className="flex items-start space-x-2">
-                      <span className="text-green-500 mt-1">•</span>
-                      <span className="text-sm">{rec}</span>
-                    </li>
-                  ))}
-                </ul>
+                <h3 className="font-semibold mb-3">Simple Coping Tools:</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">🌬️ Breathing Exercises</h4>
+                    <p className="text-sm text-blue-600 dark:text-blue-300">Try 4-7-8 breathing or box breathing for immediate relief</p>
+                    <Link href="/toolkit/breathing" className="text-xs text-blue-500 hover:underline">Start Breathing Exercise →</Link>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                    <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">🪨 Grounding Techniques</h4>
+                    <p className="text-sm text-amber-600 dark:text-amber-300">Use 5-4-3-2-1 grounding to stay present and calm</p>
+                    <Link href="/toolkit/grounding" className="text-xs text-amber-500 hover:underline">Try Grounding →</Link>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
+                    <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">📝 Journaling</h4>
+                    <p className="text-sm text-green-600 dark:text-green-300">Write about your feelings and thoughts to process emotions</p>
+                    <Link href="/journal" className="text-xs text-green-500 hover:underline">Start Journaling →</Link>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                    <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">🧘 Mindfulness</h4>
+                    <p className="text-sm text-purple-600 dark:text-purple-300">Practice mindfulness and meditation for mental clarity</p>
+                    <Link href="/toolkit/meditations" className="text-xs text-purple-500 hover:underline">Try Meditation →</Link>
+                  </div>
+                </div>
               </div>
 
               {assessmentResult.severity === 'severe' && (
@@ -533,10 +629,10 @@ export default function SelfAssessmentPage() {
                 Take Another Assessment
               </button>
               <Link
-                href="/toolkit/treatment-plan"
+                href="/toolkit"
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-400 to-pink-500 text-white rounded-lg text-center block"
               >
-                Get Personalized Plan
+                Explore Coping Tools
               </Link>
             </div>
           </div>

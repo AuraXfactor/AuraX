@@ -293,7 +293,7 @@ export default function SettingsPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Settings</h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Customize your Aura Z experience
+            Customize your AuraZ experience
           </p>
         </div>
 

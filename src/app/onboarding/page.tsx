@@ -116,7 +116,7 @@ export default function Onboarding() {
     <main className="min-h-screen py-10 px-4 flex items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-black dark:to-gray-900">
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
-          <div className="text-2xl font-extrabold">Aura Z Onboarding</div>
+          <div className="text-2xl font-extrabold">AuraZ Onboarding</div>
           <div className="text-sm opacity-70">Step {step+1} / {steps.length}</div>
         </div>
 
@@ -254,7 +254,7 @@ export default function Onboarding() {
                 <div className="mt-1 text-sm">Preferred Therapy: {preferredTherapy || '—'}</div>
                 <div className="mt-1 text-sm">Reminder: {reminderTime}</div>
                 <div className="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold">Starting Aura Points: 0</div>
-                <div className="mt-4 text-lg">Welcome, {name}. Your Aura Z journey starts now 🌟</div>
+                <div className="mt-4 text-lg">Welcome, {name}. Your AuraZ journey starts now 🌟</div>
               </div>
             </div>
           )}
