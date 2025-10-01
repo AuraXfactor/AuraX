@@ -10,8 +10,8 @@ import SwipeDetector from "@/components/SwipeDetector";
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: "AuraX - Your Vibe, Your Tribe",
-  description: "A gamified lifestyle app for mental wellness",
+  title: "AuraZ - Your Vibe, Your Tribe",
+  description: "A gamified lifestyle app for mental wellness - AuraZ",
   manifest: "/manifest.webmanifest",
 };
 

@@ -390,9 +390,9 @@ export default function SettingsPage() {
 • File complaints about data handling
 
 📞 CONTACT:
-• Privacy Officer: privacy@aurax.app
-• Data Protection: dpo@aurax.app
-• Ethics Committee: ethics@aurax.app
+• Privacy Officer: privacy@auraz.app
+• Data Protection: dpo@auraz.app
+• Ethics Committee: ethics@auraz.app
 
 We're committed to protecting your mental health data with the highest ethical standards.`);
                 }}

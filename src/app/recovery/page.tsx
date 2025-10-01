@@ -99,7 +99,7 @@ export default function RecoveryHub() {
       </div>
 
       <section className="px-6 py-10 max-w-5xl mx-auto">
-        <div className="text-3xl md:text-4xl font-extrabold">Your Recovery Journey, Your Aura.</div>
+        <div className="text-3xl md:text-4xl font-extrabold">Your Addiction Recovery Journey</div>
         <div className="mt-2 text-lg text-gray-600 dark:text-gray-300">
           <AnimatePresence mode="wait">
             <motion.div key={currentAff} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} transition={{duration:0.25}}>
@@ -195,38 +195,6 @@ export default function RecoveryHub() {
           <div className="mt-2 text-sm opacity-70">Glow brighter on hard days survived.</div>
         </div>
 
-        <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
-          <div className="font-semibold mb-2">Crisis Support</div>
-          <div className="space-y-3">
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-              <div className="font-medium text-red-800 dark:text-red-200">🚨 Emergency Resources</div>
-              <div className="text-sm text-red-700 dark:text-red-300 mt-1">
-                National Suicide Prevention Lifeline: 988
-              </div>
-              <div className="text-sm text-red-700 dark:text-red-300">
-                Crisis Text Line: Text HOME to 741741
-              </div>
-            </div>
-            <Link href="/chat" className="block w-full p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-center">
-              <div className="font-medium text-blue-800 dark:text-blue-200">🤖 AI Crisis Support</div>
-              <div className="text-sm text-blue-700 dark:text-blue-300">Get immediate AI assistance</div>
-            </Link>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
-          <div className="font-semibold mb-2">Support Groups</div>
-          <div className="space-y-2">
-            <Link href="/groups" className="block p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition">
-              <div className="font-medium text-green-800 dark:text-green-200">👥 Join Recovery Groups</div>
-              <div className="text-sm text-green-700 dark:text-green-300">Connect with others on similar journeys</div>
-            </Link>
-            <Link href="/therapy-support" className="block p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
-              <div className="font-medium text-purple-800 dark:text-purple-200">🫂 Professional Support</div>
-              <div className="text-sm text-purple-700 dark:text-purple-300">Access therapy and counseling resources</div>
-            </Link>
-          </div>
-        </div>
 
         <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
           <div className="font-semibold mb-2">Recovery Tools</div>

@@ -122,7 +122,7 @@ export default function Onboarding() {
     <main className="min-h-screen py-10 px-4 flex items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-black dark:to-gray-900">
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
-          <div className="text-2xl font-extrabold">Aura X Onboarding</div>
+          <div className="text-2xl font-extrabold">AuraZ Onboarding</div>
           <div className="text-sm opacity-70">Step {step+1} / {steps.length}</div>
         </div>
 
@@ -211,7 +211,7 @@ export default function Onboarding() {
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                   <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">📋 Terms of Service</h3>
                   <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-                    By using AuraX, you agree to our Terms of Service. We're committed to your privacy and wellness journey.
+                    By using AuraZ, you agree to our Terms of Service. We're committed to your privacy and wellness journey.
                   </p>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input

@@ -28,7 +28,8 @@ const NAV_TABS: NavTab[] = [
     color: 'from-rose-500 to-orange-500',
     items: [
       { label: 'Write Entry', href: '/journal', icon: '✍️', description: 'Create a new journal entry' },
-      { label: 'Recent Entries', href: '/journal', icon: '📄', description: 'View your latest entries' },
+      { label: 'Mood Tracker', href: '/mood-tracker', icon: '📊', description: 'Track your emotional wellbeing' },
+      { label: 'Specialized Journals', href: '/journals', icon: '📚', description: 'CBT, gratitude, and more' },
       { label: 'Journal History', href: '/journal/history', icon: '📚', description: 'Browse past entries' },
     ],
   },
@@ -70,14 +71,12 @@ const NAV_TABS: NavTab[] = [
   },
   {
     id: 'recovery',
-    label: 'Recovery',
+    label: 'Addictions',
     icon: '🔄',
     color: 'from-orange-500 to-red-500',
     items: [
-      { label: 'Recovery Hub', href: '/recovery', icon: '🔄', description: 'Addiction support tools' },
+      { label: 'Addiction Hub', href: '/recovery', icon: '🔄', description: 'Addiction support tools' },
       { label: 'Sobriety Tracker', href: '/recovery/tracker', icon: '📊', description: 'Track your progress' },
-      { label: 'Support Groups', href: '/recovery/groups', icon: '👥', description: 'Find support community' },
-      { label: 'Crisis Resources', href: '/recovery/crisis', icon: '🆘', description: 'Emergency resources' },
     ],
   },
   {

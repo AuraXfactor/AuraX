@@ -30,6 +30,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
+  // Note: Firebase auth is configured with browserLocalPersistence
+  // Users will stay logged in until they explicitly log out
+  // Session duration is managed by Firebase (typically 30 days, extendable to 3 months)
+
   return (
     <AuthContext.Provider value={{ user, loading }}>
       {children}
