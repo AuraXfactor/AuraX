@@ -367,17 +367,17 @@ export default function PostCommentsSection({
                     displayName = 'You';
                   } else if (userProfile) {
                     // Prioritize name over username, but use username if name is generic
-                    if (userProfile.name && userProfile.name !== 'Anonymous' && userProfile.name !== 'Unknown User') {
+                    if (userProfile.name && userProfile.name !== 'Anonymous' && userProfile.name !== 'Unknown User' && userProfile.name.trim() !== '') {
                       displayName = userProfile.name;
-                    } else if (userProfile.username && userProfile.username !== `user${userId.slice(-4)}`) {
+                    } else if (userProfile.username && userProfile.username !== `user${userId.slice(-4)}` && userProfile.username.trim() !== '') {
                       displayName = userProfile.username;
                     } else {
-                      displayName = userProfile.name || userProfile.username || 'Unknown User';
+                      displayName = userProfile.name || userProfile.username || `User${userId.slice(-4)}`;
                     }
                   } else {
                     // Load profile if not already loaded
                     loadUserProfile(userId);
-                    displayName = `user${userId.slice(-4)}`;
+                    displayName = `User${userId.slice(-4)}`;
                   }
                   
                   return (

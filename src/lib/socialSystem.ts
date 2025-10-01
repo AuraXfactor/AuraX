@@ -237,6 +237,32 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
         focusAreas: data.focusAreas || [],
       } as PublicProfile;
     }
+    
+    // If no public profile exists, try to get from users collection as fallback
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return {
+          userId,
+          name: userData.name || userData.displayName || 'Unknown User',
+          username: userData.username || userData.email?.split('@')[0] || `user${userId.slice(-4)}`,
+          bio: userData.bio || '',
+          avatar: userData.avatar || userData.photoURL,
+          interests: userData.interests || [],
+          location: userData.location,
+          isOnline: userData.isOnline || false,
+          lastSeen: userData.lastSeen || null,
+          friendsCount: userData.friendsCount || 0,
+          postsCount: userData.postsCount || 0,
+          joinedAt: userData.joinedAt || null,
+          focusAreas: userData.focusAreas || [],
+        } as PublicProfile;
+      }
+    } catch (fallbackError) {
+      console.warn('Failed to load user data as fallback:', fallbackError);
+    }
+    
     return null;
   } catch (error) {
     console.error('Error fetching public profile:', error);

@@ -73,6 +73,14 @@ export default function CreateSquadPage() {
     
     try {
       setCreating(true);
+      console.log('Creating squad with data:', {
+        creator: user.uid,
+        name: squadData.name,
+        description: squadData.description,
+        isPrivate: squadData.isPrivate,
+        initialMembers: inviteUsers
+      });
+      
       const squadId = await createAuraSquad({
         creator: user,
         name: squadData.name,
@@ -81,11 +89,13 @@ export default function CreateSquadPage() {
         initialMembers: inviteUsers
       });
       
+      console.log('Squad created successfully with ID:', squadId);
       alert('Squad created successfully! 🎉');
       router.push(`/squads/${squadId}`);
     } catch (error) {
       console.error('Error creating squad:', error);
-      alert('Failed to create squad');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to create squad: ${errorMessage}`);
     } finally {
       setCreating(false);
     }

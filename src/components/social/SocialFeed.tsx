@@ -6,6 +6,7 @@ import {
   createPost,
   likePost,
   unlikePost,
+  sendFriendRequest,
   SocialPost
 } from '@/lib/socialSystem';
 import { DocumentSnapshot } from 'firebase/firestore';
@@ -33,6 +34,7 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
   const [newPostTags, setNewPostTags] = useState<string[]>([]);
   const [creatingPost, setCreatingPost] = useState(false);
   const [showComments, setShowComments] = useState<Set<string>>(new Set());
+  const [sendingFriendRequests, setSendingFriendRequests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -150,6 +152,29 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
       }
       return newSet;
     });
+  };
+
+  const handleSendFriendRequest = async (authorId: string) => {
+    if (!user || user.uid === authorId) return;
+    
+    try {
+      setSendingFriendRequests(prev => new Set(prev).add(authorId));
+      await sendFriendRequest({
+        fromUser: user,
+        toUserId: authorId,
+        message: 'I saw your post and would like to connect!'
+      });
+      alert('Friend request sent successfully!');
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      alert('Failed to send friend request. Please try again.');
+    } finally {
+      setSendingFriendRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(authorId);
+        return newSet;
+      });
+    }
   };
 
   const handleCommentsCountChange = (postId: string, count: number) => {
@@ -315,6 +340,29 @@ export default function SocialFeed({ showCreatePost = true }: SocialFeedProps) {
               )}
             </div>
           </div>
+          
+          {/* Friend Request Button */}
+          {user && post.authorId !== user.uid && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleSendFriendRequest(post.authorId)}
+                disabled={sendingFriendRequests.has(post.authorId)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white text-sm rounded-lg transition-colors"
+              >
+                {sendingFriendRequests.has(post.authorId) ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>👋</span>
+                    <span>Add Friend</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
         
         {/* Post Content */}
