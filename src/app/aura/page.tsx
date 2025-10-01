@@ -168,10 +168,12 @@ export default function AuraPage() {
             metadata: { 
               type: postType,
               moodTag: selectedMood,
-              hasMedia: Boolean(mediaFile)
+              hasMedia: Boolean(mediaFile),
+              length: newPostContent.length
             }
           },
           description: `✨ Shared an Aura with friends`,
+          uniqueId: `aura-post-${user.uid}-${Date.now()}`
         });
         
         // Update quest progress
@@ -222,6 +224,7 @@ export default function AuraPage() {
               }
             },
             description: `🤗 Supported ${post.authorName}'s Aura`,
+            uniqueId: `friend-support-${user.uid}-${post.id}-${reactionType}`
           });
           
           // Update quest progress

@@ -276,6 +276,7 @@ export default function JournalPage() {
             }
           },
           description: `📔 Journal entry completed (${wordCount} words)`,
+          uniqueId: `journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
         });
         
         // Update quest progress

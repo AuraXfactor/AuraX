@@ -305,8 +305,16 @@ export default function AuraPointsPage() {
         <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
           <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Daily Wisdom 🌅</h3>
           <p className="text-amber-700 dark:text-amber-300 text-sm">
-            You can earn up to 50 points per day from regular activities. Focus on consistency over quantity!
-            Quality self-care is more valuable than racing for points.
+            You can earn up to 50 points per day from regular activities. Quality matters - longer journal entries,
+            complete meditation sessions, and meaningful interactions earn bonus points! Focus on consistency over quantity.
+          </p>
+        </div>
+        
+        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Smart Bonus System ⭐</h3>
+          <p className="text-blue-700 dark:text-blue-300 text-sm">
+            Earn bonus points for quality activities: 200+ word journals (+3 pts), 95%+ meditation completion (+2 pts),
+            long workout sessions (+2 pts), and consistency streaks. The system rewards genuine engagement!
           </p>
         </div>
       </div>

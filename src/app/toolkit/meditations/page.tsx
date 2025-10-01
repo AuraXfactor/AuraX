@@ -53,6 +53,7 @@ export default function MeditationsPage() {
             }
           },
           description: `🧘 Completed meditation: ${sessions.find(s => s.id === sessionId)?.title}`,
+          uniqueId: `meditation-${user.uid}-${sessionId}-${new Date().toISOString().split('T')[0]}`
         });
         
         // Update quest progress

@@ -127,6 +127,7 @@ export default function DailyCheckInJournal() {
             }
           },
           description: `📔 Daily Check-In completed (${entryData.completionScore}% complete)`,
+          uniqueId: `daily-checkin-${user.uid}-${new Date().toISOString().split('T')[0]}`
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);

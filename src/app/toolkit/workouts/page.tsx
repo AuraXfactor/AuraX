@@ -49,6 +49,7 @@ export default function WorkoutsPage() {
           }
         },
         description: `💪 Completed workout: ${routines.find(r => r.id === workoutId)?.title}`,
+        uniqueId: `workout-${user.uid}-${workoutId}-${new Date().toISOString().split('T')[0]}`
       });
       
       // Update quest progress
