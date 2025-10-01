@@ -148,10 +148,10 @@ export default function DirectMessageInterface({
         setOtherUserProfile(null);
       }
       
-      // Create or get direct chat - USE SIMPLE VERSION
-      console.log('💬 Creating/getting SIMPLE direct chat...');
-      const sessionId = await createSimpleChat(user.uid, otherUserId);
-      console.log('✅ SIMPLE Direct chat ready:', { sessionId });
+      // Create or get direct chat
+      console.log('💬 Creating/getting direct chat...');
+      const sessionId = await createDirectChat(user.uid, otherUserId);
+      console.log('✅ Direct chat ready:', { sessionId });
       
       setChatId(sessionId);
       console.log('🎉 Chat initialization completed successfully');

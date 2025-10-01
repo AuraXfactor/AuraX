@@ -203,8 +203,10 @@ export async function createDirectChat(
 ): Promise<string> {
   console.log('🔄 Creating direct chat...', { currentUserId, otherUserId });
   
-  // Generate deterministic chat ID for 1-to-1 chats
-  const chatId = ChatEncryption.generateChatId(currentUserId, otherUserId);
+  // Create a consistent chat ID that both users will see
+  // Sort user IDs to ensure same chat ID regardless of who initiates
+  const sortedUserIds = [currentUserId, otherUserId].sort();
+  const chatId = `dm_${sortedUserIds[0]}_${sortedUserIds[1]}`;
   const chatRef = getChatRef(chatId);
   
   try {
