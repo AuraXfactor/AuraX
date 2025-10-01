@@ -293,7 +293,7 @@ export default function SettingsPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Settings</h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Customize your AuraX experience
+            Customize your AuraZ experience
           </p>
         </div>
 
@@ -572,10 +572,20 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Data & Storage */}
+          {/* Privacy & Data Settings */}
           <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-            <h2 className="text-2xl font-semibold mb-4">💾 Data & Storage</h2>
+            <h2 className="text-2xl font-semibold mb-4">🔒 Privacy & Data</h2>
             <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <h3 className="font-medium">Privacy Settings</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Manage your data privacy and consent</p>
+                </div>
+                <a href="/settings/privacy" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                  Manage Privacy
+                </a>
+              </div>
+              
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div>
                   <h3 className="font-medium">Export Data</h3>

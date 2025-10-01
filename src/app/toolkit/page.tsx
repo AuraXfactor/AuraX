@@ -38,7 +38,7 @@ export default function ToolkitPage() {
     { href: '/toolkit/workouts', title: 'Mini Workouts', desc: '5-10 min stretch routines', emoji: '🤸', colors: 'from-pink-500 to-rose-500' },
     { href: '/toolkit/visualization', title: 'Visualization', desc: 'Guided imagery and focus', emoji: '🌄', colors: 'from-sky-500 to-cyan-500' },
     { href: '/toolkit/sleep', title: 'Sleep Tools', desc: 'White noise and wind-down', emoji: '😴', colors: 'from-slate-500 to-gray-700' },
-    { href: '/toolkit/reminders', title: 'Reminders', desc: 'Gentle notifications (opt-in)', emoji: '⏰', colors: 'from-amber-500 to-yellow-500' },
+    { href: '/toolkit/self-assessment', title: 'Self-Assessment', desc: 'Mental health screening tools (GAD-7, PHQ-9)', emoji: '📋', colors: 'from-purple-400 to-pink-500' },
   ];
 
   return (

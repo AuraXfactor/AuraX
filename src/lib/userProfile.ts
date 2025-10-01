@@ -20,7 +20,7 @@ export async function ensureUserProfile(user: User) {
     moodBaseline: [],
     auraPoints: 0,
     isPublic: true, // Default to public for social features
-    bio: 'AuraX community member',
+    bio: 'AuraZ community member',
     interests: ['wellness'],
     lastLogin: serverTimestamp(),
   };
@@ -37,7 +37,7 @@ export async function ensureUserProfile(user: User) {
     const updates: any = { lastLogin: serverTimestamp() }; // eslint-disable-line @typescript-eslint/no-explicit-any
     
     if (!existingData.isPublic) updates.isPublic = true;
-    if (!existingData.bio) updates.bio = 'AuraX community member';
+    if (!existingData.bio) updates.bio = 'AuraZ community member';
     if (!existingData.interests) updates.interests = ['wellness'];
     if (!existingData.username) updates.username = user.email?.split('@')[0] ?? `user${user.uid.slice(-4)}`;
     
@@ -66,6 +66,8 @@ export type OnboardingProfile = {
   name: string;
   username: string;
   email: string | null;
+  dateOfBirth: string;
+  location: string;
   avatar: string | null;
   focusAreas: string[];
   preferredTherapy?: string | null;
@@ -79,6 +81,8 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
     name: profile.name,
     username: profile.username,
     email: profile.email,
+    dateOfBirth: profile.dateOfBirth,
+    location: profile.location,
     avatar: profile.avatar,
     focusAreas: profile.focusAreas,
     preferredTherapy: profile.preferredTherapy ?? null,
@@ -281,7 +285,7 @@ export async function setupBiometricAuth(user: User): Promise<boolean> {
       publicKey: {
         challenge: new Uint8Array(32),
         rp: {
-          name: "AuraX",
+          name: "AuraZ",
           id: window.location.hostname,
         },
         user: {
