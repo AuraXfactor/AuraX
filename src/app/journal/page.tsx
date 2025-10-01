@@ -23,6 +23,7 @@ import { updateSquadChallengeProgress } from '@/lib/auraSquads';
 import AIInsights from '@/components/journal/AIInsights';
 import SmartPrompts from '@/components/journal/SmartPrompts';
 import MoodPrediction from '@/components/journal/MoodPrediction';
+import AuraAIChat from '@/components/aura-ai/AuraAIChat';
 
 const defaultActivities: { key: string; label: string }[] = [
   { key: 'talk_friend', label: 'Talking to a friend/loved one' },
@@ -87,6 +88,7 @@ export default function JournalPage() {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [showSmartPrompts, setShowSmartPrompts] = useState(false);
   const [showMoodPrediction, setShowMoodPrediction] = useState(false);
+  const [showAuraAI, setShowAuraAI] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<string>('');
 
   useEffect(() => {
@@ -570,6 +572,16 @@ export default function JournalPage() {
           >
             🔮 Mood Prediction
           </button>
+          <button
+            onClick={() => setShowAuraAI(!showAuraAI)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              showAuraAI 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            ✨ Aura AI Chat
+          </button>
         </div>
 
         {/* AI Insights Component */}
@@ -589,6 +601,24 @@ export default function JournalPage() {
         {/* Mood Prediction Component */}
         {showMoodPrediction && (
           <MoodPrediction />
+        )}
+
+        {/* Aura AI Chat Component */}
+        {showAuraAI && (
+          <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+            <h3 className="text-xl font-bold mb-4 text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              ✨ Chat with Aura AI
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
+              Your mental wellness companion is here to support your journaling journey
+            </p>
+            <div className="h-96">
+              <AuraAIChat 
+                context="journal"
+                initialMessage={`I see you're journaling today. How are you feeling? I'd love to help you reflect and grow.`}
+              />
+            </div>
+          </div>
         )}
       </div>
 
