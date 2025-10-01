@@ -151,20 +151,39 @@ export async function createSimpleChat(
   console.log('🧪 Creating SIMPLE chat for testing...', { currentUserId, otherUserId });
   
   try {
-    // Use a simple chat ID
-    const chatId = `test_${currentUserId}_${otherUserId}`;
+    // Create a consistent chat ID that both users will see
+    // Sort user IDs to ensure same chat ID regardless of who initiates
+    const sortedUserIds = [currentUserId, otherUserId].sort();
+    const chatId = `dm_${sortedUserIds[0]}_${sortedUserIds[1]}`;
     const chatRef = getChatRef(chatId);
+    
+    // Check if chat already exists
+    const existingChat = await getDoc(chatRef);
+    if (existingChat.exists()) {
+      console.log('✅ Chat already exists:', { chatId });
+      return chatId;
+    }
     
     // Create minimal chat data
     const simpleChatData = {
       id: chatId,
       type: 'direct',
       participants: {
-        [currentUserId]: { userId: currentUserId, role: 'member' },
-        [otherUserId]: { userId: otherUserId, role: 'member' },
+        [currentUserId]: { 
+          userId: currentUserId, 
+          role: 'member',
+          joinedAt: serverTimestamp()
+        },
+        [otherUserId]: { 
+          userId: otherUserId, 
+          role: 'member',
+          joinedAt: serverTimestamp()
+        },
       },
       createdBy: currentUserId,
       createdAt: serverTimestamp(),
+      lastActivity: serverTimestamp(),
+      messageCount: 0,
     };
     
     console.log('💾 Saving SIMPLE chat to Firestore...', { chatId });
