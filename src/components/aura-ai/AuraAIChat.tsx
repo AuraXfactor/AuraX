@@ -7,7 +7,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  type?: 'text' | 'suggestion' | 'encouragement' | 'crisis_support';
+  type?: 'text' | 'suggestion' | 'encouragement' | 'crisis_support' | 'celebration';
 }
 
 interface AuraAIChatProps {
