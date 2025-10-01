@@ -38,15 +38,30 @@ export default function CreateSquadPage() {
     if (!user) return;
     
     try {
-      const friendsRef = collection(db, 'users', user.uid, 'friends');
-      const snapshot = await getDocs(friendsRef);
+      // Try to load friends from multiple sources
+      const friendsList: Friend[] = [];
       
-      const friendsList = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        name: doc.data().friendName,
-        username: doc.data().friendUsername,
-        avatar: doc.data().friendAvatar,
-      })) as Friend[];
+      // Method 1: Try to load from friends subcollection
+      try {
+        const friendsRef = collection(db, 'users', user.uid, 'friends');
+        const snapshot = await getDocs(friendsRef);
+        
+        const subcollectionFriends = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          name: doc.data().friendName || doc.data().name || 'Unknown',
+          username: doc.data().friendUsername || doc.data().username,
+          avatar: doc.data().friendAvatar || doc.data().avatar,
+        })) as Friend[];
+        
+        friendsList.push(...subcollectionFriends);
+      } catch (error) {
+        console.log('No friends subcollection found, trying alternative methods');
+      }
+      
+      // Method 2: If no friends found, show a message to add friends first
+      if (friendsList.length === 0) {
+        console.log('No friends found - user needs to add friends first');
+      }
       
       setFriends(friendsList);
     } catch (error) {

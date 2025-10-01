@@ -706,15 +706,15 @@ export async function createPost(params: {
     authorId: user.uid,
     content,
     type,
-    mediaUrl,
+    ...(mediaUrl && { mediaUrl }),
     visibility,
     createdAt: serverTimestamp(),
     likes: [],
     comments: 0,
     shares: 0,
-    tags: tags || [],
-    mood,
-    location,
+    ...(tags && tags.length > 0 && { tags }),
+    ...(mood && { mood }),
+    ...(location && { location }),
   };
   
   const docRef = await addDoc(getPostsRef(), postData);
@@ -917,7 +917,7 @@ export async function sendMessage(params: {
     type,
     timestamp: serverTimestamp(),
     participants: participantsMap,
-    mediaUrl,
+    ...(mediaUrl && { mediaUrl }),
     readBy: { [user.uid]: serverTimestamp() },
   };
   

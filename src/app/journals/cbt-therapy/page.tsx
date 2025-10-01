@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import AuraAIChat from '@/components/aura-ai/AuraAIChat';
 
 const EMOTIONS = [
   { label: 'Angry', value: 'angry', color: 'bg-red-500' },
@@ -34,6 +35,7 @@ export default function CBTTherapyJournal() {
   const [reRatedIntensity, setReRatedIntensity] = useState(5);
   const [actionStep, setActionStep] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   if (!user) {
     router.push('/login');
@@ -183,13 +185,21 @@ export default function CBTTherapyJournal() {
             </div>
           </div>
           
-          <button
-            onClick={handleSave}
-            disabled={saving || !situation.trim() || !selectedEmotion}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition disabled:opacity-50 font-semibold"
-          >
-            {saving ? 'Saving...' : 'Save Entry'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowAIChat(true)}
+              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition font-semibold"
+            >
+              ✨ Chat with Aura AI
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !situation.trim() || !selectedEmotion}
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition disabled:opacity-50 font-semibold"
+            >
+              {saving ? 'Saving...' : 'Save Entry'}
+            </button>
+          </div>
         </div>
 
         {/* Auto Date/Time Display */}
@@ -484,6 +494,19 @@ export default function CBTTherapyJournal() {
           )}
         />
       </div>
+
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col">
+            <AuraAIChat
+              onClose={() => setShowAIChat(false)}
+              context="journal"
+              initialMessage="I'm working on my CBT therapy journal. Can you help me process my thoughts and emotions?"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

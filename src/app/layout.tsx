@@ -102,9 +102,9 @@ export default function RootLayout({
         `}} />
         <div id="install-banner" data-autoshow="true" style={{display:'none',position:'fixed',bottom:16,left:16,right:16,zIndex:50,background:'rgba(255,255,255,0.9)',backdropFilter:'blur(8px)',border:'1px solid rgba(14,165,233,0.3)',boxShadow:'0 10px 30px rgba(14,165,233,0.25)',borderRadius:16,padding:12,alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <img src="/ryd-logo.svg" alt="Aura X" style={{width:32,height:32}}/>
+            <img src="/ryd-logo.svg" alt="AuraX" style={{width:32,height:32}}/>
             <div>
-              <div style={{fontWeight:800}}>Install Aura X</div>
+              <div style={{fontWeight:800}}>Install AuraX</div>
               <div style={{fontSize:12,opacity:0.8}}>Get a faster, fullscreen app experience</div>
             </div>
           </div>

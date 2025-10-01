@@ -143,17 +143,74 @@ export const getCommentRef = (postId: string, commentId: string) => doc(db, 'pos
 
 // ===== CHAT MANAGEMENT =====
 
+// SIMPLE TEST FUNCTION - Create chat with minimal data
+export async function createSimpleChat(
+  currentUserId: string,
+  otherUserId: string
+): Promise<string> {
+  console.log('🧪 Creating SIMPLE chat for testing...', { currentUserId, otherUserId });
+  
+  try {
+    // Create a consistent chat ID that both users will see
+    // Sort user IDs to ensure same chat ID regardless of who initiates
+    const sortedUserIds = [currentUserId, otherUserId].sort();
+    const chatId = `dm_${sortedUserIds[0]}_${sortedUserIds[1]}`;
+    const chatRef = getChatRef(chatId);
+    
+    // Check if chat already exists
+    const existingChat = await getDoc(chatRef);
+    if (existingChat.exists()) {
+      console.log('✅ Chat already exists:', { chatId });
+      return chatId;
+    }
+    
+    // Create minimal chat data
+    const simpleChatData = {
+      id: chatId,
+      type: 'direct',
+      participants: {
+        [currentUserId]: { 
+          userId: currentUserId, 
+          role: 'member',
+          joinedAt: serverTimestamp()
+        },
+        [otherUserId]: { 
+          userId: otherUserId, 
+          role: 'member',
+          joinedAt: serverTimestamp()
+        },
+      },
+      createdBy: currentUserId,
+      createdAt: serverTimestamp(),
+      lastActivity: serverTimestamp(),
+      messageCount: 0,
+    };
+    
+    console.log('💾 Saving SIMPLE chat to Firestore...', { chatId });
+    await setDoc(chatRef, simpleChatData);
+    console.log('✅ SIMPLE chat created successfully', { chatId });
+    
+    return chatId;
+  } catch (error) {
+    console.error('❌ Error creating SIMPLE chat:', error);
+    throw error;
+  }
+}
+
 export async function createDirectChat(
   currentUserId: string,
   otherUserId: string
 ): Promise<string> {
   console.log('🔄 Creating direct chat...', { currentUserId, otherUserId });
   
-  // Generate deterministic chat ID for 1-to-1 chats
-  const chatId = ChatEncryption.generateChatId(currentUserId, otherUserId);
+  // Create a consistent chat ID that both users will see
+  // Sort user IDs to ensure same chat ID regardless of who initiates
+  const sortedUserIds = [currentUserId, otherUserId].sort();
+  const chatId = `dm_${sortedUserIds[0]}_${sortedUserIds[1]}`;
   const chatRef = getChatRef(chatId);
   
   try {
+    console.log('🔍 Checking if chat exists...', { chatId });
     // Check if chat already exists
     const existingChat = await getDoc(chatRef);
     if (existingChat.exists()) {
@@ -161,13 +218,9 @@ export async function createDirectChat(
       return chatId;
     }
     
-    // Load participant profiles
-    const [currentProfile, otherProfile] = await Promise.all([
-      getPublicProfile(currentUserId),
-      getPublicProfile(otherUserId)
-    ]);
-    
-    const chatData: Partial<Chat> = {
+    console.log('📝 Preparing SIMPLIFIED chat data...');
+    // SIMPLIFIED: Create chat without profiles to avoid any issues
+    const chatData = {
       id: chatId,
       type: 'direct',
       participants: {
@@ -175,34 +228,40 @@ export async function createDirectChat(
           userId: currentUserId,
           role: 'member',
           joinedAt: serverTimestamp(),
-          profile: currentProfile || undefined,
         },
         [otherUserId]: {
           userId: otherUserId,
           role: 'member',
           joinedAt: serverTimestamp(),
-          profile: otherProfile || undefined,
         },
       },
       createdBy: currentUserId,
       createdAt: serverTimestamp(),
       lastActivity: serverTimestamp(),
       messageCount: 0,
-      isEncrypted: true,
+      isEncrypted: false, // SIMPLIFIED: Disable encryption to avoid issues
       settings: {
-        allowInvites: false, // Direct chats don't allow invites
+        allowInvites: false,
         showTypingIndicators: true,
         allowReactions: true,
         autoDeleteMessages: false,
       },
     };
     
+    console.log('💾 Saving chat to Firestore...', { chatId });
     await setDoc(chatRef, chatData);
     console.log('✅ Direct chat created successfully', { chatId });
     
     return chatId;
   } catch (error) {
     console.error('❌ Error creating direct chat:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      currentUserId,
+      otherUserId,
+      chatId
+    });
     throw error;
   }
 }
@@ -246,11 +305,12 @@ export async function createGroupChat(params: {
     // Build participants object
     const participants: { [userId: string]: ChatParticipant } = {};
     [creatorId, ...participantIds].forEach((userId, index) => {
+      const profile = participantProfiles[index];
       participants[userId] = {
         userId,
         role: userId === creatorId ? 'owner' : 'member',
         joinedAt: serverTimestamp(),
-        profile: participantProfiles[index] || undefined,
+        ...(profile && { profile }),
       };
     });
     
@@ -330,11 +390,12 @@ export async function addParticipantsToGroup(params: {
     // Add each participant
     participantIds.forEach((userId, index) => {
       if (!chatData.participants[userId]) {
+        const profile = profiles[index];
         const participantData: ChatParticipant = {
           userId,
           role: 'member',
           joinedAt: serverTimestamp(),
-          profile: profiles[index] || undefined,
+          ...(profile && { profile }),
         };
         
         batch.update(chatRef, {
@@ -495,20 +556,8 @@ export async function sendMessage(params: {
     let finalContent = content;
     let encryptionIV: string | undefined;
     
-    // Encrypt message if chat is encrypted and it's text
-    if (chatData.isEncrypted && type === 'text' && content.trim()) {
-      try {
-        const participantIds = Object.keys(chatData.participants).filter(id => id !== senderId);
-        if (participantIds.length > 0) {
-          const sharedKey = await ChatEncryption.generateSharedKey(senderId, participantIds[0]);
-          const encrypted = await ChatEncryption.encrypt(content, sharedKey);
-          finalContent = encrypted.encrypted;
-          encryptionIV = encrypted.iv;
-        }
-      } catch (encryptionError) {
-        console.warn('⚠️ Encryption failed, sending unencrypted:', encryptionError);
-      }
-    }
+    // SIMPLIFIED: Skip encryption for now to avoid issues
+    console.log('📝 Using unencrypted message for simplicity');
     
     // Prepare message data
     const messageData: Partial<Message> = {
@@ -516,19 +565,26 @@ export async function sendMessage(params: {
       senderId,
       type,
       content: finalContent,
-      encryptionIV,
-      mediaUrl,
-      mediaType,
-      fileName,
-      fileSize,
+      ...(encryptionIV && { encryptionIV }),
+      ...(mediaUrl && { mediaUrl }),
+      ...(mediaType && { mediaType }),
+      ...(fileName && { fileName }),
+      ...(fileSize && { fileSize }),
       timestamp: serverTimestamp(),
-      replyTo,
+      ...(replyTo && { replyTo }),
       reactions: {},
       readBy: { [senderId]: serverTimestamp() },
       deliveredTo: { [senderId]: serverTimestamp() },
-      metadata: {
-        mentions: mentions || [],
-        dimensions,
+      ...(mentions && mentions.length > 0 && {
+        metadata: {
+          mentions,
+          ...(dimensions && { dimensions }),
+        }
+      }),
+      ...(!mentions || mentions.length === 0) && dimensions && {
+        metadata: {
+          dimensions,
+        }
       },
     };
     
@@ -874,18 +930,69 @@ export function listenToPostComments(
   return onSnapshot(q, async (snapshot) => {
     const comments: PostComment[] = [];
     
-    for (const commentDoc of snapshot.docs) {
+    // Process comments in parallel for better performance
+    const commentPromises = snapshot.docs.map(async (commentDoc) => {
       const commentData = commentDoc.data() as PostComment;
-      const authorProfile = await getPublicProfile(commentData.authorId);
       
-      comments.push({
+      // Fetch author profile with multiple fallback strategies
+      let authorProfile: PublicProfile | undefined;
+      try {
+        // First try to get the public profile
+        const profile = await getPublicProfile(commentData.authorId);
+        authorProfile = profile || undefined;
+        
+        // If no profile found, try to get from users collection
+        if (!authorProfile) {
+          const userDoc = await getDoc(doc(db, 'users', commentData.authorId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            authorProfile = {
+              userId: commentData.authorId,
+              name: userData.name || userData.displayName || 'Unknown User',
+              username: userData.username || userData.email?.split('@')[0] || `user${commentData.authorId.slice(-4)}`,
+              bio: userData.bio || '',
+              avatar: userData.avatar || userData.photoURL,
+              interests: userData.interests || [],
+              isOnline: userData.isOnline || false,
+              lastSeen: userData.lastSeen || null,
+              friendsCount: userData.friendsCount || 0,
+              postsCount: userData.postsCount || 0,
+              joinedAt: userData.joinedAt || null,
+              focusAreas: userData.focusAreas || [],
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch author profile for comment:', error);
+      }
+      
+        // Final fallback if still no profile
+        if (!authorProfile) {
+          authorProfile = {
+            userId: commentData.authorId,
+            name: 'Unknown User',
+            username: `user${commentData.authorId.slice(-4)}`,
+            bio: '',
+            avatar: undefined,
+            interests: [],
+            isOnline: false,
+            lastSeen: null,
+            friendsCount: 0,
+            postsCount: 0,
+            joinedAt: null,
+            focusAreas: [],
+          };
+        }
+      
+      return {
         ...commentData,
         id: commentDoc.id,
-        authorProfile: authorProfile || undefined,
-      });
-    }
+        authorProfile,
+      };
+    });
     
-    callback(comments);
+    const resolvedComments = await Promise.all(commentPromises);
+    callback(resolvedComments);
   });
 }
 

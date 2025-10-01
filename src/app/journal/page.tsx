@@ -20,6 +20,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import { updateQuestProgress } from '@/lib/weeklyQuests';
 import { updateSquadChallengeProgress } from '@/lib/auraSquads';
+import AIInsights from '@/components/journal/AIInsights';
+import SmartPrompts from '@/components/journal/SmartPrompts';
+import MoodPrediction from '@/components/journal/MoodPrediction';
 
 const defaultActivities: { key: string; label: string }[] = [
   { key: 'talk_friend', label: 'Talking to a friend/loved one' },
@@ -79,6 +82,12 @@ export default function JournalPage() {
   const [reminderTime, setReminderTime] = useState('20:00');
   const [customActivities, setCustomActivities] = useState<string[]>([]);
   const [newActivity, setNewActivity] = useState('');
+  
+  // AI Features State
+  const [showAIInsights, setShowAIInsights] = useState(false);
+  const [showSmartPrompts, setShowSmartPrompts] = useState(false);
+  const [showMoodPrediction, setShowMoodPrediction] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState<string>('');
 
   useEffect(() => {
     if (!user) return;
@@ -401,6 +410,12 @@ export default function JournalPage() {
     await setDoc(doc(db, 'users', user.uid), { customActivities: updated, updatedAt: serverTimestamp() }, { merge: true });
   };
 
+  const handlePromptSelect = (prompt: string) => {
+    setSelectedPrompt(prompt);
+    setNotes(prev => prev + (prev ? '\n\n' : '') + prompt + '\n\n');
+    setShowSmartPrompts(false);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
@@ -520,6 +535,62 @@ export default function JournalPage() {
           </button>
         </div>
       </form>
+
+      {/* AI Features Section */}
+      <div className="space-y-6">
+        {/* AI Features Toggle Buttons */}
+        <div className="flex flex-wrap gap-3 justify-center">
+          <button
+            onClick={() => setShowAIInsights(!showAIInsights)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              showAIInsights 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            🧠 AI Insights
+          </button>
+          <button
+            onClick={() => setShowSmartPrompts(!showSmartPrompts)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              showSmartPrompts 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            💡 Smart Prompts
+          </button>
+          <button
+            onClick={() => setShowMoodPrediction(!showMoodPrediction)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              showMoodPrediction 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            🔮 Mood Prediction
+          </button>
+        </div>
+
+        {/* AI Insights Component */}
+        {showAIInsights && (
+          <AIInsights />
+        )}
+
+        {/* Smart Prompts Component */}
+        {showSmartPrompts && (
+          <SmartPrompts 
+            currentMood={moodTag}
+            recentActivities={selectedActivities}
+            onPromptSelect={handlePromptSelect}
+          />
+        )}
+
+        {/* Mood Prediction Component */}
+        {showMoodPrediction && (
+          <MoodPrediction />
+        )}
+      </div>
 
       <div className="space-y-6">
         <div className="rounded-2xl border border-white/10 p-4 space-y-3">

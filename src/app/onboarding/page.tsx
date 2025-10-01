@@ -17,9 +17,7 @@ const focusOptions = [
 const therapyOptions = ['Chat', 'Phone Call', 'WhatsApp', 'Video Call'];
 
 const defaultAvatars = [
-  '/ryd-logo.svg',
-  '/next.svg',
-  '/globe.svg',
+  '🌟', '✨', '🎭', '🦋', '🌺', '🎨', '🌈', '🦄', '🌸', '💫', '🎪', '🎯'
 ];
 
 export default function Onboarding() {
@@ -126,10 +124,10 @@ export default function Onboarding() {
               </div>
               <div className="mt-4">
                 <div className="text-sm mb-2">Pick an avatar</div>
-                <div className="flex gap-3">
-                  {defaultAvatars.map((src)=> (
-                    <button key={src} onClick={()=>{setAvatar(src); setUploadPreview(null);}} className={`p-1 rounded-xl border ${avatar===src? 'border-blue-500 ring-2 ring-blue-300':'border-transparent'}`}>
-                      <img src={src} alt="avatar" className="w-12 h-12"/>
+                <div className="grid grid-cols-6 gap-3">
+                  {defaultAvatars.map((emoji)=> (
+                    <button key={emoji} onClick={()=>{setAvatar(emoji); setUploadPreview(null);}} className={`p-3 rounded-xl border text-2xl hover:scale-110 transition ${avatar===emoji? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50 dark:bg-blue-500/10':'border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}>
+                      {emoji}
                     </button>
                   ))}
                 </div>
@@ -199,7 +197,13 @@ export default function Onboarding() {
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
                 <div className="flex items-center gap-3">
-                  <img src={uploadPreview || avatar || '/ryd-logo.svg'} className="w-12 h-12 rounded-xl border" alt="avatar"/>
+                  {uploadPreview ? (
+                    <img src={uploadPreview} className="w-12 h-12 rounded-xl border" alt="avatar"/>
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
+                      {avatar || '🌟'}
+                    </div>
+                  )}
                   <div>
                     <div className="font-bold">{name} @{username}</div>
                     <div className="text-sm opacity-70">Focus: {focusAreas.join(', ')}</div>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   createDirectChat,
+  createSimpleChat,
   sendMessage,
   listenToMessages,
   listenToChat,
