@@ -168,6 +168,15 @@ export default function SlimNavbar() {
               <span>App Tour</span>
             </button>
             
+            <Link 
+              href="/therapy-support" 
+              onClick={() => setShowMobileMenu(false)}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            >
+              <span className="text-xl">🫂</span>
+              <span>Therapy Support</span>
+            </Link>
+            
             <hr className="border-gray-200 dark:border-gray-700" />
             
             <button
