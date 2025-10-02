@@ -1,11 +1,20 @@
 // AuraX Service Worker - Push Notifications and Caching
 
-const CACHE_NAME = 'aurax-v1';
+const CACHE_NAME = 'aurax-v2';
 const urlsToCache = [
   '/',
   '/messages',
+  '/toolkit',
+  '/toolkit/grounding',
+  '/toolkit/breathing',
+  '/toolkit/affirmations',
+  '/journals',
+  '/journals/cbt-therapy',
+  '/journals/gratitude',
+  '/journals/daily-checkin',
   '/favicon.ico',
   '/manifest.webmanifest',
+  '/ryd-logo.svg',
 ];
 
 // Install event - cache resources
@@ -139,10 +148,12 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Background sync for offline message sending
+// Background sync for offline data
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync-messages') {
     event.waitUntil(syncMessages());
+  } else if (event.tag === 'background-sync-offline-data') {
+    event.waitUntil(syncOfflineData());
   }
 });
 
@@ -157,6 +168,28 @@ async function syncMessages() {
     console.log('Messages synced successfully');
   } catch (error) {
     console.error('Error syncing messages:', error);
+  }
+}
+
+async function syncOfflineData() {
+  console.log('Syncing offline data...');
+  
+  try {
+    // Get offline data from localStorage
+    const offlineData = localStorage.getItem('aura_offline_data');
+    if (offlineData) {
+      const data = JSON.parse(offlineData);
+      const unsyncedData = data.filter(item => !item.synced);
+      
+      if (unsyncedData.length > 0) {
+        console.log(`Syncing ${unsyncedData.length} offline items...`);
+        // The sync service will handle the actual syncing
+        // This is just a trigger for the sync service
+      }
+    }
+    console.log('Offline data sync triggered');
+  } catch (error) {
+    console.error('Error syncing offline data:', error);
   }
 }
 

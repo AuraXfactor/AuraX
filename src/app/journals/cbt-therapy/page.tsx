@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
+import { useOffline } from '@/hooks/useOffline';
 
 const EMOTIONS = [
   { label: 'Angry', value: 'angry', color: 'bg-red-500' },
@@ -23,6 +24,7 @@ const EMOTIONS = [
 export default function CBTTherapyJournal() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isOfflineMode, saveOffline } = useOffline();
   
   // Form state
   const [situation, setSituation] = useState('');
@@ -61,7 +63,7 @@ export default function CBTTherapyJournal() {
       const entryData = {
         journalType: 'cbt-therapy',
         userId: user.uid,
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         dateKey: new Date().toISOString().split('T')[0],
         
         // Core CBT data
@@ -85,34 +87,43 @@ export default function CBTTherapyJournal() {
         cognitiveProgress: emotionIntensity - reRatedIntensity, // How much did CBT help?
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'cbt-therapy'), entryData);
-
-      // Award points based on progress and completion
-      try {
-        const progressBonus = Math.max(0, entryData.cognitiveProgress * 2); // Bonus for emotional improvement
-        
-        await awardAuraPoints({
-          user,
-          activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: entryData.wordCount,
-            metadata: {
-              journalType: 'cbt-therapy',
-              completionScore: entryData.completionScore,
-              emotionalImprovement: entryData.cognitiveProgress,
-              progressBonus
-            }
-          },
-          description: `🧠 CBT Thought Reframe completed (+${progressBonus} progress bonus)`,
-          uniqueId: `cbt-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+      if (isOfflineMode) {
+        // Save offline
+        await saveOffline('cbt-journal', entryData, user.uid);
+        alert('CBT Thought Reframe saved offline! It will sync when you\'re back online. 🧠✨');
+      } else {
+        // Save to Firestore
+        await addDoc(collection(db, 'specialized-journals', user.uid, 'cbt-therapy'), {
+          ...entryData,
+          timestamp: serverTimestamp()
         });
-      } catch (pointsError) {
-        console.error('Error awarding points:', pointsError);
-      }
 
-      alert('CBT Thought Reframe saved successfully! 🧠✨');
+        // Award points based on progress and completion
+        try {
+          const progressBonus = Math.max(0, entryData.cognitiveProgress * 2); // Bonus for emotional improvement
+          
+          await awardAuraPoints({
+            user,
+            activity: 'journal_entry',
+            proof: {
+              type: 'journal_length',
+              value: entryData.wordCount,
+              metadata: {
+                journalType: 'cbt-therapy',
+                completionScore: entryData.completionScore,
+                emotionalImprovement: entryData.cognitiveProgress,
+                progressBonus
+              }
+            },
+            description: `🧠 CBT Thought Reframe completed (+${progressBonus} progress bonus)`,
+            uniqueId: `cbt-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          });
+        } catch (pointsError) {
+          console.error('Error awarding points:', pointsError);
+        }
+
+        alert('CBT Thought Reframe saved successfully! 🧠✨');
+      }
       
       // Reset form
       resetForm();
@@ -219,6 +230,11 @@ export default function CBTTherapyJournal() {
               minute: '2-digit' 
             })}
           </p>
+          {isOfflineMode && (
+            <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-2">
+              📱 Working offline - your journal will sync when you're back online
+            </p>
+          )}
         </div>
 
         <div className="space-y-8">

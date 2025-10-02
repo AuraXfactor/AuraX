@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { useOffline } from '@/hooks/useOffline';
 
 type Phase = 'inhale' | 'hold' | 'exhale';
 
@@ -21,6 +22,7 @@ interface SessionData {
 
 export default function BreathingToolPage() {
   const { user } = useAuth();
+  const { isOfflineMode, saveOffline, getOfflineData } = useOffline();
   const prefersReducedMotion = useReducedMotion();
 
   const [pattern, setPattern] = useState<'478' | 'box' | 'custom'>('478');
@@ -34,6 +36,7 @@ export default function BreathingToolPage() {
   const [moodAfter, setMoodAfter] = useState(5);
   const [stressAfter, setStressAfter] = useState(5);
   const [sessionNotes, setSessionNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const durations = useMemo(() => {
     if (pattern === '478') return { inhale: 4, hold: 7, exhale: 8 };
@@ -82,8 +85,8 @@ export default function BreathingToolPage() {
     setShowIntro(false);
   };
 
-  const endSession = () => {
-    if (!currentSession) return;
+  const endSession = async () => {
+    if (!currentSession || !user) return;
     
     const endTime = new Date();
     const duration = Math.floor((endTime.getTime() - currentSession.startTime.getTime()) / 1000);
@@ -97,11 +100,26 @@ export default function BreathingToolPage() {
       notes: sessionNotes
     };
     
-    setSessionHistory(prev => [...prev, completedSession]);
-    setCurrentSession(null);
-    setIsSessionActive(false);
-    setPhase('inhale');
-    setCount(0);
+    setSaving(true);
+    try {
+      // Save offline
+      await saveOffline('breathing', completedSession, user.uid);
+      
+      setSessionHistory(prev => [...prev, completedSession]);
+      setCurrentSession(null);
+      setIsSessionActive(false);
+      setPhase('inhale');
+      setCount(0);
+      
+      if (isOfflineMode) {
+        alert('Session saved offline! It will sync when you\'re back online. 🌬️');
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+      alert('Failed to save session. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const resetSession = () => {
@@ -135,6 +153,14 @@ export default function BreathingToolPage() {
       <motion.h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.45 }}>
         Guided Breathwork 🌬️
       </motion.h1>
+      
+      {isOfflineMode && (
+        <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+          <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+            📱 Working offline - your sessions will sync when you're back online
+          </p>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {showIntro && !isSessionActive && (
@@ -282,9 +308,10 @@ export default function BreathingToolPage() {
               <div className="flex gap-4 justify-center">
                 <button
                   onClick={endSession}
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full hover:from-green-600 hover:to-emerald-600 transition"
+                  disabled={saving}
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full hover:from-green-600 hover:to-emerald-600 transition disabled:opacity-50"
                 >
-                  End Session
+                  {saving ? 'Saving...' : 'End Session'}
                 </button>
                 <button
                   onClick={resetSession}
@@ -360,9 +387,10 @@ export default function BreathingToolPage() {
             <div className="flex gap-4 mt-6">
               <button
                 onClick={endSession}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-full hover:from-cyan-600 hover:to-blue-600 transition"
+                disabled={saving}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-full hover:from-cyan-600 hover:to-blue-600 transition disabled:opacity-50"
               >
-                Save Session
+                {saving ? 'Saving...' : 'Save Session'}
               </button>
               <button
                 onClick={resetSession}

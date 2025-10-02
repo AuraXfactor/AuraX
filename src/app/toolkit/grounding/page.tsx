@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useOffline } from '@/hooks/useOffline';
 
 interface GroundingSession {
   id: string;
@@ -81,6 +82,7 @@ const GROUNDING_TECHNIQUES = [
 export default function GroundingToolPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isOfflineMode, saveOffline, getOfflineData } = useOffline();
   const [selectedTechnique, setSelectedTechnique] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -92,13 +94,21 @@ export default function GroundingToolPage() {
   const [focusAfter, setFocusAfter] = useState(5);
   const [sessionNotes, setSessionNotes] = useState('');
   const [sessionHistory, setSessionHistory] = useState<GroundingSession[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-  }, [user, router]);
+    
+    // Load offline session history
+    if (user) {
+      const offlineData = getOfflineData('grounding', user.uid);
+      const offlineSessions = offlineData.map(item => item.data).filter(Boolean);
+      setSessionHistory(offlineSessions);
+    }
+  }, [user, router, getOfflineData]);
 
   const startSession = (techniqueId: string) => {
     const technique = GROUNDING_TECHNIQUES.find(t => t.id === techniqueId);
@@ -132,8 +142,8 @@ export default function GroundingToolPage() {
     }
   };
 
-  const endSession = () => {
-    if (!sessionData || !selectedTechnique) return;
+  const endSession = async () => {
+    if (!sessionData || !selectedTechnique || !user) return;
 
     const technique = GROUNDING_TECHNIQUES.find(t => t.id === selectedTechnique);
     if (!technique) return;
@@ -150,11 +160,26 @@ export default function GroundingToolPage() {
       notes: sessionNotes
     };
 
-    setSessionHistory(prev => [...prev, completedSession]);
-    setSessionData(null);
-    setIsSessionActive(false);
-    setSelectedTechnique(null);
-    setCurrentStep(0);
+    setSaving(true);
+    try {
+      // Save offline
+      await saveOffline('grounding', completedSession, user.uid);
+      
+      setSessionHistory(prev => [...prev, completedSession]);
+      setSessionData(null);
+      setIsSessionActive(false);
+      setSelectedTechnique(null);
+      setCurrentStep(0);
+      
+      if (isOfflineMode) {
+        alert('Session saved offline! It will sync when you\'re back online. 🌱');
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+      alert('Failed to save session. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const resetSession = () => {
@@ -185,6 +210,13 @@ export default function GroundingToolPage() {
           <p className="text-gray-600 dark:text-gray-300">
             Anchor yourself in the present moment with guided grounding exercises
           </p>
+          {isOfflineMode && (
+            <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+              <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                📱 Working offline - your sessions will sync when you're back online
+              </p>
+            </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -411,9 +443,10 @@ export default function GroundingToolPage() {
               <div className="flex gap-4 mt-6">
                 <button
                   onClick={endSession}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition"
+                  disabled={saving}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition disabled:opacity-50"
                 >
-                  Save Session
+                  {saving ? 'Saving...' : 'Save Session'}
                 </button>
                 <button
                   onClick={resetSession}

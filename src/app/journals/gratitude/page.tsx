@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
+import { useOffline } from '@/hooks/useOffline';
 
 const ABUNDANCE_CATEGORIES = ['Physical', 'Emotional', 'Relational'];
 
@@ -25,6 +26,7 @@ const GRATITUDE_AFFIRMATIONS = [
 export default function GratitudeJournal() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isOfflineMode, saveOffline } = useOffline();
   
   // Form state
   const [dailyHighlight, setDailyHighlight] = useState('');
@@ -76,7 +78,7 @@ export default function GratitudeJournal() {
       const entryData = {
         journalType: 'gratitude',
         userId: user.uid,
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         dateKey: new Date().toISOString().split('T')[0],
         
         // Core gratitude data
@@ -113,35 +115,44 @@ export default function GratitudeJournal() {
         abundanceAreasCount: Object.values(abundanceReflections).filter(v => v.trim()).length,
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'gratitude'), entryData);
-
-      // Award points with gratitude bonus
-      try {
-        const gratitudeBonus = entryData.gratitudeCount * 3; // Bonus for each gratitude item
-        
-        await awardAuraPoints({
-          user,
-          activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: entryData.wordCount,
-            metadata: {
-              journalType: 'gratitude',
-              completionScore: entryData.completionScore,
-              gratitudeCount: entryData.gratitudeCount,
-              abundanceAreasCount: entryData.abundanceAreasCount,
-              gratitudeBonus
-            }
-          },
-          description: `🙏 Gratitude practice completed (+${gratitudeBonus} gratitude bonus)`,
-          uniqueId: `gratitude-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+      if (isOfflineMode) {
+        // Save offline
+        await saveOffline('gratitude-journal', entryData, user.uid);
+        alert('Gratitude journal saved offline! It will sync when you\'re back online. 🙏✨');
+      } else {
+        // Save to Firestore
+        await addDoc(collection(db, 'specialized-journals', user.uid, 'gratitude'), {
+          ...entryData,
+          timestamp: serverTimestamp()
         });
-      } catch (pointsError) {
-        console.error('Error awarding points:', pointsError);
-      }
 
-      alert('Gratitude journal saved successfully! 🙏✨');
+        // Award points with gratitude bonus
+        try {
+          const gratitudeBonus = entryData.gratitudeCount * 3; // Bonus for each gratitude item
+          
+          await awardAuraPoints({
+            user,
+            activity: 'journal_entry',
+            proof: {
+              type: 'journal_length',
+              value: entryData.wordCount,
+              metadata: {
+                journalType: 'gratitude',
+                completionScore: entryData.completionScore,
+                gratitudeCount: entryData.gratitudeCount,
+                abundanceAreasCount: entryData.abundanceAreasCount,
+                gratitudeBonus
+              }
+            },
+            description: `🙏 Gratitude practice completed (+${gratitudeBonus} gratitude bonus)`,
+            uniqueId: `gratitude-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          });
+        } catch (pointsError) {
+          console.error('Error awarding points:', pointsError);
+        }
+
+        alert('Gratitude journal saved successfully! 🙏✨');
+      }
       
       // Reset form
       resetForm();
@@ -236,6 +247,11 @@ export default function GratitudeJournal() {
               minute: '2-digit' 
             })}
           </p>
+          {isOfflineMode && (
+            <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-2">
+              📱 Working offline - your journal will sync when you're back online
+            </p>
+          )}
         </div>
 
         <div className="space-y-8">
