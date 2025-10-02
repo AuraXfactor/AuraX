@@ -509,7 +509,7 @@ export default function AssessmentPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-3">Recommendations:</h3>
+                  <h3 className="font-semibold mb-3">Next Steps:</h3>
                   <ul className="space-y-2">
                     {result.recommendations.map((rec, idx) => (
                       <li key={idx} className="flex items-start gap-2">
@@ -532,7 +532,7 @@ export default function AssessmentPage() {
             </button>
             <div className="flex justify-center gap-4">
               <Link href="/chat" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                🤖 AI Support
+                🤖 Auraz AI
               </Link>
               <Link href="/mood-tracker" className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
                 📊 Mood Tracker
@@ -665,42 +665,12 @@ export default function AssessmentPage() {
           </motion.div>
         </div>
 
-        <div className="mt-12 space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
-              📚 Assessment Sources & References
-            </h3>
-            <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
-              <p><strong>Anxiety Assessment:</strong> Based on GAD-7 (Generalized Anxiety Disorder 7-item scale) - Spitzer, R. L., Kroenke, K., Williams, J. B., & Löwe, B. (2006). A brief measure for assessing generalized anxiety disorder: the GAD-7. Archives of internal medicine, 166(10), 1092-1097.</p>
-              <p><strong>Depression Assessment:</strong> Based on PHQ-9 (Patient Health Questionnaire-9) - Kroenke, K., Spitzer, R. L., & Williams, J. B. (2001). The PHQ-9: validity of a brief depression severity measure. Journal of general internal medicine, 16(9), 606-613.</p>
-              <p><strong>Personality Assessment:</strong> Based on Big Five personality traits (OCEAN model) - Costa, P. T., & McCrae, R. R. (1992). NEO PI-R professional manual. Psychological Assessment Resources.</p>
-              <p><strong>Clinical Framework:</strong> All assessments align with DSM-5 diagnostic criteria for mental health disorders.</p>
-            </div>
-          </div>
-
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-3">
-              ⚠️ Important Clinical Disclaimers
-            </h3>
-            <div className="text-sm text-red-700 dark:text-red-300 space-y-3">
-              <p><strong>NOT A DIAGNOSIS:</strong> These assessments are screening tools only and cannot diagnose any mental health condition. Only qualified mental health professionals can provide formal diagnoses.</p>
-              <p><strong>SEEK PROFESSIONAL HELP:</strong> If you're experiencing thoughts of self-harm, suicide, or severe mental health symptoms, please contact emergency services (911) or a mental health professional immediately.</p>
-              <p><strong>CRISIS RESOURCES:</strong> National Suicide Prevention Lifeline: 988, Crisis Text Line: Text HOME to 741741</p>
-              <p><strong>PROFESSIONAL EVALUATION:</strong> Consider these results as a starting point for discussion with a qualified mental health professional, not as a substitute for professional evaluation.</p>
-            </div>
-          </div>
-
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-3">
-              💡 How to Use These Results
-            </h3>
-            <div className="text-sm text-green-700 dark:text-green-300 space-y-2">
-              <p>• Share your results with a mental health professional for proper evaluation</p>
-              <p>• Use results to start conversations about your mental health</p>
-              <p>• Track changes over time by retaking assessments periodically</p>
-              <p>• Remember that mental health is complex and these tools are just one piece of the puzzle</p>
-              <p>• Consider the recommendations as starting points, not definitive treatment plans</p>
-            </div>
+        <div className="mt-12">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>Note:</strong> These assessments are screening tools based on validated scales (GAD-7, PHQ-9, Big Five). 
+              They provide insights to discuss with mental health professionals. If you're in crisis, contact 988 or text HOME to 741741.
+            </p>
           </div>
         </div>
       </div>

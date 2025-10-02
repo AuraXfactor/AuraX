@@ -3,10 +3,13 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { logOut } from '@/lib/firebaseAuth';
 import { useState } from 'react';
+import PWAInstallButton from './PWAInstallButton';
+import PWAInstallGuide from './PWAInstallGuide';
 
 export default function Navbar() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -21,7 +24,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 backdrop-blur bg-white/70 dark:bg-black/30 border-b border-white/20">
       <nav className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="font-extrabold text-xl tracking-tight">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">AuraX</span>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">AuraZ</span>
         </Link>
         <div className="flex items-center gap-2">
           <Link href="/aura" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow">
@@ -45,6 +48,16 @@ export default function Navbar() {
           <Link href="/toolkit" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow">
             🧰 Toolkit
           </Link>
+          <Link href="/chat" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow">
+            🤖 Auraz AI
+          </Link>
+          <button 
+            onClick={() => setShowInstallGuide(!showInstallGuide)}
+            className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow"
+            title="Install App Guide"
+          >
+            📱
+          </button>
           {user ? (
             <div className="flex items-center gap-2">
               <Link href="/profile" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow">
@@ -68,6 +81,24 @@ export default function Navbar() {
           )}
         </div>
       </nav>
+      
+      {/* Install Guide Modal */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">Install AuraZ App</h2>
+              <button
+                onClick={() => setShowInstallGuide(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                ✕
+              </button>
+            </div>
+            <PWAInstallGuide compact={true} showTitle={false} />
+          </div>
+        </div>
+      )}
     </header>
   );
 }

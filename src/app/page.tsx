@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserProfile } from "@/lib/userProfile";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import PWAInstallButton from "@/components/PWAInstallButton";
+import PWAInstallGuide from "@/components/PWAInstallGuide";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -48,6 +50,10 @@ export default function Home() {
               <Link href="/messages" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 transition-all font-bold text-lg">
                 💬 Open Messages (NEW!)
               </Link>
+              <Link href="/chat" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 hover:scale-105 transition-all font-bold text-lg">
+                🤖 Auraz AI
+              </Link>
+              <PWAInstallButton className="px-8 py-4 rounded-2xl text-white shadow-xl hover:scale-105 transition-all font-bold text-lg" />
               <Link href="/journals" className="px-6 py-3 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
                 📔 Choose Journal ➜
               </Link>
@@ -68,6 +74,7 @@ export default function Home() {
       <section className="max-w-5xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
           { title: 'Secure Messages', desc: 'End-to-end encrypted WhatsApp-style messaging 💬', href: '/messages', emoji: '🔒', colors: 'from-purple-500 to-pink-500' },
+          { title: 'Auraz AI', desc: 'Your intelligent wellness companion for support and guidance 🤖', href: '/chat', emoji: '🤖', colors: 'from-blue-500 to-cyan-500' },
           { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
           { title: 'DIY', desc: 'Do it yourself - meditations, workouts, tools 🛠️', href: '/toolkit', emoji: '🔧', colors: 'from-cyan-400 to-blue-500' },
           { title: 'Recovery Hub', desc: 'Addiction recovery support and wellness tools 🔄', href: '/recovery', emoji: '🔄', colors: 'from-emerald-400 to-teal-500' },
@@ -81,7 +88,12 @@ export default function Home() {
         ))}
       </section>
 
-      <section className="max-w-5xl mx-auto mt-16 text-center text-sm text-gray-500">
+      {/* PWA Install Guide */}
+      <section className="max-w-4xl mx-auto mt-16">
+        <PWAInstallGuide />
+      </section>
+
+      <section className="max-w-5xl mx-auto mt-8 text-center text-sm text-gray-500">
         PWA enabled. Install to your home screen and try offline.
       </section>
     </main>
