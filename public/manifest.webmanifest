@@ -1,17 +1,31 @@
 {
-  "name": "Aura X",
-  "short_name": "AuraX",
-  "description": "A gamified lifestyle app for mental wellness",
+  "name": "AuraZ - Your Vibe, Your Tribe",
+  "short_name": "AuraZ",
+  "description": "A gamified lifestyle app for mental wellness with journals, breathwork, and streaks",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone"],
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#0ea5e9",
+  "categories": ["health", "lifestyle", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     { "src": "/favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" },
-    { "src": "/ryd-logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/icon.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" },
+    { "src": "/ryd-logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/ryd-logo.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    }
+  ]
 }
 

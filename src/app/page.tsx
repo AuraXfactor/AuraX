@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserProfile } from "@/lib/userProfile";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import PWAInstallButton from "@/components/PWAInstallButton";
+import PWAInstallGuide from "@/components/PWAInstallGuide";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -51,6 +53,7 @@ export default function Home() {
               <Link href="/chat" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 hover:scale-105 transition-all font-bold text-lg">
                 🤖 Auraz AI
               </Link>
+              <PWAInstallButton className="px-8 py-4 rounded-2xl text-white shadow-xl hover:scale-105 transition-all font-bold text-lg" />
               <Link href="/journals" className="px-6 py-3 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
                 📔 Choose Journal ➜
               </Link>
@@ -85,7 +88,12 @@ export default function Home() {
         ))}
       </section>
 
-      <section className="max-w-5xl mx-auto mt-16 text-center text-sm text-gray-500">
+      {/* PWA Install Guide */}
+      <section className="max-w-4xl mx-auto mt-16">
+        <PWAInstallGuide />
+      </section>
+
+      <section className="max-w-5xl mx-auto mt-8 text-center text-sm text-gray-500">
         PWA enabled. Install to your home screen and try offline.
       </section>
     </main>
