@@ -47,11 +47,11 @@ const NAV_TABS: NavTab[] = [
   },
   {
     id: 'chat',
-    label: 'Chat AI',
-    icon: '🤖',
+    label: 'AuraZ AI ⚡️',
+    icon: '⚡️',
     color: 'from-cyan-500 to-blue-500',
     items: [
-      { label: 'AI Assistant', href: '/chat', icon: '🤖', description: 'Get instant wellness support' },
+      { label: 'AI Assistant', href: '/chat', icon: '⚡️', description: 'Get instant wellness support' },
       { label: 'Mood Check', href: '/chat?mode=mood', icon: '😊', description: 'Quick mood assessment' },
       { label: 'Crisis Support', href: '/chat?mode=crisis', icon: '🆘', description: 'Emergency support chat' },
       { label: 'Wellness Tips', href: '/chat?mode=tips', icon: '💡', description: 'Daily wellness advice' },

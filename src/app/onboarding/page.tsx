@@ -35,7 +35,6 @@ export default function Onboarding() {
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const steps = useMemo(() => [
     'Profile',
@@ -44,7 +43,7 @@ export default function Onboarding() {
     'Therapy Style',
     'Journaling Reminder',
     'Avatar',
-    'Terms & Privacy',
+    'Terms',
     'Summary',
   ], []);
 
@@ -199,7 +198,7 @@ export default function Onboarding() {
 
           {step === 6 && stepCard(
             <div>
-              <div className="text-lg font-semibold mb-4">Terms & Privacy Consent</div>
+              <div className="text-lg font-semibold mb-4">Terms of Service</div>
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                   <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">📋 Terms of Service</h3>
