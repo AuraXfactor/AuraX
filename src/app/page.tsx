@@ -77,7 +77,7 @@ export default function Home() {
           { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
           { title: 'DIY', desc: 'Do it yourself - meditations, workouts, tools 🛠️', href: '/toolkit', emoji: '🔧', colors: 'from-cyan-400 to-blue-500' },
           { title: 'Addictions', desc: 'Addiction recovery support and wellness tools 🔄', href: '/recovery', emoji: '🔄', colors: 'from-emerald-400 to-teal-500' },
-          { title: 'AuraZ AI⚡️', desc: 'Your intelligent wellness companion for support and guidance ⚡️', href: '/chat', emoji: '⚡️', colors: 'from-blue-500 to-cyan-500' },
+          { title: 'AuraZ AI ⚡️', desc: 'Your intelligent wellness companion for support and guidance ⚡️', href: '/chat', emoji: '⚡️', colors: 'from-blue-500 to-cyan-500' },
           { title: 'Aura Feed✨', desc: 'Share your 24-hour wellness moments with friends ✨', href: '/aura', emoji: '✨', colors: 'from-purple-500 to-pink-500' },
         ].map((c) => (
           <Link key={c.title} href={c.href} className="group block p-5 rounded-2xl border border-white/20 bg-white/60 dark:bg-white/5 backdrop-blur hover:shadow-2xl transition transform hover:-translate-y-1">

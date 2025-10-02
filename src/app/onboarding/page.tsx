@@ -16,9 +16,6 @@ const focusOptions = [
 
 const therapyOptions = ['Chat', 'Phone Call', 'WhatsApp', 'Video Call'];
 
-const defaultAvatars = [
-  '🌟', '✨', '🎭', '🦋', '🌺', '🎨', '🌈', '🦄', '🌸', '💫', '🎪', '🎯'
-];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -27,12 +24,10 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
-  const [avatar, setAvatar] = useState<string | null>(null);
   const [moodBaseline, setMoodBaseline] = useState<string[]>([]);
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
   const [preferredTherapy, setPreferredTherapy] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState<'Morning'|'Afternoon'|'Evening'>('Morning');
-  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -42,7 +37,6 @@ export default function Onboarding() {
     'Focus Areas',
     'Therapy Style',
     'Journaling Reminder',
-    'Avatar',
     'Terms',
     'Summary',
   ], []);
@@ -72,16 +66,10 @@ export default function Onboarding() {
     if (step === 2) return focusAreas.length >= 2 && focusAreas.length <= 3;
     if (step === 3) return true; // optional
     if (step === 4) return ['Morning','Afternoon','Evening'].includes(reminderTime);
-    if (step === 5) return true; // optional
-    if (step === 6) return termsAccepted; // terms acceptance required
+    if (step === 5) return termsAccepted; // terms acceptance required
     return true;
   }, [step, name, username, moodBaseline, focusAreas, reminderTime, termsAccepted]);
 
-  const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => setUploadPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
 
   const save = async () => {
     if (!user) return;
@@ -91,7 +79,7 @@ export default function Onboarding() {
         name: name.trim(),
         username: username.trim(),
         email: user.email ?? null,
-        avatar: uploadPreview || avatar,
+        avatar: null,
         focusAreas,
         preferredTherapy: preferredTherapy ?? null,
         reminderTime,
@@ -125,16 +113,6 @@ export default function Onboarding() {
               <div className="grid sm:grid-cols-2 gap-3">
                 <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Your name" className="px-3 py-2 rounded-md border" />
                 <input value={username} onChange={(e)=>setUsername(e.target.value)} placeholder="Username" className="px-3 py-2 rounded-md border" />
-              </div>
-              <div className="mt-4">
-                <div className="text-sm mb-2">Pick an avatar</div>
-                <div className="grid grid-cols-6 gap-3">
-                  {defaultAvatars.map((emoji)=> (
-                    <button key={emoji} onClick={()=>{setAvatar(emoji); setUploadPreview(null);}} className={`p-3 rounded-xl border text-2xl hover:scale-110 transition ${avatar===emoji? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50 dark:bg-blue-500/10':'border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}>
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           )}
@@ -188,16 +166,6 @@ export default function Onboarding() {
 
           {step === 5 && stepCard(
             <div>
-              <div className="text-lg font-semibold mb-2">Profile Picture (optional)</div>
-              <div className="flex items-center gap-4">
-                <input type="file" accept="image/*" onChange={(e)=>{const f=e.target.files?.[0]; if (f) handleFile(f);}} />
-                {(uploadPreview || avatar) && <img src={uploadPreview || avatar || ''} alt="preview" className="w-16 h-16 rounded-xl border"/>}
-              </div>
-            </div>
-          )}
-
-          {step === 6 && stepCard(
-            <div>
               <div className="text-lg font-semibold mb-4">Terms of Service</div>
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
@@ -222,18 +190,14 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 7 && stepCard(
+          {step === 6 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
                 <div className="flex items-center gap-3">
-                  {uploadPreview ? (
-                    <img src={uploadPreview} className="w-12 h-12 rounded-xl border" alt="avatar"/>
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
-                      {avatar || '🌟'}
-                    </div>
-                  )}
+                  <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
+                    🌟
+                  </div>
                   <div>
                     <div className="font-bold">{name} @{username}</div>
                     <div className="text-sm opacity-70">Focus: {focusAreas.join(', ')}</div>
