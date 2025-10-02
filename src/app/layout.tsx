@@ -29,8 +29,9 @@ export const metadata = {
 export const viewport = {
   themeColor: '#0ea5e9',
   width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
+  initialScale: 0.5,
+  maximumScale: 0.5,
+  minimumScale: 0.5,
   userScalable: false,
 };
 
@@ -82,8 +83,8 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#0ea5e9" />
         <meta name="msapplication-tap-highlight" content="no" />
         
-        {/* Viewport for iOS */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        {/* Viewport for iOS - Force 50% zoom */}
+        <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.5, minimum-scale=0.5, user-scalable=no, viewport-fit=cover" />
       </head>
       <body className="bg-fun">
         <AuthProvider>
