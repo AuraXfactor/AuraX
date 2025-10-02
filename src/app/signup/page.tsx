@@ -10,13 +10,6 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyConsent, setPrivacyConsent] = useState({
-    dataCollection: true,
-    analytics: true,
-    personalization: true,
-    notifications: true,
-    dataSharing: false
-  });
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,38 +84,6 @@ export default function Signup() {
               </label>
             </div>
 
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">🔒 Privacy Settings</h3>
-              <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                You can change these settings anytime in your profile.
-              </p>
-
-              <div className="space-y-2">
-                {[
-                  { key: 'dataCollection', label: 'Data Collection', desc: 'Allow us to collect your wellness data' },
-                  { key: 'analytics', label: 'Analytics', desc: 'Help us improve the app' },
-                  { key: 'personalization', label: 'Personalization', desc: 'Enable personalized recommendations' },
-                  { key: 'notifications', label: 'Notifications', desc: 'Receive wellness reminders' },
-                  { key: 'dataSharing', label: 'Data Sharing', desc: 'Share anonymized data for research (optional)' }
-                ].map(item => (
-                  <label key={item.key} className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={privacyConsent[item.key as keyof typeof privacyConsent]}
-                      onChange={(e) => setPrivacyConsent(prev => ({
-                        ...prev,
-                        [item.key]: e.target.checked
-                      }))}
-                      className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-green-800 dark:text-green-200">{item.label}</div>
-                      <div className="text-xs text-green-600 dark:text-green-400">{item.desc}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
           </div>
 
           <button

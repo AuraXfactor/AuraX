@@ -12,7 +12,6 @@ interface SettingsData {
   theme?: string;
   notifications?: {
     journal?: boolean;
-    therapy?: boolean;
     recovery?: boolean;
     email?: boolean;
   };
@@ -94,7 +93,6 @@ export default function SettingsPage() {
           theme: userData.theme || 'auto',
           notifications: {
             journal: userData.notifications?.journal ?? true,
-            therapy: userData.notifications?.therapy ?? true,
             recovery: userData.notifications?.recovery ?? true,
             email: userData.notifications?.email ?? true,
           },
@@ -326,7 +324,6 @@ export default function SettingsPage() {
             <div className="space-y-4">
               {[
                 { key: 'journal', label: 'Journal Reminders', desc: 'Daily reminders to write in your journal' },
-                { key: 'therapy', label: 'Therapy Sessions', desc: 'Notifications about upcoming therapy sessions' },
                 { key: 'recovery', label: 'Recovery Check-ins', desc: 'Recovery support and check-in reminders' },
                 { key: 'email', label: 'Email Notifications', desc: 'Receive notifications via email' },
               ].map((item) => (
