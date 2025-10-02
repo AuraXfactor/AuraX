@@ -7,6 +7,7 @@ import SmartBottomNav from "@/components/SmartBottomNav";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
 import ClientAppWrapper from "@/components/ClientAppWrapper";
 import SwipeDetector from "@/components/SwipeDetector";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import type { ReactNode } from 'react';
 
 export const metadata = {
@@ -86,6 +87,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
       </head>
       <body className="bg-fun">
+        <GoogleAnalytics />
         <AuthProvider>
           <ThemeProvider>
             <AppContent>{children}</AppContent>
