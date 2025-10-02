@@ -92,6 +92,22 @@ export default function RootLayout({
             <ClientAppWrapper>
               <div></div>
             </ClientAppWrapper>
+            
+            {/* Offline Status Indicator */}
+            <div id="offline-indicator" className="fixed top-16 left-4 z-50 hidden">
+              <div className="bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                <span className="text-sm">📱</span>
+                <span className="text-sm font-medium">Working offline - data will sync when connected</span>
+              </div>
+            </div>
+            
+            {/* Sync Status Indicator */}
+            <div id="sync-indicator" className="fixed top-16 right-4 z-50 hidden">
+              <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                <span className="text-sm">🔄</span>
+                <span className="text-sm font-medium">Syncing data...</span>
+              </div>
+            </div>
           </ThemeProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
