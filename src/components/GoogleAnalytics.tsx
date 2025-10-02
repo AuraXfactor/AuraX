@@ -1,20 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { initGA, trackPageView } from '@/lib/analytics';
 import Script from 'next/script';
 
 const GA_MEASUREMENT_ID = 'G-ZT9ZYCJF1Z';
 
-export default function GoogleAnalytics() {
+function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  useEffect(() => {
-    // Initialize GA4
-    initGA();
-  }, []);
 
   useEffect(() => {
     // Track page views on route changes
@@ -30,6 +25,15 @@ export default function GoogleAnalytics() {
       return () => clearTimeout(timeoutId);
     }
   }, [pathname, searchParams]);
+
+  return null;
+}
+
+export default function GoogleAnalytics() {
+  useEffect(() => {
+    // Initialize GA4
+    initGA();
+  }, []);
 
   return (
     <>
@@ -56,6 +60,11 @@ export default function GoogleAnalytics() {
           });
         `}
       </Script>
+      
+      {/* Analytics Tracker with Suspense boundary */}
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
     </>
   );
 }
