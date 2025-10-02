@@ -36,7 +36,8 @@ export default function Home() {
           </span>
         </h1>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
-          Gamified mental wellness with journals, breathwork, and streaks. PWA ready. Offline friendly. 🔥
+          Gamified mental wellness with journals, self helptools, lifestyle and streaks🔥
+              🚀 Pull up and vibe with the 🤞crew, 📝journal your feels, flex your growth, and stay locked in with the dopest community while you earn Aura Points🔥
         </p>
 
         {user ? (
