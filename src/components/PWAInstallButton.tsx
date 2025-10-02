@@ -19,6 +19,9 @@ export default function PWAInstallButton({
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     // Detect iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(iOS);
@@ -26,7 +29,7 @@ export default function PWAInstallButton({
     // Check if already installed
     const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    setIsInstalled(isInStandaloneMode || isStandalone);
+    setIsInstalled(Boolean(isInStandaloneMode || isStandalone));
 
     // Listen for beforeinstallprompt event (Android/Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
