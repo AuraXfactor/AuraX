@@ -20,12 +20,18 @@ export default function FriendRequests({ onRequestHandled }: FriendRequestsProps
   useEffect(() => {
     if (!user) return;
 
+    console.log('🔍 Setting up friend request listener for user:', user.uid);
+    
     const unsubscribe = listenToFriendRequests(user.uid, (newRequests) => {
+      console.log('📨 Received friend requests:', newRequests.length);
       setRequests(newRequests);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🧹 Cleaning up friend request listener');
+      unsubscribe();
+    };
   }, [user]);
 
   const handleRequest = async (requestId: string, response: 'accepted' | 'rejected') => {
@@ -33,6 +39,8 @@ export default function FriendRequests({ onRequestHandled }: FriendRequestsProps
     
     setActionLoading(requestId);
     try {
+      console.log(`🔄 ${response} friend request:`, requestId);
+      
       await respondToFriendRequest({
         user,
         requestId,
@@ -43,15 +51,21 @@ export default function FriendRequests({ onRequestHandled }: FriendRequestsProps
       
       // Show success message
       const message = response === 'accepted' 
-        ? 'Friend request accepted!' 
+        ? 'Friend request accepted! 🎉' 
         : 'Friend request declined';
       
-      // You could implement a toast notification here
-      console.log(message);
+      console.log('✅', message);
       
-    } catch (error) {
-      console.error(`Error ${response} friend request:`, error);
-      alert(`Failed to ${response} friend request`);
+      // Remove the request from local state immediately for better UX
+      setRequests(prev => prev.filter(req => req.id !== requestId));
+      
+    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      console.error(`❌ Error ${response} friend request:`, error);
+      console.error('Error details:', error.message);
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || `Failed to ${response} friend request`;
+      alert(`Error: ${errorMessage}`);
     } finally {
       setActionLoading(null);
     }
@@ -116,11 +130,16 @@ export default function FriendRequests({ onRequestHandled }: FriendRequestsProps
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
-                    {request.fromProfile?.name || 'Unknown User'}
+                    {request.fromProfile?.name || 'Loading...'}
                   </h4>
                   {request.fromProfile?.username && (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       @{request.fromProfile.username}
+                    </span>
+                  )}
+                  {!request.fromProfile && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      (Profile loading...)
                     </span>
                   )}
                 </div>

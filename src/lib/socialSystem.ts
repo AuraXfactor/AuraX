@@ -314,46 +314,90 @@ export async function respondToFriendRequest(params: {
 }): Promise<void> {
   const { user, requestId, response } = params;
   
-  const batch = writeBatch(db);
-  const requestRef = doc(getFriendRequestsRef(), requestId);
-  
-  // Update request status
-  batch.update(requestRef, {
-    status: response,
-    updatedAt: serverTimestamp(),
+  console.log('🔍 respondToFriendRequest called with:', { 
+    userId: user.uid, 
+    requestId, 
+    response 
   });
-
-  if (response === 'accepted') {
-    // Get request data to create friendship
+  
+  try {
+    const batch = writeBatch(db);
+    const requestRef = doc(getFriendRequestsRef(), requestId);
+    
+    // Get request data first to validate it exists
     const requestDoc = await getDoc(requestRef);
     if (!requestDoc.exists()) {
       throw new Error('Friend request not found');
     }
     
     const requestData = requestDoc.data() as EnhancedFriendRequest;
+    console.log('📋 Request data:', requestData);
     
-    // Create bidirectional friendship
-    const friendship1Ref = getFriendDocRef(user.uid, requestData.fromUserId);
-    const friendship2Ref = getFriendDocRef(requestData.fromUserId, user.uid);
-    
-    const friendshipTimestamp = serverTimestamp();
-    
-    batch.set(friendship1Ref, {
-      userId: user.uid,
-      friendId: requestData.fromUserId,
-      friendSince: friendshipTimestamp,
-      lastInteraction: friendshipTimestamp,
+    // Update request status
+    batch.update(requestRef, {
+      status: response,
+      updatedAt: serverTimestamp(),
     });
 
-    batch.set(friendship2Ref, {
-      userId: requestData.fromUserId,
-      friendId: user.uid,
-      friendSince: friendshipTimestamp,
-      lastInteraction: friendshipTimestamp,
-    });
+    if (response === 'accepted') {
+      console.log('✅ Creating friendship between users:', user.uid, 'and', requestData.fromUserId);
+      
+      // Create bidirectional friendship
+      const friendship1Ref = getFriendDocRef(user.uid, requestData.fromUserId);
+      const friendship2Ref = getFriendDocRef(requestData.fromUserId, user.uid);
+      
+      const friendshipTimestamp = serverTimestamp();
+      
+      batch.set(friendship1Ref, {
+        userId: user.uid,
+        friendId: requestData.fromUserId,
+        friendSince: friendshipTimestamp,
+        lastInteraction: friendshipTimestamp,
+      });
+
+      batch.set(friendship2Ref, {
+        userId: requestData.fromUserId,
+        friendId: user.uid,
+        friendSince: friendshipTimestamp,
+        lastInteraction: friendshipTimestamp,
+      });
+      
+      // Update friend counts in public profiles
+      const userProfileRef = doc(getPublicProfilesRef(), user.uid);
+      const friendProfileRef = doc(getPublicProfilesRef(), requestData.fromUserId);
+      
+      // Get current friend counts
+      const [userProfileDoc, friendProfileDoc] = await Promise.all([
+        getDoc(userProfileRef),
+        getDoc(friendProfileRef)
+      ]);
+      
+      const userFriendCount = userProfileDoc.exists() ? (userProfileDoc.data().friendsCount || 0) : 0;
+      const friendFriendCount = friendProfileDoc.exists() ? (friendProfileDoc.data().friendsCount || 0) : 0;
+      
+      batch.update(userProfileRef, {
+        friendsCount: userFriendCount + 1,
+      });
+      
+      batch.update(friendProfileRef, {
+        friendsCount: friendFriendCount + 1,
+      });
+    } else if (response === 'rejected') {
+      console.log('❌ Rejecting friend request, will delete it');
+      // Delete rejected requests to clean up the database
+      batch.delete(requestRef);
+    }
+
+    console.log('📤 Committing batch...');
+    await batch.commit();
+    console.log('✅ Friend request response completed successfully');
+    
+  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    console.error('❌ Error in respondToFriendRequest:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    throw error;
   }
-
-  await batch.commit();
 }
 
 // Friend Discovery and Search
@@ -833,7 +877,14 @@ export function listenToFriendRequests(userId: string, callback: (requests: Enha
     
     for (const doc of snapshot.docs) {
       const requestData = doc.data() as EnhancedFriendRequest;
-      const fromProfile = await getPublicProfile(requestData.fromUserId);
+      let fromProfile;
+      
+      try {
+        fromProfile = await getPublicProfile(requestData.fromUserId);
+      } catch (error) {
+        console.error('Error fetching from profile:', error);
+        fromProfile = null;
+      }
       
       requests.push({
         ...requestData,
