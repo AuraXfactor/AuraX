@@ -7,6 +7,7 @@ import SmartBottomNav from "@/components/SmartBottomNav";
 import AuraPointsWidget from "@/components/AuraPointsWidget";
 import ClientAppWrapper from "@/components/ClientAppWrapper";
 import SwipeDetector from "@/components/SwipeDetector";
+import OfflineStatus from "@/components/OfflineStatus";
 import type { ReactNode } from 'react';
 
 export const metadata = {
@@ -41,6 +42,7 @@ function AppContent({ children }: { children: ReactNode }) {
       {children}
       <SmartBottomNav />
       <AuraPointsWidget />
+      <OfflineStatus />
     </SwipeDetector>
   );
 }
@@ -75,7 +77,7 @@ export default function RootLayout({
         
         {/* Splash Screens for iOS */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="apple-touch-startup-image" href="/ryd-logo.svg" />
+        <link rel="apple-touch-startup-image" href="/auraz-logo.svg" />
         
         {/* Additional PWA meta tags */}
         <meta name="application-name" content="AuraZ" />

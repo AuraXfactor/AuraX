@@ -249,7 +249,7 @@ export default function TherapySupportPage() {
       {/* Footer Branding */}
       <div className="mt-12 text-center text-sm text-gray-600">
         <div className="mx-auto mb-2 flex items-center justify-center gap-3">
-          <img src="/ryd-logo.svg" alt="RYD Mental Health" className="h-6 w-auto" />
+          <img src="/auraz-logo.svg" alt="AuraZ" className="h-6 w-auto" />
         </div>
         Therapy services provided by{' '}
         <a href="https://rydmentalhealth.org" target="_blank" rel="noreferrer" className="text-cyan-700 underline">RYD Mental Health</a>

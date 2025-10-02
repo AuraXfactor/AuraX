@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import { useOffline } from '@/hooks/useOffline';
 
 const MOOD_OPTIONS = [
   { emoji: '😢', label: 'Very Sad', value: 'very_sad', color: 'from-blue-400 to-blue-600' },
@@ -30,6 +31,7 @@ const SELF_CARE_ACTIVITIES = [
 export default function DailyCheckInJournal() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isOfflineMode, saveOffline } = useOffline();
   
   // Form state
   const [selectedMood, setSelectedMood] = useState('');
@@ -86,7 +88,7 @@ export default function DailyCheckInJournal() {
       const entryData = {
         journalType: 'daily-checkin',
         userId: user.uid,
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         dateKey: new Date().toISOString().split('T')[0],
         
         // Core data
@@ -109,31 +111,40 @@ export default function DailyCheckInJournal() {
         completionScore: calculateCompletionScore(),
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'daily-checkin'), entryData);
-
-      // Award points
-      try {
-        await awardAuraPoints({
-          user,
-          activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: entryData.wordCount,
-            metadata: {
-              journalType: 'daily-checkin',
-              completionScore: entryData.completionScore,
-              activitiesCount: selectedActivities.length
-            }
-          },
-          description: `📔 Daily Check-In completed (${entryData.completionScore}% complete)`,
-          uniqueId: `daily-checkin-${user.uid}-${new Date().toISOString().split('T')[0]}`
+      if (isOfflineMode) {
+        // Save offline
+        await saveOffline('daily-checkin', entryData, user.uid);
+        alert('Daily Check-In saved offline! It will sync when you\'re back online. 🎉');
+      } else {
+        // Save to Firestore
+        await addDoc(collection(db, 'specialized-journals', user.uid, 'daily-checkin'), {
+          ...entryData,
+          timestamp: serverTimestamp()
         });
-      } catch (pointsError) {
-        console.error('Error awarding points:', pointsError);
-      }
 
-      alert('Daily Check-In saved successfully! 🎉');
+        // Award points
+        try {
+          await awardAuraPoints({
+            user,
+            activity: 'journal_entry',
+            proof: {
+              type: 'journal_length',
+              value: entryData.wordCount,
+              metadata: {
+                journalType: 'daily-checkin',
+                completionScore: entryData.completionScore,
+                activitiesCount: selectedActivities.length
+              }
+            },
+            description: `📔 Daily Check-In completed (${entryData.completionScore}% complete)`,
+            uniqueId: `daily-checkin-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          });
+        } catch (pointsError) {
+          console.error('Error awarding points:', pointsError);
+        }
+
+        alert('Daily Check-In saved successfully! 🎉');
+      }
       
       // Reset form
       resetForm();
@@ -223,6 +234,11 @@ export default function DailyCheckInJournal() {
               minute: '2-digit' 
             })}
           </p>
+          {isOfflineMode && (
+            <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-2">
+              📱 Working offline - your journal will sync when you're back online
+            </p>
+          )}
         </div>
 
         <div className="space-y-8">

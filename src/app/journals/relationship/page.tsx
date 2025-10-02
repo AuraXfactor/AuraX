@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+import { useOffline } from '@/hooks/useOffline';
 
 const RELATIONSHIP_TYPES = [
   { label: 'Partner/Spouse', value: 'partner', icon: '💕' },
@@ -32,6 +33,7 @@ const COMMUNICATION_STYLES = [
 export default function RelationshipJournal() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isOfflineMode, saveOffline } = useOffline();
   
   // Form state
   const [selectedRelationType, setSelectedRelationType] = useState('');
@@ -74,7 +76,7 @@ export default function RelationshipJournal() {
       const entryData = {
         journalType: 'relationship',
         userId: user.uid,
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         dateKey: new Date().toISOString().split('T')[0],
         
         // Core relationship data
@@ -108,35 +110,44 @@ export default function RelationshipJournal() {
         relationshipHealth: calculateRelationshipHealth(),
       };
 
-      // Save to Firestore
-      await addDoc(collection(db, 'specialized-journals', user.uid, 'relationship'), entryData);
-
-      // Award points with relationship bonus
-      try {
-        const relationshipBonus = Math.max(0, (interactionQuality - 3) * 2); // Bonus for positive interactions
-        
-        await awardAuraPoints({
-          user,
-          activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: entryData.wordCount,
-            metadata: {
-              journalType: 'relationship',
-              completionScore: entryData.completionScore,
-              relationshipHealth: entryData.relationshipHealth,
-              interactionQuality,
-              relationshipBonus
-            }
-          },
-          description: `💕 Relationship reflection completed (+${relationshipBonus} connection bonus)`,
-          uniqueId: `relationship-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+      if (isOfflineMode) {
+        // Save offline
+        await saveOffline('connection-journal', entryData, user.uid);
+        alert('Relationship journal saved offline! It will sync when you\'re back online. 💕');
+      } else {
+        // Save to Firestore
+        await addDoc(collection(db, 'specialized-journals', user.uid, 'relationship'), {
+          ...entryData,
+          timestamp: serverTimestamp()
         });
-      } catch (pointsError) {
-        console.error('Error awarding points:', pointsError);
-      }
 
-      alert('Relationship journal saved successfully! 💕');
+        // Award points with relationship bonus
+        try {
+          const relationshipBonus = Math.max(0, (interactionQuality - 3) * 2); // Bonus for positive interactions
+          
+          await awardAuraPoints({
+            user,
+            activity: 'journal_entry',
+            proof: {
+              type: 'journal_length',
+              value: entryData.wordCount,
+              metadata: {
+                journalType: 'relationship',
+                completionScore: entryData.completionScore,
+                relationshipHealth: entryData.relationshipHealth,
+                interactionQuality,
+                relationshipBonus
+              }
+            },
+            description: `💕 Relationship reflection completed (+${relationshipBonus} connection bonus)`,
+            uniqueId: `relationship-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          });
+        } catch (pointsError) {
+          console.error('Error awarding points:', pointsError);
+        }
+
+        alert('Relationship journal saved successfully! 💕');
+      }
       
       // Reset form
       resetForm();
@@ -257,6 +268,11 @@ export default function RelationshipJournal() {
               minute: '2-digit' 
             })}
           </p>
+          {isOfflineMode && (
+            <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-2">
+              📱 Working offline - your journal will sync when you're back online
+            </p>
+          )}
         </div>
 
         <div className="space-y-8">
