@@ -15,13 +15,26 @@ interface MoodEntry {
   energy: number;
   sleep: number;
   stress: number;
+  activities: string[];
+  copingStrategies: string[];
+  gratitude: string[];
+  challenges: string[];
+  victories: string[];
 }
 
 interface MoodInsight {
-  type: 'pattern' | 'trend' | 'suggestion';
+  type: 'pattern' | 'trend' | 'suggestion' | 'reflection' | 'motivation';
   title: string;
   description: string;
   action?: string;
+  motivationalQuestion?: string;
+}
+
+interface MotivationalPrompt {
+  id: string;
+  question: string;
+  category: 'values' | 'goals' | 'strengths' | 'change' | 'support';
+  followUp?: string;
 }
 
 const MOOD_OPTIONS = [
@@ -42,6 +55,49 @@ const TRIGGER_OPTIONS = [
   'Social media', 'Sleep', 'Exercise', 'Food', 'News', 'Family', 'Other'
 ];
 
+const ACTIVITY_OPTIONS = [
+  'Exercise', 'Meditation', 'Reading', 'Music', 'Art/Creativity', 'Nature walk',
+  'Social time', 'Cooking', 'Gaming', 'Learning', 'Volunteering', 'Rest'
+];
+
+const COPING_STRATEGIES = [
+  'Deep breathing', 'Journaling', 'Talking to someone', 'Exercise', 'Meditation',
+  'Creative expression', 'Nature time', 'Music therapy', 'Mindfulness', 'Self-care'
+];
+
+const MOTIVATIONAL_PROMPTS: MotivationalPrompt[] = [
+  {
+    id: 'values_1',
+    question: 'What values are most important to you in life?',
+    category: 'values',
+    followUp: 'How does your current mood align with these values?'
+  },
+  {
+    id: 'goals_1',
+    question: 'What would you like to achieve in the next month?',
+    category: 'goals',
+    followUp: 'What small step could you take today toward this goal?'
+  },
+  {
+    id: 'strengths_1',
+    question: 'What strengths have helped you through difficult times?',
+    category: 'strengths',
+    followUp: 'How can you use these strengths right now?'
+  },
+  {
+    id: 'change_1',
+    question: 'What would you like to change about your current situation?',
+    category: 'change',
+    followUp: 'What would that change look like for you?'
+  },
+  {
+    id: 'support_1',
+    question: 'Who are the people that support you most?',
+    category: 'support',
+    followUp: 'How could you reach out to them today?'
+  }
+];
+
 export default function MoodTrackerPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -52,9 +108,17 @@ export default function MoodTrackerPage() {
   const [sleep, setSleep] = useState(5);
   const [stress, setStress] = useState(5);
   const [triggers, setTriggers] = useState<string[]>([]);
+  const [activities, setActivities] = useState<string[]>([]);
+  const [copingStrategies, setCopingStrategies] = useState<string[]>([]);
+  const [gratitude, setGratitude] = useState<string[]>([]);
+  const [challenges, setChallenges] = useState<string[]>([]);
+  const [victories, setVictories] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [insights, setInsights] = useState<MoodInsight[]>([]);
   const [showInsights, setShowInsights] = useState(false);
+  const [currentPrompt, setCurrentPrompt] = useState<MotivationalPrompt | null>(null);
+  const [promptResponse, setPromptResponse] = useState('');
+  const [showMotivationalSection, setShowMotivationalSection] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -83,7 +147,8 @@ export default function MoodTrackerPage() {
           type: 'pattern',
           title: 'Low Mood Pattern Detected',
           description: 'You\'ve been experiencing lower moods recently. This is completely normal and temporary.',
-          action: 'Try some mood-boosting activities'
+          action: 'Try some mood-boosting activities',
+          motivationalQuestion: 'What has helped you feel better in the past?'
         });
       }
       
@@ -92,7 +157,8 @@ export default function MoodTrackerPage() {
           type: 'trend',
           title: 'Positive Mood Trend',
           description: 'Great news! You\'ve been feeling more positive lately. Keep up the good work!',
-          action: 'Continue your current routine'
+          action: 'Continue your current routine',
+          motivationalQuestion: 'What\'s contributing to this positive energy?'
         });
       }
     }
@@ -111,11 +177,45 @@ export default function MoodTrackerPage() {
         type: 'suggestion',
         title: `Common Trigger: ${topTrigger[0]}`,
         description: `You've logged "${topTrigger[0]}" as a trigger ${topTrigger[1]} times recently.`,
-        action: 'Consider strategies to manage this trigger'
+        action: 'Consider strategies to manage this trigger',
+        motivationalQuestion: 'What would help you feel more prepared for this trigger?'
       });
     }
     
+    // Add motivational insights
+    newInsights.push({
+      type: 'motivation',
+      title: 'Reflection Opportunity',
+      description: 'Take a moment to reflect on your journey and what matters most to you.',
+      action: 'Try a motivational prompt',
+      motivationalQuestion: 'What would you like to focus on improving in your life?'
+    });
+    
     setInsights(newInsights);
+  };
+
+  const startMotivationalPrompt = () => {
+    const randomPrompt = MOTIVATIONAL_PROMPTS[Math.floor(Math.random() * MOTIVATIONAL_PROMPTS.length)];
+    setCurrentPrompt(randomPrompt);
+    setPromptResponse('');
+    setShowMotivationalSection(true);
+  };
+
+  const handleMotivationalResponse = () => {
+    if (!currentPrompt || !promptResponse.trim()) return;
+    
+    // Add to insights
+    const newInsight: MoodInsight = {
+      type: 'reflection',
+      title: `Reflection: ${currentPrompt.category}`,
+      description: promptResponse,
+      action: currentPrompt.followUp
+    };
+    
+    setInsights(prev => [...prev, newInsight]);
+    setCurrentPrompt(null);
+    setPromptResponse('');
+    setShowMotivationalSection(false);
   };
 
   const handleMoodSelection = (mood: string) => {
@@ -141,6 +241,11 @@ export default function MoodTrackerPage() {
       sleep,
       stress,
       triggers,
+      activities,
+      copingStrategies,
+      gratitude,
+      challenges,
+      victories,
       notes,
       timestamp: new Date()
     };
@@ -156,6 +261,11 @@ export default function MoodTrackerPage() {
     setSleep(5);
     setStress(5);
     setTriggers([]);
+    setActivities([]);
+    setCopingStrategies([]);
+    setGratitude([]);
+    setChallenges([]);
+    setVictories([]);
     setNotes('');
     
     // Generate new insights
@@ -338,6 +448,97 @@ export default function MoodTrackerPage() {
           </div>
         )}
 
+        {/* Activities */}
+        {selectedMood && (
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">What activities did you do today?</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {ACTIVITY_OPTIONS.map((activity) => (
+                <button
+                  key={activity}
+                  onClick={() => setActivities(prev => 
+                    prev.includes(activity) 
+                      ? prev.filter(a => a !== activity)
+                      : [...prev, activity]
+                  )}
+                  className={`p-2 rounded-lg text-sm transition ${
+                    activities.includes(activity)
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {activity}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Coping Strategies */}
+        {selectedMood && (
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">What helped you cope today?</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {COPING_STRATEGIES.map((strategy) => (
+                <button
+                  key={strategy}
+                  onClick={() => setCopingStrategies(prev => 
+                    prev.includes(strategy) 
+                      ? prev.filter(s => s !== strategy)
+                      : [...prev, strategy]
+                  )}
+                  className={`p-2 rounded-lg text-sm transition ${
+                    copingStrategies.includes(strategy)
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {strategy}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Gratitude, Challenges, Victories */}
+        {selectedMood && (
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Reflection & Growth</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">What are you grateful for today?</label>
+                <textarea
+                  value={gratitude.join(', ')}
+                  onChange={(e) => setGratitude(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                  placeholder="e.g., good weather, a friend's call, completing a task"
+                  className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">What challenges did you face?</label>
+                <textarea
+                  value={challenges.join(', ')}
+                  onChange={(e) => setChallenges(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                  placeholder="e.g., work stress, difficult conversation"
+                  className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">What victories did you have?</label>
+                <textarea
+                  value={victories.join(', ')}
+                  onChange={(e) => setVictories(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                  placeholder="e.g., finished a project, helped someone, learned something new"
+                  className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  rows={2}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Notes */}
         {selectedMood && (
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-6 mb-6">
@@ -364,11 +565,61 @@ export default function MoodTrackerPage() {
           </div>
         )}
 
-        {/* Insights */}
+        {/* Motivational Interviewing Section */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">💭 Motivational Reflection</h3>
+            <button
+              onClick={startMotivationalPrompt}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition"
+            >
+              Start Reflection
+            </button>
+          </div>
+          
+          {currentPrompt && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800"
+            >
+              <div className="font-medium text-purple-800 dark:text-purple-200 mb-2">
+                {currentPrompt.question}
+              </div>
+              <textarea
+                value={promptResponse}
+                onChange={(e) => setPromptResponse(e.target.value)}
+                placeholder="Take a moment to reflect on this question..."
+                className="w-full p-3 rounded-lg border border-purple-300 dark:border-purple-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white mt-2"
+                rows={3}
+              />
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleMotivationalResponse}
+                  disabled={!promptResponse.trim()}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition disabled:opacity-50"
+                >
+                  Save Reflection
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentPrompt(null);
+                    setPromptResponse('');
+                  }}
+                  className="px-4 py-2 border border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
+                >
+                  Skip
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Enhanced Insights */}
         {insights.length > 0 && (
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-2xl p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">AI Insights</h3>
+              <h3 className="text-lg font-semibold">🧠 Personalized Insights</h3>
               <button
                 onClick={() => setShowInsights(!showInsights)}
                 className="text-purple-600 hover:text-purple-700 transition"
@@ -386,12 +637,37 @@ export default function MoodTrackerPage() {
                   className="space-y-3"
                 >
                   {insights.map((insight, index) => (
-                    <div key={index} className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <div className="font-medium text-blue-800 dark:text-blue-200">{insight.title}</div>
-                      <div className="text-sm text-blue-700 dark:text-blue-300 mt-1">{insight.description}</div>
+                    <div key={index} className={`p-4 rounded-lg border ${
+                      insight.type === 'motivation' ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' :
+                      insight.type === 'reflection' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+                      'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                    }`}>
+                      <div className={`font-medium ${
+                        insight.type === 'motivation' ? 'text-purple-800 dark:text-purple-200' :
+                        insight.type === 'reflection' ? 'text-green-800 dark:text-green-200' :
+                        'text-blue-800 dark:text-blue-200'
+                      }`}>
+                        {insight.title}
+                      </div>
+                      <div className={`text-sm mt-1 ${
+                        insight.type === 'motivation' ? 'text-purple-700 dark:text-purple-300' :
+                        insight.type === 'reflection' ? 'text-green-700 dark:text-green-300' :
+                        'text-blue-700 dark:text-blue-300'
+                      }`}>
+                        {insight.description}
+                      </div>
                       {insight.action && (
-                        <div className="text-sm text-blue-600 dark:text-blue-400 mt-2 font-medium">
+                        <div className={`text-sm mt-2 font-medium ${
+                          insight.type === 'motivation' ? 'text-purple-600 dark:text-purple-400' :
+                          insight.type === 'reflection' ? 'text-green-600 dark:text-green-400' :
+                          'text-blue-600 dark:text-blue-400'
+                        }`}>
                           💡 {insight.action}
+                        </div>
+                      )}
+                      {insight.motivationalQuestion && (
+                        <div className="text-sm mt-2 p-2 bg-white/50 dark:bg-black/20 rounded border-l-4 border-purple-400">
+                          <strong>Reflection prompt:</strong> {insight.motivationalQuestion}
                         </div>
                       )}
                     </div>
@@ -406,7 +682,7 @@ export default function MoodTrackerPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link href="/chat" className="p-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl text-center hover:from-blue-600 hover:to-cyan-600 transition">
             <div className="text-2xl mb-2">🤖</div>
-            <div className="font-semibold">AI Chat Support</div>
+            <div className="font-semibold">Auraz AI</div>
             <div className="text-sm opacity-90">Get personalized guidance</div>
           </Link>
           

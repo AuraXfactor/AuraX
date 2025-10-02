@@ -21,7 +21,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 backdrop-blur bg-white/70 dark:bg-black/30 border-b border-white/20">
       <nav className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="font-extrabold text-xl tracking-tight">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">AuraX</span>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">AuraZ</span>
         </Link>
         <div className="flex items-center gap-2">
           <Link href="/aura" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow">
@@ -44,6 +44,9 @@ export default function Navbar() {
           </Link>
           <Link href="/toolkit" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow">
             🧰 Toolkit
+          </Link>
+          <Link href="/chat" className="px-3 py-1.5 rounded-full hover:scale-105 transition-transform bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow">
+            🤖 Auraz AI
           </Link>
           {user ? (
             <div className="flex items-center gap-2">

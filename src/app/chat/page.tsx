@@ -75,7 +75,7 @@ export default function ChatAIPage() {
     const welcomeMessage: ChatMessage = {
       id: '1',
       type: 'ai',
-      content: "Hello! I'm your AI wellness companion. I'm here to support you with mental health guidance, mood tracking, and crisis support. How are you feeling today?",
+      content: "Hello! I'm Auraz AI, your wellness companion. I'm here to support you with mental health guidance, mood tracking, and crisis support. How are you feeling today?",
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
@@ -229,7 +229,7 @@ What's going on that's making you feel this way? I'm here to listen without judg
                 🤖
               </div>
               <div>
-                <h1 className="text-xl font-bold">AI Wellness Assistant</h1>
+                <h1 className="text-xl font-bold">Auraz AI</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {currentMode === 'crisis' ? 'Crisis Support Mode' : 
                    currentMode === 'mood' ? 'Mood Tracking Mode' : 'General Support'}

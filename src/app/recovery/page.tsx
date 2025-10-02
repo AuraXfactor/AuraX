@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { addShadowBox, addWhisper, logCraving, setUserAddiction } from '@/lib/userProfile';
+import { awardAuraPoints } from '@/lib/auraPoints';
 import Link from 'next/link';
 
 const affirmations = [
@@ -31,12 +32,107 @@ export default function RecoveryHub() {
   const [shadowReframe, setShadowReframe] = useState<string | null>(null);
   const [whisper, setWhisper] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // Sobriety tracking state
+  const [sobrietyStartDate, setSobrietyStartDate] = useState<string>('');
+  const [sobrietyStreak, setSobrietyStreak] = useState(0);
+  const [milestones, setMilestones] = useState<Array<{id: string, title: string, achieved: boolean, date?: string}>>([]);
+  const [dailyCheckIns, setDailyCheckIns] = useState<Array<{date: string, mood: number, triggers: string[], notes: string}>>([]);
+  const [todayCheckIn, setTodayCheckIn] = useState({mood: 5, triggers: [] as string[], notes: ''});
 
   useEffect(() => {
     if (affTimer.current) window.clearInterval(affTimer.current);
     affTimer.current = window.setInterval(() => setCurrentAff((i) => (i + 1) % affirmations.length), 4000);
     return () => { if (affTimer.current) window.clearInterval(affTimer.current); };
   }, []);
+
+  // Initialize sobriety tracking
+  useEffect(() => {
+    if (user) {
+      const savedData = localStorage.getItem(`sobriety_${user.uid}`);
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        setSobrietyStartDate(data.startDate || '');
+        setSobrietyStreak(data.streak || 0);
+        setMilestones(data.milestones || []);
+        setDailyCheckIns(data.checkIns || []);
+      }
+    }
+  }, [user]);
+
+  // Calculate sobriety streak
+  const calculateStreak = () => {
+    if (!sobrietyStartDate) return 0;
+    const start = new Date(sobrietyStartDate);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Initialize milestones
+  useEffect(() => {
+    if (sobrietyStartDate && milestones.length === 0) {
+      const initialMilestones = [
+        { id: '1', title: '24 Hours Clean', achieved: false },
+        { id: '2', title: '1 Week Strong', achieved: false },
+        { id: '3', title: '30 Days Victory', achieved: false },
+        { id: '4', title: '90 Days Champion', achieved: false },
+        { id: '5', title: '6 Months Hero', achieved: false },
+        { id: '6', title: '1 Year Legend', achieved: false },
+      ];
+      setMilestones(initialMilestones);
+    }
+  }, [sobrietyStartDate, milestones.length]);
+
+  // Check milestone achievements
+  useEffect(() => {
+    const currentStreak = calculateStreak();
+    setSobrietyStreak(currentStreak);
+    
+    const updatedMilestones = milestones.map(milestone => {
+      let shouldAchieve = false;
+      switch (milestone.id) {
+        case '1': shouldAchieve = currentStreak >= 1; break;
+        case '2': shouldAchieve = currentStreak >= 7; break;
+        case '3': shouldAchieve = currentStreak >= 30; break;
+        case '4': shouldAchieve = currentStreak >= 90; break;
+        case '5': shouldAchieve = currentStreak >= 180; break;
+        case '6': shouldAchieve = currentStreak >= 365; break;
+      }
+      
+      if (shouldAchieve && !milestone.achieved) {
+        // Award points for milestone
+        if (user) {
+          awardAuraPoints({
+            user,
+            activity: 'first_time_bonus',
+            description: `🏆 ${milestone.title} milestone achieved!`,
+            uniqueId: `milestone-${milestone.id}-${user.uid}`
+          });
+        }
+        return { ...milestone, achieved: true, date: new Date().toISOString() };
+      }
+      return milestone;
+    });
+    
+    if (JSON.stringify(updatedMilestones) !== JSON.stringify(milestones)) {
+      setMilestones(updatedMilestones);
+    }
+  }, [sobrietyStartDate, user]);
+
+  // Save data to localStorage
+  useEffect(() => {
+    if (user && sobrietyStartDate) {
+      const data = {
+        startDate: sobrietyStartDate,
+        streak: sobrietyStreak,
+        milestones,
+        checkIns: dailyCheckIns
+      };
+      localStorage.setItem(`sobriety_${user.uid}`, JSON.stringify(data));
+    }
+  }, [user, sobrietyStartDate, sobrietyStreak, milestones, dailyCheckIns]);
 
   const handleSaveAddiction = async () => {
     if (!user || !addiction.trim()) return;
@@ -78,6 +174,41 @@ export default function RecoveryHub() {
     alert('Saved. We\'ll surface this when you need it most.');
   };
 
+  const handleStartSobriety = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setSobrietyStartDate(today);
+    alert('🎉 Your sobriety journey begins today! You\'ve got this!');
+  };
+
+  const handleDailyCheckIn = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const newCheckIn = {
+      date: today,
+      mood: todayCheckIn.mood,
+      triggers: todayCheckIn.triggers,
+      notes: todayCheckIn.notes
+    };
+    
+    setDailyCheckIns(prev => {
+      const filtered = prev.filter(checkIn => checkIn.date !== today);
+      return [...filtered, newCheckIn];
+    });
+    
+    setTodayCheckIn({mood: 5, triggers: [], notes: ''});
+    alert('✅ Daily check-in saved! Keep up the great work!');
+  };
+
+  const getStreakDisplay = () => {
+    if (!sobrietyStartDate) return 'Not started';
+    const days = calculateStreak();
+    if (days === 0) return 'Starting today';
+    if (days === 1) return '1 day strong';
+    if (days < 7) return `${days} days strong`;
+    if (days < 30) return `${days} days (${Math.floor(days/7)} weeks)`;
+    if (days < 365) return `${days} days (${Math.floor(days/30)} months)`;
+    return `${days} days (${Math.floor(days/365)} years)`;
+  };
+
   const particles = useMemo(() => Array.from({ length: 24 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
@@ -117,6 +248,42 @@ export default function RecoveryHub() {
             </div>
           </div>
         )}
+
+        {/* Sobriety Tracker */}
+        <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">🎯 Sobriety Tracker</h2>
+            {!sobrietyStartDate && (
+              <button 
+                onClick={handleStartSobriety}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"
+              >
+                Start Journey
+              </button>
+            )}
+          </div>
+          
+          {sobrietyStartDate ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold">{getStreakDisplay()}</div>
+                <div className="text-emerald-100">Sobriety Streak</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold">{milestones.filter(m => m.achieved).length}</div>
+                <div className="text-emerald-100">Milestones Achieved</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold">{dailyCheckIns.length}</div>
+                <div className="text-emerald-100">Check-ins Completed</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-emerald-100">Ready to start your recovery journey? Every day counts!</p>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="px-6 max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
@@ -186,13 +353,89 @@ export default function RecoveryHub() {
         </div>
 
         <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
-          <div className="font-semibold mb-2">Recovery Map</div>
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({length: 28}).map((_,i)=> (
-              <div key={i} className="h-8 rounded-md bg-cyan-400/20" />
+          <div className="font-semibold mb-2">Recovery Milestones</div>
+          <div className="space-y-2">
+            {milestones.map((milestone, index) => (
+              <div key={milestone.id} className={`flex items-center justify-between p-2 rounded-lg ${
+                milestone.achieved ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-lg ${milestone.achieved ? '🏆' : '⏳'}`}></span>
+                  <span className={milestone.achieved ? 'font-semibold' : ''}>{milestone.title}</span>
+                </div>
+                {milestone.achieved && milestone.date && (
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                    {new Date(milestone.date).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
             ))}
           </div>
-          <div className="mt-2 text-sm opacity-70">Glow brighter on hard days survived.</div>
+          <div className="mt-2 text-sm opacity-70">Each milestone unlocks Aura Points!</div>
+        </div>
+
+        <div className="p-5 rounded-2xl border bg-white/70 dark:bg-white/5">
+          <div className="font-semibold mb-2">Daily Check-in</div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm mb-1">How are you feeling today? (1-10)</label>
+              <input 
+                type="range" 
+                min="1" 
+                max="10" 
+                value={todayCheckIn.mood}
+                onChange={(e) => setTodayCheckIn(prev => ({...prev, mood: Number(e.target.value)}))}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Struggling</span>
+                <span className="font-bold">{todayCheckIn.mood}</span>
+                <span>Great</span>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm mb-1">Triggers today (optional)</label>
+              <div className="flex flex-wrap gap-1">
+                {['Stress', 'Social', 'Boredom', 'Celebration', 'Loneliness'].map(trigger => (
+                  <button
+                    key={trigger}
+                    onClick={() => setTodayCheckIn(prev => ({
+                      ...prev,
+                      triggers: prev.triggers.includes(trigger) 
+                        ? prev.triggers.filter(t => t !== trigger)
+                        : [...prev.triggers, trigger]
+                    }))}
+                    className={`px-2 py-1 text-xs rounded ${
+                      todayCheckIn.triggers.includes(trigger)
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    {trigger}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm mb-1">Notes (optional)</label>
+              <textarea
+                value={todayCheckIn.notes}
+                onChange={(e) => setTodayCheckIn(prev => ({...prev, notes: e.target.value}))}
+                placeholder="How was your day? Any challenges or victories?"
+                className="w-full p-2 text-sm rounded border"
+                rows={2}
+              />
+            </div>
+            
+            <button
+              onClick={handleDailyCheckIn}
+              className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+            >
+              Save Check-in
+            </button>
+          </div>
         </div>
 
 

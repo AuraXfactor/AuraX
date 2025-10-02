@@ -191,7 +191,7 @@ export default function AuraPointsPage() {
       </div>
 
       {/* Level Progress */}
-      <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+      <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6 mb-6">
         <h2 className="text-2xl font-bold mb-4">Your Journey Progress</h2>
         <div className="space-y-4">
           <div>
