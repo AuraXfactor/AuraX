@@ -465,7 +465,7 @@ export default function RecoveryHub() {
       <footer className="px-6 py-10 max-w-5xl mx-auto text-center text-sm opacity-80">
         <div className="italic">{`"`}Recovery is powered by RYD Mental Health. You are never alone.{`"`}</div>
         <a href="https://rydmentalhealth.org" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-2 text-blue-600">
-          <img src="/ryd-logo.svg" alt="RYD" className="w-5 h-5" /> rydmentalhealth.org
+          <img src="/auraz-logo.svg" alt="AuraZ" className="w-5 h-5" /> rydmentalhealth.org
         </a>
       </footer>
     </main>

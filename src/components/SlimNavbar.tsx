@@ -28,7 +28,7 @@ export default function SlimNavbar() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <img src="/ryd-logo.svg" alt="AuraX" className="w-8 h-8" />
+              <img src="/auraz-logo.svg" alt="AuraZ" className="w-8 h-8" />
               <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
                 AuraX
               </span>

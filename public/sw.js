@@ -14,7 +14,7 @@ const urlsToCache = [
   '/journals/daily-checkin',
   '/favicon.ico',
   '/manifest.webmanifest',
-  '/ryd-logo.svg',
+  '/auraz-logo.svg',
 ];
 
 // Install event - cache resources
