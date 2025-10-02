@@ -47,8 +47,11 @@ export default function Home() {
             
             {/* NEW: Prominent Messaging CTA */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/messages" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 transition-all font-bold text-lg">
-                💬 Open Messages (NEW!)
+              <Link href="/aura" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 transition-all font-bold text-lg">
+                ✨ Aura Feed
+              </Link>
+              <Link href="/messages" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 hover:scale-105 transition-all font-bold text-lg">
+                💬 Messages
               </Link>
               <Link href="/chat" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 hover:scale-105 transition-all font-bold text-lg">
                 🤖 Auraz AI

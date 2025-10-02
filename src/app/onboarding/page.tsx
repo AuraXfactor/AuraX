@@ -35,13 +35,7 @@ export default function Onboarding() {
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyConsent, setPrivacyConsent] = useState({
-    dataCollection: true,
-    analytics: true,
-    personalization: true,
-    notifications: true,
-    dataSharing: false
-  });
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const steps = useMemo(() => [
     'Profile',
@@ -80,9 +74,9 @@ export default function Onboarding() {
     if (step === 3) return true; // optional
     if (step === 4) return ['Morning','Afternoon','Evening'].includes(reminderTime);
     if (step === 5) return true; // optional
-    if (step === 6) return termsAccepted; // terms acceptance required
+    if (step === 6) return termsAccepted && privacyAccepted; // both terms and privacy acceptance required
     return true;
-  }, [step, name, username, moodBaseline, focusAreas, reminderTime, termsAccepted]);
+  }, [step, name, username, moodBaseline, focusAreas, reminderTime, termsAccepted, privacyAccepted]);
 
   const handleFile = (file: File) => {
     const reader = new FileReader();
@@ -104,7 +98,7 @@ export default function Onboarding() {
         reminderTime,
         moodBaseline,
         termsAccepted,
-        privacyConsent,
+        privacyAccepted,
       });
       router.push('/');
     } finally {
@@ -221,42 +215,28 @@ export default function Onboarding() {
                       className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm text-blue-700 dark:text-blue-300">
-                      I agree to the <a href="/terms" className="underline hover:no-underline">Terms of Service</a> and <a href="/privacy" className="underline hover:no-underline">Privacy Policy</a>
+                      I agree to the <a href="/terms" className="underline hover:no-underline">Terms of Service</a>
                     </span>
                   </label>
                 </div>
 
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">🔒 Privacy Settings</h3>
+                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">🔒 Privacy Policy</h3>
                   <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                    You can change these settings anytime in your profile. We respect your privacy choices.
+                    We respect your privacy and protect your data. You can change these settings anytime in your profile.
                   </p>
                   
-                  <div className="space-y-3">
-                    {[
-                      { key: 'dataCollection', label: 'Data Collection', desc: 'Allow us to collect your wellness data to provide personalized insights' },
-                      { key: 'analytics', label: 'Analytics', desc: 'Help us improve the app with anonymous usage analytics' },
-                      { key: 'personalization', label: 'Personalization', desc: 'Enable personalized recommendations and content' },
-                      { key: 'notifications', label: 'Notifications', desc: 'Receive wellness reminders and motivational messages' },
-                      { key: 'dataSharing', label: 'Data Sharing', desc: 'Share anonymized data for research (optional)' }
-                    ].map(item => (
-                      <label key={item.key} className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={privacyConsent[item.key as keyof typeof privacyConsent]}
-                          onChange={(e) => setPrivacyConsent(prev => ({
-                            ...prev,
-                            [item.key]: e.target.checked
-                          }))}
-                          className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm text-green-800 dark:text-green-200">{item.label}</div>
-                          <div className="text-xs text-green-600 dark:text-green-400">{item.desc}</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={privacyAccepted}
+                      onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm text-green-700 dark:text-green-300">
+                      I agree to the <a href="/privacy" className="underline hover:no-underline">Privacy Policy</a> and consent to data collection for personalized wellness insights
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -285,9 +265,7 @@ export default function Onboarding() {
                 <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">Privacy Consent:</div>
                   <div className="text-xs text-green-700 dark:text-green-300">
-                    {Object.entries(privacyConsent).filter(([_, value]) => value).map(([key, _]) => 
-                      key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
-                    ).join(', ')}
+                    {privacyAccepted ? 'Privacy Policy Accepted - Data collection enabled for personalized insights' : 'Privacy Policy Not Accepted'}
                   </div>
                 </div>
                 <div className="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold">Starting Aura Points: 0</div>
