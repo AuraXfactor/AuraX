@@ -14,7 +14,19 @@ const focusOptions = [
   'Self-Love & Confidence',
 ];
 
-const therapyOptions = ['Chat', 'Phone Call', 'WhatsApp', 'Video Call'];
+const avatarOptions = [
+  '😊', '😎', '🤗', '😌', '🤩', '😇', '🥰', '😘', '🤔', '😋',
+  '😍', '🥳', '😄', '🤠', '😊', '😎', '🤗', '😌', '🤩', '😇'
+];
+
+const genderOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+
+const countryOptions = [
+  'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France',
+  'Spain', 'Italy', 'Netherlands', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Japan', 'South Korea', 'Singapore', 'New Zealand', 'Brazil', 'Mexico',
+  'Argentina', 'India', 'China', 'Other'
+];
 
 
 export default function Onboarding() {
@@ -24,18 +36,23 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [avatar, setAvatar] = useState<string>('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState<string>('');
+  const [country, setCountry] = useState<string>('');
+  const [town, setTown] = useState('');
   const [moodBaseline, setMoodBaseline] = useState<string[]>([]);
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
-  const [preferredTherapy, setPreferredTherapy] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState<'Morning'|'Afternoon'|'Evening'>('Morning');
   const [saving, setSaving] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const steps = useMemo(() => [
     'Profile',
+    'Avatar',
+    'Personal Info',
     'Mood Baseline',
     'Focus Areas',
-    'Therapy Style',
     'Journaling Reminder',
     'Terms',
     'Summary',
@@ -62,13 +79,14 @@ export default function Onboarding() {
 
   const canContinue = useMemo(() => {
     if (step === 0) return name.trim().length > 0 && username.trim().length > 0;
-    if (step === 1) return moodBaseline.length === 3;
-    if (step === 2) return focusAreas.length >= 2 && focusAreas.length <= 3;
-    if (step === 3) return true; // optional
-    if (step === 4) return ['Morning','Afternoon','Evening'].includes(reminderTime);
-    if (step === 5) return termsAccepted; // terms acceptance required
+    if (step === 1) return avatar.length > 0;
+    if (step === 2) return dateOfBirth.length > 0 && gender.length > 0 && country.length > 0 && town.trim().length > 0;
+    if (step === 3) return moodBaseline.length === 3;
+    if (step === 4) return focusAreas.length >= 2 && focusAreas.length <= 3;
+    if (step === 5) return ['Morning','Afternoon','Evening'].includes(reminderTime);
+    if (step === 6) return termsAccepted; // terms acceptance required
     return true;
-  }, [step, name, username, moodBaseline, focusAreas, reminderTime, termsAccepted]);
+  }, [step, name, username, avatar, dateOfBirth, gender, country, town, moodBaseline, focusAreas, reminderTime, termsAccepted]);
 
 
   const save = async () => {
@@ -79,13 +97,22 @@ export default function Onboarding() {
         name: name.trim(),
         username: username.trim(),
         email: user.email ?? null,
-        avatar: null,
+        avatar: avatar,
+        dateOfBirth,
+        gender,
+        country,
+        town: town.trim(),
         focusAreas,
-        preferredTherapy: preferredTherapy ?? null,
         reminderTime,
         moodBaseline,
         termsAccepted,
       });
+      
+      // Mark that user has completed onboarding and should see tour
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`onboarding_completed_${user.uid}`, 'true');
+      }
+      
       router.push('/');
     } finally {
       setSaving(false);
@@ -119,6 +146,78 @@ export default function Onboarding() {
 
           {step === 1 && stepCard(
             <div>
+              <div className="text-lg font-semibold mb-2">Choose Your Avatar</div>
+              <div className="text-sm opacity-75 mb-3">Pick an emoji that represents you</div>
+              <div className="grid grid-cols-10 gap-2 text-2xl">
+                {avatarOptions.map((emoji) => (
+                  <button 
+                    key={emoji} 
+                    onClick={() => setAvatar(emoji)} 
+                    className={`h-12 rounded-lg border ${avatar === emoji ? 'border-blue-500 ring-2 ring-blue-300' : 'border-white/20'}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              {avatar && <div className="mt-2 text-sm opacity-70">Selected: {avatar}</div>}
+            </div>
+          )}
+
+          {step === 2 && stepCard(
+            <div>
+              <div className="text-lg font-semibold mb-2">Personal Information</div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Date of Birth</label>
+                  <input 
+                    type="date" 
+                    value={dateOfBirth} 
+                    onChange={(e) => setDateOfBirth(e.target.value)} 
+                    className="w-full px-3 py-2 rounded-md border" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Gender</label>
+                  <select 
+                    value={gender} 
+                    onChange={(e) => setGender(e.target.value)} 
+                    className="w-full px-3 py-2 rounded-md border"
+                  >
+                    <option value="">Select gender</option>
+                    {genderOptions.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Country</label>
+                  <select 
+                    value={country} 
+                    onChange={(e) => setCountry(e.target.value)} 
+                    className="w-full px-3 py-2 rounded-md border"
+                  >
+                    <option value="">Select country</option>
+                    {countryOptions.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Town/City</label>
+                  <input 
+                    type="text" 
+                    value={town} 
+                    onChange={(e) => setTown(e.target.value)} 
+                    placeholder="Enter your town or city" 
+                    className="w-full px-3 py-2 rounded-md border" 
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && stepCard(
+            <div>
               <div className="text-lg font-semibold mb-2">Mood Baseline</div>
               <div className="text-sm opacity-75 mb-3">Select 3 emojis representing your vibe</div>
               <div className="grid grid-cols-8 gap-2 text-2xl">
@@ -130,7 +229,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 2 && stepCard(
+          {step === 4 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Wellness Focus Areas</div>
               <div className="text-sm opacity-75 mb-3">Choose top 2-3</div>
@@ -142,18 +241,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 3 && stepCard(
-            <div>
-              <div className="text-lg font-semibold mb-2">Preferred Therapy Style (optional)</div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                {therapyOptions.map((opt) => (
-                  <button key={opt} onClick={()=>setPreferredTherapy(opt)} className={`px-4 py-2 rounded-xl border text-left ${preferredTherapy===opt?'border-blue-500 bg-blue-50 dark:bg-blue-500/10':'border-white/20'}`}>{opt}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 4 && stepCard(
+          {step === 5 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Journaling Reminder</div>
               <div className="flex gap-2">
@@ -164,7 +252,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 5 && stepCard(
+          {step === 6 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-4">Terms of Service</div>
               <div className="space-y-4">
@@ -190,21 +278,23 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 6 && stepCard(
+          {step === 7 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
-                    🌟
+                    {avatar || '🌟'}
                   </div>
                   <div>
                     <div className="font-bold">{name} @{username}</div>
                     <div className="text-sm opacity-70">Focus: {focusAreas.join(', ')}</div>
                   </div>
                 </div>
-                <div className="mt-3 text-sm">Mood: {moodBaseline.join(' ')}</div>
-                <div className="mt-1 text-sm">Preferred Therapy: {preferredTherapy || '—'}</div>
+                <div className="mt-3 text-sm">Location: {town}, {country}</div>
+                <div className="mt-1 text-sm">Gender: {gender}</div>
+                <div className="mt-1 text-sm">DOB: {dateOfBirth}</div>
+                <div className="mt-1 text-sm">Mood: {moodBaseline.join(' ')}</div>
                 <div className="mt-1 text-sm">Reminder: {reminderTime}</div>
                 <div className="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold">Starting Aura Points: 0</div>
                 <div className="mt-4 text-lg">Welcome, {name}. Your Aura journey starts now 🌟</div>

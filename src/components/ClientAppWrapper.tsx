@@ -36,24 +36,15 @@ export default function ClientAppWrapper({ children }: ClientAppWrapperProps) {
   // Auto-start tour for new users only after onboarding completion
   React.useEffect(() => {
     if (typeof window !== 'undefined' && user && shouldShowTour()) {
-      // Check if user has completed onboarding by checking if they have a profile
-      const checkOnboardingComplete = async () => {
-        try {
-          const response = await fetch('/api/user/profile');
-          if (response.ok) {
-            const profile = await response.json();
-            // If user has completed onboarding (has profile data), show tour
-            if (profile && profile.name) {
-              const timer = setTimeout(() => startTour(), 2000);
-              return () => clearTimeout(timer);
-            }
-          }
-        } catch (error) {
-          console.log('Profile check failed, skipping tour');
-        }
-      };
-      
-      checkOnboardingComplete();
+      // Check if user has completed onboarding by checking localStorage
+      const onboardingCompleted = localStorage.getItem(`onboarding_completed_${user.uid}`);
+      if (onboardingCompleted === 'true') {
+        // Clear the onboarding completion flag to prevent showing tour again
+        localStorage.removeItem(`onboarding_completed_${user.uid}`);
+        // Start tour after a short delay
+        const timer = setTimeout(() => startTour(), 2000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [user, shouldShowTour, startTour]);
 

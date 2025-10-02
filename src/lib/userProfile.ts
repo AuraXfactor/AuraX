@@ -14,8 +14,11 @@ export async function ensureUserProfile(user: User) {
     name: user.displayName ?? user.email?.split('@')[0] ?? 'Anonymous',
     username: user.email?.split('@')[0] ?? `user${user.uid.slice(-4)}`,
     avatar: user.photoURL ?? null,
+    dateOfBirth: null,
+    gender: null,
+    country: null,
+    town: null,
     focusAreas: ['wellness'],
-    preferredTherapy: null,
     reminderTime: null,
     moodBaseline: [],
     auraPoints: 0,
@@ -52,6 +55,8 @@ export async function ensureUserProfile(user: User) {
     username: userData.username,
     bio: userData.bio,
     avatar: userData.avatar,
+    country: userData.country,
+    town: userData.town,
     interests: userData.interests,
     focusAreas: userData.focusAreas,
     isOnline: true,
@@ -66,9 +71,12 @@ export type OnboardingProfile = {
   name: string;
   username: string;
   email: string | null;
-  avatar: string | null;
+  avatar: string;
+  dateOfBirth: string;
+  gender: string;
+  country: string;
+  town: string;
   focusAreas: string[];
-  preferredTherapy?: string | null;
   reminderTime: 'Morning' | 'Afternoon' | 'Evening';
   moodBaseline: string[]; // emojis
   termsAccepted: boolean;
@@ -81,8 +89,11 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
     username: profile.username,
     email: profile.email,
     avatar: profile.avatar,
+    dateOfBirth: profile.dateOfBirth,
+    gender: profile.gender,
+    country: profile.country,
+    town: profile.town,
     focusAreas: profile.focusAreas,
-    preferredTherapy: profile.preferredTherapy ?? null,
     reminderTime: profile.reminderTime,
     moodBaseline: profile.moodBaseline,
     termsAccepted: profile.termsAccepted,
@@ -166,8 +177,11 @@ export type UserProfileData = {
   name?: string | null;
   username?: string | null;
   avatar?: string | null;
+  dateOfBirth?: string;
+  gender?: string;
+  country?: string;
+  town?: string;
   focusAreas?: string[];
-  preferredTherapy?: string | null;
   reminderTime?: 'Morning' | 'Afternoon' | 'Evening' | null;
   moodBaseline?: string[];
   auraPoints?: number;
