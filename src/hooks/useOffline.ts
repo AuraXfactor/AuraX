@@ -3,6 +3,8 @@
  * Provides offline functionality for the app
  */
 
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { offlineStorage, OfflineData } from '@/lib/offlineStorage';
 import { syncService, SyncResult } from '@/lib/syncService';

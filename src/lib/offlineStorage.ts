@@ -87,6 +87,7 @@ class OfflineStorage {
    * Get all offline data
    */
   getOfflineData(): OfflineData[] {
+    if (typeof window === 'undefined') return [];
     try {
       const data = localStorage.getItem(this.storageKey);
       return data ? JSON.parse(data) : [];
@@ -109,6 +110,7 @@ class OfflineStorage {
    * Get unsynced data
    */
   getUnsyncedData(): OfflineData[] {
+    if (typeof window === 'undefined') return [];
     return this.getOfflineData().filter(item => !item.synced);
   }
 
@@ -116,6 +118,7 @@ class OfflineStorage {
    * Mark data as synced
    */
   markAsSynced(id: string): void {
+    if (typeof window === 'undefined') return;
     const data = this.getOfflineData();
     const item = data.find(item => item.id === id);
     if (item) {
@@ -128,6 +131,7 @@ class OfflineStorage {
    * Remove synced data older than 7 days
    */
   cleanupOldData(): void {
+    if (typeof window === 'undefined') return;
     const data = this.getOfflineData();
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
     const filteredData = data.filter(item => 
@@ -140,6 +144,7 @@ class OfflineStorage {
    * Add to sync queue
    */
   private addToSyncQueue(data: OfflineData): void {
+    if (typeof window === 'undefined') return;
     try {
       const queue = this.getSyncQueue();
       queue.push(data);
@@ -153,6 +158,7 @@ class OfflineStorage {
    * Get sync queue
    */
   getSyncQueue(): OfflineData[] {
+    if (typeof window === 'undefined') return [];
     try {
       const data = localStorage.getItem(this.syncQueueKey);
       return data ? JSON.parse(data) : [];
@@ -166,6 +172,7 @@ class OfflineStorage {
    * Clear sync queue
    */
   clearSyncQueue(): void {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem(this.syncQueueKey);
   }
 
@@ -173,6 +180,7 @@ class OfflineStorage {
    * Check if online
    */
   isOnline(): boolean {
+    if (typeof window === 'undefined') return true;
     return navigator.onLine;
   }
 
@@ -180,6 +188,7 @@ class OfflineStorage {
    * Get storage usage info
    */
   getStorageInfo(): { used: number; available: number; percentage: number } {
+    if (typeof window === 'undefined') return { used: 0, available: 0, percentage: 0 };
     try {
       const data = this.getOfflineData();
       const used = JSON.stringify(data).length;
@@ -196,6 +205,7 @@ class OfflineStorage {
    * Export offline data for backup
    */
   exportOfflineData(): string {
+    if (typeof window === 'undefined') return '[]';
     const data = this.getOfflineData();
     return JSON.stringify(data, null, 2);
   }
@@ -204,6 +214,7 @@ class OfflineStorage {
    * Import offline data from backup
    */
   importOfflineData(jsonData: string): boolean {
+    if (typeof window === 'undefined') return false;
     try {
       const data = JSON.parse(jsonData);
       if (Array.isArray(data)) {

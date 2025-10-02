@@ -3,6 +3,8 @@
  * Shows offline status and sync information
  */
 
+'use client';
+
 import React from 'react';
 import { useOffline } from '@/hooks/useOffline';
 
