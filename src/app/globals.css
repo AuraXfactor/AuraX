@@ -16,7 +16,8 @@
   --card-foreground: #0f172a;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Force light mode - ignore system dark mode preferences */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -32,7 +33,7 @@
     --card: #1e293b;
     --card-foreground: #f8fafc;
   }
-}
+} */
 
 /* Theme variations */
 [data-theme="light"] {
@@ -113,6 +114,95 @@
   --border: rgba(255, 255, 255, 0.2);
   --card: rgba(255, 255, 255, 0.1);
   --card-foreground: #ffffff;
+}
+
+/* Force light mode on all elements */
+html {
+  color-scheme: light !important;
+}
+
+html, body {
+  background: #ffffff !important;
+  color: #171717 !important;
+}
+
+/* Override any dark mode classes */
+.dark, [data-theme="dark"] {
+  background: #ffffff !important;
+  color: #171717 !important;
+}
+
+/* Optimized zoom for feature grid display - shows 6 features in 2x3 grid */
+
+/* Small mobile devices - 60% zoom for optimal grid view */
+@media screen and (max-width: 480px) {
+  html {
+    zoom: 0.6;
+    -moz-transform: scale(0.6);
+    -moz-transform-origin: 0 0;
+    -webkit-transform: scale(0.6);
+    -webkit-transform-origin: 0 0;
+    transform: scale(0.6);
+    transform-origin: 0 0;
+    width: 166.67%;
+    height: 166.67%;
+  }
+  
+  body {
+    width: 166.67%;
+    height: 166.67%;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+}
+
+/* Medium mobile devices - 70% zoom for better grid visibility */
+@media screen and (min-width: 481px) and (max-width: 768px) {
+  html {
+    zoom: 0.7;
+    -moz-transform: scale(0.7);
+    -moz-transform-origin: 0 0;
+    -webkit-transform: scale(0.7);
+    -webkit-transform-origin: 0 0;
+    transform: scale(0.7);
+    transform-origin: 0 0;
+    width: 142.86%;
+    height: 142.86%;
+  }
+  
+  body {
+    width: 142.86%;
+    height: 142.86%;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+}
+
+/* Tablets and larger - 80% zoom for optimal feature grid */
+@media screen and (min-width: 769px) {
+  html {
+    zoom: 0.8;
+    -moz-transform: scale(0.8);
+    -moz-transform-origin: 0 0;
+    -webkit-transform: scale(0.8);
+    -webkit-transform-origin: 0 0;
+    transform: scale(0.8);
+    transform-origin: 0 0;
+    width: 125%;
+    height: 125%;
+  }
+  
+  body {
+    width: 125%;
+    height: 125%;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+}
+
+/* Ensure all elements respect the light mode */
+* {
+  color-scheme: light !important;
 }
 
 body {

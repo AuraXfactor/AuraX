@@ -73,13 +73,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         root.setAttribute('data-theme', 'light');
         break;
       case 'auto':
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          root.classList.add('dark');
-          root.setAttribute('data-theme', 'dark');
-        } else {
-          root.setAttribute('data-theme', 'light');
-        }
+        // Force light mode regardless of system preference
+        root.setAttribute('data-theme', 'light');
         break;
       case 'purple':
       case 'ocean':
@@ -109,15 +104,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Handle system theme changes for auto mode
+  // Handle system theme changes for auto mode - disabled to force light mode
   useEffect(() => {
-    if (theme === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => applyTheme('auto');
-      
-      mediaQuery.addListener(handleChange);
-      return () => mediaQuery.removeListener(handleChange);
-    }
+    // Disabled to force light mode regardless of system preference
+    // if (theme === 'auto') {
+    //   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    //   const handleChange = () => applyTheme('auto');
+    //   
+    //   mediaQuery.addListener(handleChange);
+    //   return () => mediaQuery.removeListener(handleChange);
+    // }
   }, [theme]);
 
   return (
