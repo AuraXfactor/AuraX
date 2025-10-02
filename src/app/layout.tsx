@@ -30,8 +30,9 @@ export const viewport = {
   themeColor: '#0ea5e9',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  minimumScale: 0.5,
+  userScalable: true,
 };
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -82,8 +83,8 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#0ea5e9" />
         <meta name="msapplication-tap-highlight" content="no" />
         
-        {/* Viewport for iOS */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        {/* Viewport for iOS and Android - Auto-fit zoom */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover" />
       </head>
       <body className="bg-fun">
         <AuthProvider>
@@ -112,6 +113,56 @@ export default function RootLayout({
         </AuthProvider>
         <script dangerouslySetInnerHTML={{__html: `
           (function(){
+            // Mobile zoom optimization
+            function initMobileZoom() {
+              // Apply initial zoom based on screen size
+              var width = window.innerWidth;
+              var optimalZoom = 1.0;
+              
+              if (width < 360) {
+                optimalZoom = 0.9;
+              } else if (width < 480) {
+                optimalZoom = 1.0;
+              } else if (width < 768) {
+                optimalZoom = 1.0;
+              }
+              
+              // Apply zoom if needed
+              if (Math.abs(parseFloat(getComputedStyle(document.documentElement).zoom || '1') - optimalZoom) > 0.1) {
+                document.documentElement.style.zoom = optimalZoom.toString();
+              }
+              
+              // Prevent horizontal overflow
+              var bodyWidth = Math.max(
+                document.body.scrollWidth,
+                document.body.offsetWidth,
+                document.documentElement.clientWidth,
+                document.documentElement.scrollWidth,
+                document.documentElement.offsetWidth
+              );
+              
+              if (bodyWidth > window.innerWidth) {
+                document.documentElement.style.overflowX = 'hidden';
+                document.body.style.overflowX = 'hidden';
+                document.body.classList.add('overflow-prevented');
+              }
+            }
+            
+            // Initialize mobile zoom
+            initMobileZoom();
+            
+            // Handle orientation changes
+            window.addEventListener('orientationchange', function() {
+              setTimeout(initMobileZoom, 100);
+            });
+            
+            // Handle resize events
+            var resizeTimeout;
+            window.addEventListener('resize', function() {
+              clearTimeout(resizeTimeout);
+              resizeTimeout = setTimeout(initMobileZoom, 150);
+            });
+            
             // Service Worker Registration
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
