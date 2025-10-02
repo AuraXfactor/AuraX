@@ -29,10 +29,10 @@ export const metadata = {
 export const viewport = {
   themeColor: '#ffffff',
   width: 'device-width',
-  initialScale: 1.0,
-  maximumScale: 1.0,
+  initialScale: 0.5,
+  maximumScale: 0.5,
   minimumScale: 0.5,
-  userScalable: true,
+  userScalable: false,
   viewportFit: 'cover',
 };
 
@@ -91,8 +91,8 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
         <meta name="msapplication-navbutton-color" content="#ffffff" />
         
-        {/* Responsive viewport - minimum 50% zoom, better on larger devices */}
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover" />
+        {/* Viewport for iOS - Force 50% zoom */}
+        <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.5, minimum-scale=0.5, user-scalable=no, viewport-fit=cover" />
         
         {/* Additional viewport meta for Android */}
         <meta name="mobile-web-app-capable" content="yes" />
