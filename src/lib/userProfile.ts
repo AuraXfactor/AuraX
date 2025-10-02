@@ -151,7 +151,6 @@ export type UserSettings = {
   theme?: string;
   notifications?: {
     journal?: boolean;
-    therapy?: boolean;
     recovery?: boolean;
     email?: boolean;
   };
