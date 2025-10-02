@@ -47,11 +47,11 @@ export default function Home() {
             
             {/* NEW: Prominent Messaging CTA */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/messages" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 transition-all font-bold text-lg">
-                💬 Open Messages (NEW!)
+              <Link href="/messages" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 hover:scale-105 transition-all font-bold text-lg">
+                💬 Messages
               </Link>
               <Link href="/chat" className="px-8 py-4 rounded-2xl text-white shadow-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 hover:scale-105 transition-all font-bold text-lg">
-                🤖 Auraz AI
+                ⚡️ Auraz AI
               </Link>
               <PWAInstallButton className="px-8 py-4 rounded-2xl text-white shadow-xl hover:scale-105 transition-all font-bold text-lg" />
               <Link href="/journals" className="px-6 py-3 rounded-full bg-emerald-600 text-white hover:scale-105 transition">
@@ -74,10 +74,11 @@ export default function Home() {
       <section className="max-w-5xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
           { title: 'Secure Messages', desc: 'End-to-end encrypted WhatsApp-style messaging 💬', href: '/messages', emoji: '🔒', colors: 'from-purple-500 to-pink-500' },
-          { title: 'Auraz AI', desc: 'Your intelligent wellness companion for support and guidance 🤖', href: '/chat', emoji: '🤖', colors: 'from-blue-500 to-cyan-500' },
           { title: 'Specialized Journals', desc: 'Daily check-ins, CBT therapy, gratitude & more 📔', href: '/journals', emoji: '📚', colors: 'from-rose-400 to-orange-400' },
           { title: 'DIY', desc: 'Do it yourself - meditations, workouts, tools 🛠️', href: '/toolkit', emoji: '🔧', colors: 'from-cyan-400 to-blue-500' },
-          { title: 'Recovery Hub', desc: 'Addiction recovery support and wellness tools 🔄', href: '/recovery', emoji: '🔄', colors: 'from-emerald-400 to-teal-500' },
+          { title: 'Addictions', desc: 'Addiction recovery support and wellness tools 🔄', href: '/recovery', emoji: '🔄', colors: 'from-emerald-400 to-teal-500' },
+          { title: 'AuraZ AI ⚡️', desc: 'Your intelligent wellness companion for support and guidance ⚡️', href: '/chat', emoji: '⚡️', colors: 'from-blue-500 to-cyan-500' },
+          { title: 'Aura Feed✨', desc: 'Share your 24-hour wellness moments with friends ✨', href: '/aura', emoji: '✨', colors: 'from-purple-500 to-pink-500' },
         ].map((c) => (
           <Link key={c.title} href={c.href} className="group block p-5 rounded-2xl border border-white/20 bg-white/60 dark:bg-white/5 backdrop-blur hover:shadow-2xl transition transform hover:-translate-y-1">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow bg-gradient-to-br ${c.colors} text-white animate-pop`}>{c.emoji}</div>

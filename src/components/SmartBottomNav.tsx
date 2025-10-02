@@ -47,11 +47,11 @@ const NAV_TABS: NavTab[] = [
   },
   {
     id: 'chat',
-    label: 'Chat AI',
-    icon: '🤖',
+    label: 'AuraZ AI ⚡️',
+    icon: '⚡️',
     color: 'from-cyan-500 to-blue-500',
     items: [
-      { label: 'AI Assistant', href: '/chat', icon: '🤖', description: 'Get instant wellness support' },
+      { label: 'AI Assistant', href: '/chat', icon: '⚡️', description: 'Get instant wellness support' },
       { label: 'Mood Check', href: '/chat?mode=mood', icon: '😊', description: 'Quick mood assessment' },
       { label: 'Crisis Support', href: '/chat?mode=crisis', icon: '🆘', description: 'Emergency support chat' },
       { label: 'Wellness Tips', href: '/chat?mode=tips', icon: '💡', description: 'Daily wellness advice' },
@@ -91,18 +91,6 @@ const NAV_TABS: NavTab[] = [
       { label: 'Rewards Store', href: '/aura-points?tab=rewards', icon: '🏪', description: 'Spend your points' },
     ],
   },
-  {
-    id: 'profile',
-    label: 'Me',
-    icon: '👤',
-    color: 'from-indigo-500 to-purple-500',
-    items: [
-      { label: 'Profile', href: '/profile', icon: '📊', description: 'Your wellness stats' },
-      { label: 'Settings', href: '/settings', icon: '⚙️', description: 'App preferences' },
-      { label: 'Therapy Support', href: '/therapy-support', icon: '🫂', description: 'Professional help' },
-      { label: 'Help', href: '/settings#help', icon: '❓', description: 'Support & export' },
-    ],
-  },
 ];
 
 export default function SmartBottomNav() {
@@ -134,9 +122,6 @@ export default function SmartBottomNav() {
     }
     if (pathname.startsWith('/aura-points') || pathname.startsWith('/squads')) {
       return 'points';
-    }
-    if (pathname.startsWith('/profile') || pathname.startsWith('/settings') || pathname.startsWith('/therapy-support')) {
-      return 'profile';
     }
     return 'journal'; // default
   };

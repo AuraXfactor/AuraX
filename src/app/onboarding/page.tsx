@@ -16,9 +16,6 @@ const focusOptions = [
 
 const therapyOptions = ['Chat', 'Phone Call', 'WhatsApp', 'Video Call'];
 
-const defaultAvatars = [
-  '🌟', '✨', '🎭', '🦋', '🌺', '🎨', '🌈', '🦄', '🌸', '💫', '🎪', '🎯'
-];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -27,21 +24,12 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
-  const [avatar, setAvatar] = useState<string | null>(null);
   const [moodBaseline, setMoodBaseline] = useState<string[]>([]);
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
   const [preferredTherapy, setPreferredTherapy] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState<'Morning'|'Afternoon'|'Evening'>('Morning');
-  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyConsent, setPrivacyConsent] = useState({
-    dataCollection: true,
-    analytics: true,
-    personalization: true,
-    notifications: true,
-    dataSharing: false
-  });
 
   const steps = useMemo(() => [
     'Profile',
@@ -49,8 +37,7 @@ export default function Onboarding() {
     'Focus Areas',
     'Therapy Style',
     'Journaling Reminder',
-    'Avatar',
-    'Terms & Privacy',
+    'Terms',
     'Summary',
   ], []);
 
@@ -79,16 +66,10 @@ export default function Onboarding() {
     if (step === 2) return focusAreas.length >= 2 && focusAreas.length <= 3;
     if (step === 3) return true; // optional
     if (step === 4) return ['Morning','Afternoon','Evening'].includes(reminderTime);
-    if (step === 5) return true; // optional
-    if (step === 6) return termsAccepted; // terms acceptance required
+    if (step === 5) return termsAccepted; // terms acceptance required
     return true;
   }, [step, name, username, moodBaseline, focusAreas, reminderTime, termsAccepted]);
 
-  const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => setUploadPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
 
   const save = async () => {
     if (!user) return;
@@ -98,13 +79,12 @@ export default function Onboarding() {
         name: name.trim(),
         username: username.trim(),
         email: user.email ?? null,
-        avatar: uploadPreview || avatar,
+        avatar: null,
         focusAreas,
         preferredTherapy: preferredTherapy ?? null,
         reminderTime,
         moodBaseline,
         termsAccepted,
-        privacyConsent,
       });
       router.push('/');
     } finally {
@@ -133,16 +113,6 @@ export default function Onboarding() {
               <div className="grid sm:grid-cols-2 gap-3">
                 <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Your name" className="px-3 py-2 rounded-md border" />
                 <input value={username} onChange={(e)=>setUsername(e.target.value)} placeholder="Username" className="px-3 py-2 rounded-md border" />
-              </div>
-              <div className="mt-4">
-                <div className="text-sm mb-2">Pick an avatar</div>
-                <div className="grid grid-cols-6 gap-3">
-                  {defaultAvatars.map((emoji)=> (
-                    <button key={emoji} onClick={()=>{setAvatar(emoji); setUploadPreview(null);}} className={`p-3 rounded-xl border text-2xl hover:scale-110 transition ${avatar===emoji? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50 dark:bg-blue-500/10':'border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}>
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           )}
@@ -196,17 +166,7 @@ export default function Onboarding() {
 
           {step === 5 && stepCard(
             <div>
-              <div className="text-lg font-semibold mb-2">Profile Picture (optional)</div>
-              <div className="flex items-center gap-4">
-                <input type="file" accept="image/*" onChange={(e)=>{const f=e.target.files?.[0]; if (f) handleFile(f);}} />
-                {(uploadPreview || avatar) && <img src={uploadPreview || avatar || ''} alt="preview" className="w-16 h-16 rounded-xl border"/>}
-              </div>
-            </div>
-          )}
-
-          {step === 6 && stepCard(
-            <div>
-              <div className="text-lg font-semibold mb-4">Terms & Privacy Consent</div>
+              <div className="text-lg font-semibold mb-4">Terms of Service</div>
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                   <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">📋 Terms of Service</h3>
@@ -221,59 +181,23 @@ export default function Onboarding() {
                       className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm text-blue-700 dark:text-blue-300">
-                      I agree to the <a href="/terms" className="underline hover:no-underline">Terms of Service</a> and <a href="/privacy" className="underline hover:no-underline">Privacy Policy</a>
+                      I agree to the <a href="/terms" className="underline hover:no-underline">Terms of Service</a>
                     </span>
                   </label>
                 </div>
 
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">🔒 Privacy Settings</h3>
-                  <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                    You can change these settings anytime in your profile. We respect your privacy choices.
-                  </p>
-                  
-                  <div className="space-y-3">
-                    {[
-                      { key: 'dataCollection', label: 'Data Collection', desc: 'Allow us to collect your wellness data to provide personalized insights' },
-                      { key: 'analytics', label: 'Analytics', desc: 'Help us improve the app with anonymous usage analytics' },
-                      { key: 'personalization', label: 'Personalization', desc: 'Enable personalized recommendations and content' },
-                      { key: 'notifications', label: 'Notifications', desc: 'Receive wellness reminders and motivational messages' },
-                      { key: 'dataSharing', label: 'Data Sharing', desc: 'Share anonymized data for research (optional)' }
-                    ].map(item => (
-                      <label key={item.key} className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={privacyConsent[item.key as keyof typeof privacyConsent]}
-                          onChange={(e) => setPrivacyConsent(prev => ({
-                            ...prev,
-                            [item.key]: e.target.checked
-                          }))}
-                          className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm text-green-800 dark:text-green-200">{item.label}</div>
-                          <div className="text-xs text-green-600 dark:text-green-400">{item.desc}</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           )}
 
-          {step === 7 && stepCard(
+          {step === 6 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
                 <div className="flex items-center gap-3">
-                  {uploadPreview ? (
-                    <img src={uploadPreview} className="w-12 h-12 rounded-xl border" alt="avatar"/>
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
-                      {avatar || '🌟'}
-                    </div>
-                  )}
+                  <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
+                    🌟
+                  </div>
                   <div>
                     <div className="font-bold">{name} @{username}</div>
                     <div className="text-sm opacity-70">Focus: {focusAreas.join(', ')}</div>
@@ -282,14 +206,6 @@ export default function Onboarding() {
                 <div className="mt-3 text-sm">Mood: {moodBaseline.join(' ')}</div>
                 <div className="mt-1 text-sm">Preferred Therapy: {preferredTherapy || '—'}</div>
                 <div className="mt-1 text-sm">Reminder: {reminderTime}</div>
-                <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <div className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">Privacy Consent:</div>
-                  <div className="text-xs text-green-700 dark:text-green-300">
-                    {Object.entries(privacyConsent).filter(([_, value]) => value).map(([key, _]) => 
-                      key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
-                    ).join(', ')}
-                  </div>
-                </div>
                 <div className="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold">Starting Aura Points: 0</div>
                 <div className="mt-4 text-lg">Welcome, {name}. Your Aura journey starts now 🌟</div>
               </div>

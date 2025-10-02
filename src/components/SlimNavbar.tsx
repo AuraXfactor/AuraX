@@ -28,9 +28,9 @@ export default function SlimNavbar() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <img src="/ryd-logo.svg" alt="AuraX" className="w-8 h-8" />
+              <img src="/auraz-logo.svg" alt="AuraZ" className="w-8 h-8" />
               <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
-                AuraX
+                AuraZ
               </span>
             </Link>
 
@@ -153,6 +153,28 @@ export default function SlimNavbar() {
             >
               <span className="text-xl">⚙️</span>
               <span>Settings</span>
+            </Link>
+            
+            <button
+              onClick={() => {
+                setShowMobileMenu(false);
+                // Trigger tour guide
+                const event = new CustomEvent('startTour');
+                window.dispatchEvent(event);
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            >
+              <span className="text-xl">🎯</span>
+              <span>App Tour</span>
+            </button>
+            
+            <Link 
+              href="/therapy-support" 
+              onClick={() => setShowMobileMenu(false)}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            >
+              <span className="text-xl">🫂</span>
+              <span>Therapy Support</span>
             </Link>
             
             <hr className="border-gray-200 dark:border-gray-700" />

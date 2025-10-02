@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
@@ -348,12 +349,53 @@ export default function SettingsPage() {
             </div>
           </div>
 
-        {/* Privacy Consent Management */}
+          {/* Privacy Consent Management */}
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
           <h2 className="text-2xl font-semibold mb-4">🔒 Privacy & Consent Management</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
             Manage your privacy preferences and consent settings. You can change these anytime.
           </p>
+
+          {/* Legal Documents & User Agreements */}
+          <div className="mb-6 grid md:grid-cols-2 gap-4">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                    📋 Terms of Service
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Read our terms and conditions for using AuraZ.
+                  </p>
+                </div>
+                <Link
+                  href="/terms"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium"
+                >
+                  View Terms
+                </Link>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-1">
+                    🔒 Privacy Policy
+                  </h3>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Learn how we protect your data and privacy.
+                  </p>
+                </div>
+                <Link
+                  href="/privacy"
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm font-medium"
+                >
+                  View Privacy
+                </Link>
+              </div>
+            </div>
+          </div>
 
           {/* Ethical Concerns Button */}
           <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">

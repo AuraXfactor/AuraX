@@ -21,7 +21,7 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
-    title: '🌟 Welcome to AuraX!',
+    title: '🌟 Welcome to AuraZ!',
     description: 'Your personal wellness companion. Let\'s take a quick tour to get you started on your journey.',
     target: 'body',
     position: 'center',

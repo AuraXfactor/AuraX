@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTourGuide } from '@/components/TourGuide';
 import { useLeftSwipeMenu } from '@/components/LeftSwipeMenu';
+import { useOfflineSync } from '@/utils/offlineStorage';
 import TourGuide from '@/components/TourGuide';
 import LeftSwipeMenu from '@/components/LeftSwipeMenu';
 
@@ -14,6 +15,23 @@ export default function ClientAppWrapper({ children }: ClientAppWrapperProps) {
   const { user } = useAuth();
   const { isActive: tourActive, startTour, completeTour, skipTour, shouldShowTour } = useTourGuide();
   const { isOpen: menuOpen, openMenu, closeMenu } = useLeftSwipeMenu();
+  const { isOnline, syncStatus, triggerSync } = useOfflineSync();
+
+  // Initialize offline sync
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const initOfflineSync = async () => {
+        try {
+          const { syncManager } = await import('@/utils/offlineStorage');
+          await syncManager.init();
+        } catch (error) {
+          console.error('Failed to initialize offline sync:', error);
+        }
+      };
+      
+      initOfflineSync();
+    }
+  }, []);
 
   // Auto-start tour for new users only after onboarding completion
   React.useEffect(() => {
@@ -38,6 +56,49 @@ export default function ClientAppWrapper({ children }: ClientAppWrapperProps) {
       checkOnboardingComplete();
     }
   }, [user, shouldShowTour, startTour]);
+
+  // Listen for tour start events from menu
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleStartTour = () => {
+        startTour();
+      };
+
+      window.addEventListener('startTour', handleStartTour);
+      return () => window.removeEventListener('startTour', handleStartTour);
+    }
+  }, [startTour]);
+
+  // Auto-sync when coming back online
+  React.useEffect(() => {
+    if (isOnline && syncStatus === 'idle') {
+      triggerSync();
+    }
+  }, [isOnline, syncStatus, triggerSync]);
+
+  // Show/hide offline indicators
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const offlineIndicator = document.getElementById('offline-indicator');
+      const syncIndicator = document.getElementById('sync-indicator');
+      
+      if (offlineIndicator) {
+        if (!isOnline) {
+          offlineIndicator.classList.remove('hidden');
+        } else {
+          offlineIndicator.classList.add('hidden');
+        }
+      }
+      
+      if (syncIndicator) {
+        if (syncStatus === 'syncing') {
+          syncIndicator.classList.remove('hidden');
+        } else {
+          syncIndicator.classList.add('hidden');
+        }
+      }
+    }
+  }, [isOnline, syncStatus]);
 
   return (
     <>

@@ -72,13 +72,6 @@ export type OnboardingProfile = {
   reminderTime: 'Morning' | 'Afternoon' | 'Evening';
   moodBaseline: string[]; // emojis
   termsAccepted: boolean;
-  privacyConsent: {
-    dataCollection: boolean;
-    analytics: boolean;
-    personalization: boolean;
-    notifications: boolean;
-    dataSharing: boolean;
-  };
 };
 
 export async function saveOnboardingProfile(user: User, profile: OnboardingProfile) {
@@ -93,7 +86,6 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
     reminderTime: profile.reminderTime,
     moodBaseline: profile.moodBaseline,
     termsAccepted: profile.termsAccepted,
-    privacyConsent: profile.privacyConsent,
     auraPoints: 0,
     createdAt: serverTimestamp(),
     lastLogin: serverTimestamp(),
