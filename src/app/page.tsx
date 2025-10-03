@@ -32,11 +32,11 @@ export default function Home() {
       <section className="max-w-5xl mx-auto text-center">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-4">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500">
-            Your Vibe, Your Tribe ✈️💰⚽️🏀
+            Your Vibe, Your Tribe ✨
           </span>
         </h1>
         <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
-          Hosber at mental wellness with journals, self helptools, lifestyle and streaks🔥
+           Aura farming with journals, self helptools, lifestyle and streaks🔥
               🚀 Pull up and vibe with the 🤞crew, 📝journal your feels, flex your growth, and stay locked in with the dopest community while you earn Aura Points🔥
         </p>
 
