@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false, // Keep TypeScript error checking
   },
+  // Ensure Google Analytics works with Vercel
+  async rewrites() {
+    return [];
+  },
   headers: async () => {
     return [
       {
