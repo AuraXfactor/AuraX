@@ -83,7 +83,7 @@ export async function getFriendsFromChats(userId: string): Promise<UnifiedFriend
                 isOnline: profile.isOnline || false,
                 lastSeen: profile.lastSeen,
                 joinedAt: participant?.joinedAt || chatData.createdAt,
-                auraPoints: profile.auraPoints || 0,
+                auraPoints: (profile as any).auraPoints || 0,
                 mutualConnections: 0, // We'll calculate this separately if needed
                 sharedInterests: profile.interests || [],
                 chatId: chatDoc.id,
@@ -234,9 +234,9 @@ export async function getMutualConnectionsCount(
 }
 
 // Search public profiles for friend discovery
-export async function searchPublicProfiles(query: string): Promise<any[]> {
+export async function searchPublicProfiles(searchQuery: string): Promise<any[]> {
   try {
-    console.log('🔍 Searching public profiles:', query);
+    console.log('🔍 Searching public profiles:', searchQuery);
     
     // For now, we'll use a simple approach
     // In a real app, you'd want to implement proper search indexing
@@ -252,7 +252,7 @@ export async function searchPublicProfiles(query: string): Promise<any[]> {
     })) as any[];
     
     // Filter by search query
-    const lowercaseQuery = query.toLowerCase();
+    const lowercaseQuery = searchQuery.toLowerCase();
     const filteredProfiles = profiles.filter(profile => 
       profile.name?.toLowerCase().includes(lowercaseQuery) ||
       profile.username?.toLowerCase().includes(lowercaseQuery) ||
