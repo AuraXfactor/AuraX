@@ -2,18 +2,13 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import FriendSearch from '@/components/social/FriendSearch';
-import EnhancedFriendRequests from '@/components/social/EnhancedFriendRequests';
-import EnhancedFriendSuggestions from '@/components/social/EnhancedFriendSuggestions';
-import FriendsList from '@/components/social/FriendsList';
-import AuraFamilyList from '@/components/social/AuraFamilyList';
-import UniversalAuraFamList from '@/components/social/UniversalAuraFamList';
-import SocialFeed from '@/components/social/SocialFeed';
+import FamSearch from '@/components/social/FamSearch';
+import FamRequests from '@/components/social/FamRequests';
+import FamList from '@/components/social/FamList';
 
 const tabs = [
   { id: 'friends', label: 'Aura Fam', icon: '👨‍👩‍👧‍👦' },
   { id: 'discover', label: 'Discover', icon: '🔍' },
-  { id: 'suggestions', label: 'Suggestions', icon: '💡' },
   { id: 'requests', label: 'Fam Requests', icon: '📬' },
 ];
 
@@ -90,10 +85,9 @@ function FriendsPageContent() {
 
         {/* Tab Content */}
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-          {activeTab === 'friends' && <UniversalAuraFamList onMemberRemoved={handleRequestsUpdate} />}
-          {activeTab === 'discover' && <FriendSearch onRequestSent={handleRequestsUpdate} />}
-          {activeTab === 'suggestions' && <EnhancedFriendSuggestions onRequestSent={handleRequestsUpdate} />}
-          {activeTab === 'requests' && <EnhancedFriendRequests onRequestHandled={handleRequestsUpdate} />}
+          {activeTab === 'friends' && <FamList onMemberRemoved={handleRequestsUpdate} />}
+          {activeTab === 'discover' && <FamSearch onRequestSent={handleRequestsUpdate} />}
+          {activeTab === 'requests' && <FamRequests onRequestHandled={handleRequestsUpdate} />}
         </div>
       </div>
     </div>

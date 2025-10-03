@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { ensureUserProfile } from '@/lib/userProfile';
+import { autoMigrateUserFriends } from '@/lib/migrateToFamSystem';
 
 interface AuthContextType {
   user: User | null;
@@ -22,7 +23,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        try { await ensureUserProfile(user); } catch {}
+        try { 
+          await ensureUserProfile(user);
+          await autoMigrateUserFriends(user);
+        } catch {}
       }
       setLoading(false);
     });
