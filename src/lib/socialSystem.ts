@@ -73,11 +73,18 @@ export type Group = {
   isPublic: boolean;
   members: { [userId: string]: boolean };
   admins: { [userId: string]: boolean };
+  memberRoles?: { [userId: string]: string };
+  memberJoinedAt?: { [userId: string]: any };
+  memberAddedBy?: { [userId: string]: string };
   createdAt: Timestamp | FieldValue | null;
   memberCount: number;
   avatar?: string;
   tags?: string[];
   lastActivity?: Timestamp | FieldValue | null;
+  messagePermission?: 'everyone' | 'admins_only';
+  invitePermission?: 'everyone' | 'admins_only';
+  allowMemberInvites?: boolean;
+  allowFileSharing?: boolean;
 };
 
 export type ChatMessage = {

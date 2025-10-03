@@ -1,6 +1,7 @@
 'use client';
 import React, { Suspense } from 'react';
 import MessagingHub from '@/components/messaging/MessagingHub';
+import ChatPerformanceMonitor from '@/components/performance/ChatPerformanceMonitor';
 
 function MessagesContent() {
   return (
@@ -20,6 +21,9 @@ function MessagesContent() {
         <div className="h-[calc(100vh-140px)]">
           <MessagingHub className="w-full h-full" />
         </div>
+        
+        {/* Performance Monitor */}
+        <ChatPerformanceMonitor />
       </div>
     </div>
   );

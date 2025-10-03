@@ -259,7 +259,7 @@ export default function FriendSearch({ onRequestSent }: FriendSearchProps) {
                 Sending...
               </div>
             ) : (
-              'Add Friend'
+              'Add Fam'
             )}
           </button>
         )}

@@ -1,9 +1,11 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { logOut } from '@/lib/firebaseAuth';
+import { getFriendRequestCounts } from '@/lib/enhancedFriendSystem';
 import { Bell, Search, Menu, X } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 export default function SlimNavbar() {
   const { user } = useAuth();
@@ -11,6 +13,27 @@ export default function SlimNavbar() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [friendRequestCount, setFriendRequestCount] = useState(0);
+
+  // Load friend request counts
+  useEffect(() => {
+    if (!user) return;
+
+    const loadCounts = async () => {
+      try {
+        const counts = await getFriendRequestCounts(user.uid);
+        setFriendRequestCount(counts.pending);
+      } catch (error) {
+        console.error('Error loading friend request counts:', error);
+      }
+    };
+
+    loadCounts();
+    
+    // Update counts every 30 seconds
+    const interval = setInterval(loadCounts, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -52,18 +75,7 @@ export default function SlimNavbar() {
                   </button>
 
                   {/* Notifications */}
-                  <button
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className={`relative p-2 rounded-xl transition ${
-                      showNotifications 
-                        ? 'bg-purple-500 text-white' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-500'
-                    }`}
-                    title="Notifications"
-                  >
-                    <Bell size={18} />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
+                  <NotificationCenter />
 
                   {/* Profile Menu */}
                   <button

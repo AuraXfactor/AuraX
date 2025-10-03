@@ -27,6 +27,18 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
     }
   }, [user]);
 
+  // Listen for refresh events
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (user) {
+        loadFriends();
+      }
+    };
+
+    window.addEventListener('refreshFriendsList', handleRefresh);
+    return () => window.removeEventListener('refreshFriendsList', handleRefresh);
+  }, [user]);
+
   const loadFriends = async () => {
     if (!user) return;
     
@@ -118,7 +130,7 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search friends..."
+            placeholder="Search Aura Family..."
             className="w-full px-4 py-2.5 pl-10 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -150,14 +162,14 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
       {filteredAndSortedFriends.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">
-            {friends.length === 0 ? '👥' : '🔍'}
+            {friends.length === 0 ? '👨‍👩‍👧‍👦' : '🔍'}
           </div>
           <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-            {friends.length === 0 ? 'No friends yet' : 'No friends found'}
+            {friends.length === 0 ? 'No Aura Family yet' : 'No family found'}
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
             {friends.length === 0 
-              ? 'Start by discovering people or searching for friends!'
+              ? 'Start by discovering your Aura Family or searching for connections!'
               : 'Try adjusting your search or sort criteria'
             }
           </p>

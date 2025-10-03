@@ -20,6 +20,8 @@ import {
   formatMessageTime
 } from '@/lib/messaging';
 import { getPublicProfile, PublicProfile, searchUsers } from '@/lib/socialSystem';
+import { profileCache, loadProfilesBatch } from '@/lib/profileCache';
+import { measurePerformance, debounce } from '@/lib/chatOptimizations';
 
 interface GroupChatInterfaceProps {
   groupId?: string; // If provided, join existing group
@@ -37,7 +39,7 @@ export default function GroupChatInterface({
   // State
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [participantProfiles, setParticipantProfiles] = useState<{ [userId: string]: PublicProfile }>({});
+  const [participantProfiles, setParticipantProfiles] = useState<{ [userId: string]: PublicProfile | null }>({});
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -139,20 +141,23 @@ export default function GroupChatInterface({
     };
   }, [chatId, user, isCreatingGroup]);
 
-  // Search for users to add to group
-  useEffect(() => {
-    if (!searchQuery.trim() || !user) {
-      setSearchResults([]);
-      return;
-    }
-    
-    const searchTimeout = setTimeout(async () => {
+  // Debounced search for users to add to group
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (!query.trim() || !user) {
+        setSearchResults([]);
+        return;
+      }
+      
       try {
-        const results = await searchUsers({
-          query: searchQuery,
-          currentUserId: user.uid,
-          limitCount: 10,
-        });
+        const results = await measurePerformance(
+          'User Search',
+          () => searchUsers({
+            query,
+            currentUserId: user.uid,
+            limitCount: 10,
+          })
+        );
         
         // Filter out already selected participants
         const filteredResults = results.filter(profile => 
@@ -163,11 +168,16 @@ export default function GroupChatInterface({
         setSearchResults(filteredResults);
       } catch (error) {
         console.error('Error searching users:', error);
+        setSearchResults([]);
       }
-    }, 300);
-    
-    return () => clearTimeout(searchTimeout);
-  }, [searchQuery, user, selectedParticipants]);
+    }, 300),
+    [user, selectedParticipants]
+  );
+
+  // Search for users to add to group
+  useEffect(() => {
+    debouncedSearch(searchQuery);
+  }, [searchQuery, debouncedSearch]);
 
   const initializeExistingGroup = async () => {
     if (!user || !groupId) {
@@ -199,18 +209,12 @@ export default function GroupChatInterface({
     console.log('👥 Loading participant profiles...', { participantIds: ids });
     
     try {
-      const profiles = await Promise.all(
-        ids.map(id => getPublicProfile(id))
+      const profiles = await measurePerformance(
+        'Participant Profiles Loading',
+        () => loadProfilesBatch(ids, getPublicProfile)
       );
       
-      const profileMap: { [userId: string]: PublicProfile } = {};
-      profiles.forEach((profile, index) => {
-        if (profile) {
-          profileMap[ids[index]] = profile;
-        }
-      });
-      
-      setParticipantProfiles(prev => ({ ...prev, ...profileMap }));
+      setParticipantProfiles(prev => ({ ...prev, ...profiles }));
       console.log('✅ Participant profiles loaded');
     } catch (error) {
       console.error('❌ Error loading participant profiles:', error);

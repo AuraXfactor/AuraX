@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   listenToUserChats,
@@ -7,6 +7,8 @@ import {
   formatMessageTime
 } from '@/lib/messaging';
 import { getPublicProfile, PublicProfile } from '@/lib/socialSystem';
+import { profileCache, loadProfilesBatch } from '@/lib/profileCache';
+import { debounce } from '@/lib/chatOptimizations';
 
 interface ChatListProps {
   onChatSelect: (chat: Chat) => void;
@@ -27,18 +29,18 @@ export default function ChatList({
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [profileCache, setProfileCache] = useState<{ [userId: string]: PublicProfile }>({});
+  const [profileCache, setProfileCache] = useState<{ [userId: string]: PublicProfile | null }>({});
 
-  // Load user's chats
+  // Optimized chat loading with batch profile fetching
   useEffect(() => {
     if (!user) return;
     
-    console.log('🔄 Setting up user chats listener...');
+    console.log('🔄 Setting up optimized user chats listener...');
     
     const unsubscribe = listenToUserChats(user.uid, async (userChats) => {
       console.log('💬 Received chats update:', userChats.length);
       
-      // Load profiles for all participants
+      // Collect all participant IDs efficiently
       const allParticipantIds = new Set<string>();
       userChats.forEach(chat => {
         Object.keys(chat.participants).forEach(id => {
@@ -48,21 +50,17 @@ export default function ChatList({
         });
       });
       
-      // Load missing profiles
-      const missingProfiles = Array.from(allParticipantIds).filter(id => !profileCache[id]);
-      if (missingProfiles.length > 0) {
-        const profiles = await Promise.all(
-          missingProfiles.map(id => getPublicProfile(id))
-        );
-        
-        const newProfileCache = { ...profileCache };
-        profiles.forEach((profile, index) => {
-          if (profile) {
-            newProfileCache[missingProfiles[index]] = profile;
-          }
-        });
-        
-        setProfileCache(newProfileCache);
+      // Batch load all profiles at once using cache
+      if (allParticipantIds.size > 0) {
+        try {
+          const profiles = await loadProfilesBatch(
+            Array.from(allParticipantIds), 
+            getPublicProfile
+          );
+          setProfileCache(profiles);
+        } catch (error) {
+          console.warn('Failed to load some profiles:', error);
+        }
       }
       
       setChats(userChats);
@@ -73,25 +71,36 @@ export default function ChatList({
       console.log('🔄 Cleaning up chats listener');
       unsubscribe();
     };
-  }, [user, profileCache]);
+  }, [user]);
 
-  const filteredChats = chats.filter(chat => {
-    if (!searchQuery.trim()) return true;
+  // Debounced search to prevent excessive filtering
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      // Search logic is handled in the memoized filteredChats
+    }, 300),
+    []
+  );
+
+  // Memoized filtered chats for performance
+  const filteredChats = useMemo(() => {
+    if (!searchQuery.trim()) return chats;
     
     const query = searchQuery.toLowerCase();
     
-    // For group chats, search by name
-    if (chat.type === 'group') {
-      return chat.name?.toLowerCase().includes(query);
-    }
-    
-    // For direct messages, search by participant name
-    const otherParticipants = Object.keys(chat.participants).filter(id => id !== user?.uid);
-    return otherParticipants.some(id => {
-      const profile = profileCache[id];
-      return profile?.name.toLowerCase().includes(query);
+    return chats.filter(chat => {
+      // For group chats, search by name
+      if (chat.type === 'group') {
+        return chat.name?.toLowerCase().includes(query);
+      }
+      
+      // For direct messages, search by participant name
+      const otherParticipants = Object.keys(chat.participants).filter(id => id !== user?.uid);
+      return otherParticipants.some(id => {
+        const profile = profileCache[id];
+        return profile?.name.toLowerCase().includes(query);
+      });
     });
-  });
+  }, [chats, searchQuery, profileCache, user?.uid]);
 
   const getChatDisplayInfo = (chat: Chat) => {
     if (chat.type === 'group') {

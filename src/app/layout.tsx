@@ -101,11 +101,11 @@ export default function RootLayout({
               </div>
             </div>
             
-            {/* Sync Status Indicator */}
+            {/* Sync Status Indicator - Less intrusive */}
             <div id="sync-indicator" className="fixed top-16 right-4 z-50 hidden">
-              <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-                <span className="text-sm">🔄</span>
-                <span className="text-sm font-medium">Syncing data...</span>
+              <div className="bg-blue-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="font-medium">Syncing...</span>
               </div>
             </div>
           </ThemeProvider>
