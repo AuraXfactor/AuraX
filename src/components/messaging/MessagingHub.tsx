@@ -1,11 +1,13 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Chat } from '@/lib/messaging';
 import ChatList from './ChatList';
 import DirectMessageInterface from './DirectMessageInterface';
 import GroupChatInterface from './GroupChatInterface';
 import { searchUsers, PublicProfile } from '@/lib/socialSystem';
+import { profileCache } from '@/lib/profileCache';
+import { measurePerformance, debounce } from '@/lib/chatOptimizations';
 
 type ViewMode = 'list' | 'direct' | 'group' | 'new-dm' | 'new-group';
 
@@ -57,21 +59,24 @@ export default function MessagingHub({
     }
   }, [initialChatId, initialOtherUserId]);
 
-  // Search for users when creating new DM/Group
-  useEffect(() => {
-    if (!searchQuery.trim() || !user || viewMode === 'list') {
-      setSearchResults([]);
-      return;
-    }
-    
-    const searchTimeout = setTimeout(async () => {
+  // Debounced search for users when creating new DM/Group
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (!query.trim() || !user || viewMode === 'list') {
+        setSearchResults([]);
+        return;
+      }
+      
       setSearchLoading(true);
       try {
-        const results = await searchUsers({
-          query: searchQuery,
-          currentUserId: user.uid,
-          limitCount: 10,
-        });
+        const results = await measurePerformance(
+          'User Search',
+          () => searchUsers({
+            query,
+            currentUserId: user.uid,
+            limitCount: 10,
+          })
+        );
         
         // Filter out already selected participants
         const filteredResults = results.filter(profile => 
@@ -86,10 +91,14 @@ export default function MessagingHub({
       } finally {
         setSearchLoading(false);
       }
-    }, 300);
-    
-    return () => clearTimeout(searchTimeout);
-  }, [searchQuery, user, selectedParticipants, viewMode]);
+    }, 300),
+    [user, selectedParticipants, viewMode]
+  );
+
+  // Search for users when creating new DM/Group
+  useEffect(() => {
+    debouncedSearch(searchQuery);
+  }, [searchQuery, debouncedSearch]);
 
   const handleChatSelect = (chat: Chat) => {
     setSelectedChat(chat);

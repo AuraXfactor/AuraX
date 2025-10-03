@@ -19,6 +19,8 @@ import {
   formatMessageTime
 } from '@/lib/messaging';
 import { getPublicProfile, PublicProfile } from '@/lib/socialSystem';
+import { profileCache } from '@/lib/profileCache';
+import { measurePerformance } from '@/lib/chatOptimizations';
 
 interface DirectMessageInterfaceProps {
   otherUserId: string;
@@ -137,10 +139,13 @@ export default function DirectMessageInterface({
       setError(null);
       setLoading(true);
       
-      // Load other user's profile
+      // Load other user's profile with caching
       console.log('👤 Loading other user profile...', { otherUserId });
       try {
-        const profile = await getPublicProfile(otherUserId);
+        const profile = await measurePerformance(
+          'Profile Loading',
+          () => profileCache.getProfile(otherUserId, getPublicProfile)
+        );
         setOtherUserProfile(profile);
         console.log('✅ Profile loaded:', profile?.name || 'No name');
       } catch (profileError) {
