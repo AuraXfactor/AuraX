@@ -40,7 +40,9 @@ function FriendsPageContent() {
 
   const handleRequestsUpdate = () => {
     // This will be called when requests are handled
-    console.log('Friend requests updated');
+    console.log('Friend requests updated - refreshing friends list');
+    // Force a page refresh to show the new friend immediately
+    window.location.reload();
   };
 
   if (!user) {

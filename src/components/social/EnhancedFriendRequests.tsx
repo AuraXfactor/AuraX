@@ -54,16 +54,40 @@ export default function EnhancedFriendRequests({
       
       onRequestHandled?.();
       
-      // Show success message
+      // Show success message with toast notification
       const message = response === 'accepted' 
-        ? 'Friend request accepted!' 
-        : 'Friend request declined';
+        ? '✅ Friend request accepted! They are now in your friends list.' 
+        : '❌ Friend request declined';
       
-      console.log(message);
+      // Create a temporary success message element
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse';
+      successDiv.innerHTML = `
+        <span>${response === 'accepted' ? '✅' : '❌'}</span>
+        <span>${message}</span>
+      `;
+      document.body.appendChild(successDiv);
+      
+      // Remove the message after 3 seconds
+      setTimeout(() => {
+        successDiv.remove();
+      }, 3000);
       
     } catch (error) {
       console.error(`Error ${response} friend request:`, error);
-      alert(`Failed to ${response} friend request`);
+      
+      // Show error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2';
+      errorDiv.innerHTML = `
+        <span>❌</span>
+        <span>Failed to ${response} friend request</span>
+      `;
+      document.body.appendChild(errorDiv);
+      
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 3000);
     } finally {
       setActionLoading(null);
     }
