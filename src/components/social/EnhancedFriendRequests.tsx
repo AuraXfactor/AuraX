@@ -27,7 +27,7 @@ export default function EnhancedFriendRequests({
   const [counts, setCounts] = useState<FriendRequestCounts>({ pending: 0, sent: 0, received: 0 });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const [activeTab, setActiveTab] = useState<'received' | 'sent' | 'accepted' | 'declined'>('received');
 
   useEffect(() => {
     if (!user) return;
@@ -56,11 +56,11 @@ export default function EnhancedFriendRequests({
         response,
       });
       
-      // If accepted, trigger Aura Family refresh
+      // If accepted, trigger Universal Aura Fam refresh
       if (response === 'accepted' && request) {
         // Small delay to ensure friend request processing is complete
         setTimeout(() => {
-          const event = new CustomEvent('auraFamilyUpdated', {
+          const event = new CustomEvent('universalAuraFamUpdated', {
             detail: { action: 'memberAdded', memberName: fromName }
           });
           window.dispatchEvent(event);
@@ -185,10 +185,30 @@ export default function EnhancedFriendRequests({
         >
           Sent ({counts.sent})
         </button>
+        <button
+          onClick={() => setActiveTab('accepted')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === 'accepted'
+              ? 'border-green-500 text-green-600 dark:text-green-400'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          Accepted
+        </button>
+        <button
+          onClick={() => setActiveTab('declined')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === 'declined'
+              ? 'border-red-500 text-red-600 dark:text-red-400'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          Declined
+        </button>
       </div>
 
       {/* Content */}
-      {activeTab === 'received' ? (
+      {activeTab === 'received' && (
         receivedRequests.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📬</div>
@@ -331,7 +351,9 @@ export default function EnhancedFriendRequests({
             ))}
           </div>
         )
-      ) : (
+      )}
+      
+      {activeTab === 'sent' && (
         sentRequests.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📤</div>
@@ -429,6 +451,30 @@ export default function EnhancedFriendRequests({
             ))}
           </div>
         )
+      )}
+      
+      {activeTab === 'accepted' && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">✅</div>
+          <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+            Accepted Requests
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            These are your accepted fam members. They should appear in your Aura Fam list.
+          </p>
+        </div>
+      )}
+      
+      {activeTab === 'declined' && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">❌</div>
+          <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+            Declined Requests
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            These are requests that were declined. You can send a new request if you want to try again.
+          </p>
+        </div>
       )}
     </div>
   );

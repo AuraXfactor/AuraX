@@ -7,6 +7,7 @@ import EnhancedFriendRequests from '@/components/social/EnhancedFriendRequests';
 import EnhancedFriendSuggestions from '@/components/social/EnhancedFriendSuggestions';
 import FriendsList from '@/components/social/FriendsList';
 import AuraFamilyList from '@/components/social/AuraFamilyList';
+import UniversalAuraFamList from '@/components/social/UniversalAuraFamList';
 import SocialFeed from '@/components/social/SocialFeed';
 
 const tabs = [
@@ -89,7 +90,7 @@ function FriendsPageContent() {
 
         {/* Tab Content */}
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-          {activeTab === 'friends' && <AuraFamilyList onMemberRemoved={handleRequestsUpdate} />}
+          {activeTab === 'friends' && <UniversalAuraFamList onMemberRemoved={handleRequestsUpdate} />}
           {activeTab === 'discover' && <FriendSearch onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'suggestions' && <EnhancedFriendSuggestions onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'requests' && <EnhancedFriendRequests onRequestHandled={handleRequestsUpdate} />}
