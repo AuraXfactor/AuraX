@@ -3,15 +3,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
-  getFamMembers,
-  getFamStats,
-  listenToFamChanges,
-  removeFamMember,
-  searchFamMembers,
-  sortFamMembers,
-  FamMember,
-  FamStats
-} from '@/lib/famTrackingSystem';
+  getFriendsFromChats,
+  getFriendStats,
+  searchFriends,
+  sortFriends,
+  UnifiedFriend,
+  UnifiedFriendStats
+} from '@/lib/unifiedFriendSystem';
 
 interface FamListProps {
   onMemberRemoved?: () => void;
@@ -20,8 +18,8 @@ interface FamListProps {
 export default function FamList({ onMemberRemoved }: FamListProps) {
   const { user } = useAuth();
   const router = useRouter();
-  const [famMembers, setFamMembers] = useState<FamMember[]>([]);
-  const [stats, setStats] = useState<FamStats | null>(null);
+  const [famMembers, setFamMembers] = useState<UnifiedFriend[]>([]);
+  const [stats, setStats] = useState<UnifiedFriendStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,13 +30,13 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
     
     setLoading(true);
     try {
-      console.log('🔄 Loading fam members...');
-      const [members, famStats] = await Promise.all([
-        getFamMembers(user.uid),
-        getFamStats(user.uid)
+      console.log('🔄 Loading fam members from chat participants...');
+      const [members, friendStats] = await Promise.all([
+        getFriendsFromChats(user.uid),
+        getFriendStats(user.uid)
       ]);
       setFamMembers(members);
-      setStats(famStats);
+      setStats(friendStats);
       console.log('✅ Fam members loaded:', members.length);
     } catch (error) {
       console.error('Error loading fam members:', error);
@@ -53,43 +51,31 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
     }
   }, [user, loadFamMembers]);
 
-  // Listen for fam changes
+  // Listen for fam changes - refresh when needed
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribe = listenToFamChanges(user.uid, (members, famStats) => {
-      setFamMembers(members);
-      setStats(famStats);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // Listen for custom fam update events
-  useEffect(() => {
     const handleFamUpdate = () => {
-      if (user) {
-        console.log('🔄 Fam update event received, refreshing...');
-        loadFamMembers();
-      }
+      console.log('🔄 Fam update event received, refreshing...');
+      loadFamMembers();
     };
 
     window.addEventListener('famUpdated', handleFamUpdate);
     return () => window.removeEventListener('famUpdated', handleFamUpdate);
   }, [user, loadFamMembers]);
 
-  const handleRemoveMember = async (member: FamMember) => {
+
+  const handleRemoveMember = async (member: UnifiedFriend) => {
     if (!user || !confirm(`Remove ${member.name} from your Aura Fam?`)) {
       return;
     }
     
     setActionLoading(member.userId);
     try {
-      await removeFamMember({
-        userId: user.uid,
-        famUserId: member.userId,
-      });
+      // For now, we'll just show a message since removing from chat system is complex
+      // In a real implementation, you'd need to handle chat deletion or archiving
+      console.log('🗑️ Removing fam member:', member.userId);
+      alert('Friend removal functionality will be implemented in the next update');
       
       onMemberRemoved?.();
     } catch (error) {
@@ -111,8 +97,8 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
 
   // Filter and sort fam members
   const filteredAndSortedMembers = React.useMemo(() => {
-    const filtered = searchFamMembers(famMembers, searchQuery);
-    return sortFamMembers(filtered, sortBy);
+    const filtered = searchFriends(famMembers, searchQuery);
+    return sortFriends(filtered, sortBy);
   }, [famMembers, searchQuery, sortBy]);
 
   if (loading) {
@@ -131,20 +117,20 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
           <h2 className="text-2xl font-bold mb-4">Aura Fam Stats</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-3xl font-bold">{stats.totalMembers}</div>
+              <div className="text-3xl font-bold">{stats.totalFriends}</div>
               <div className="text-sm opacity-90">Total Fam</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">{stats.activeMembers}</div>
+              <div className="text-3xl font-bold">{stats.activeFriends}</div>
               <div className="text-sm opacity-90">Active Now</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">{stats.newMembersThisWeek}</div>
+              <div className="text-3xl font-bold">{stats.newFriendsThisWeek}</div>
               <div className="text-sm opacity-90">New This Week</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">{stats.pendingRequests}</div>
-              <div className="text-sm opacity-90">Pending Requests</div>
+              <div className="text-3xl font-bold">{stats.totalAuraPoints.toLocaleString()}</div>
+              <div className="text-sm opacity-90">Total Aura Points</div>
             </div>
           </div>
         </div>

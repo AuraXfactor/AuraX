@@ -3,10 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
-  sendFamRequest,
-  getFamMembers,
+  sendFriendRequest
+} from '@/lib/simpleRequestSystem';
+import { 
+  getFriendsFromChats,
   searchPublicProfiles
-} from '@/lib/famTrackingSystem';
+} from '@/lib/unifiedFriendSystem';
 import { 
   getFriendSuggestions, 
   FriendSuggestion 
@@ -37,7 +39,7 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
     if (!user) return;
     
     try {
-      const famMembers = await getFamMembers(user.uid);
+      const famMembers = await getFriendsFromChats(user.uid);
       const famUserIds = famMembers.map(member => member.userId);
       setExistingFam(famUserIds);
     } catch (error) {
@@ -152,9 +154,9 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
     
     setActionLoading(targetUserId);
     try {
-      console.log('📤 Sending fam request:', { targetUserId, targetName });
+      console.log('📤 Sending friend request:', { targetUserId, targetName });
       
-      await sendFamRequest({
+      await sendFriendRequest({
         fromUserId: user.uid,
         toUserId: targetUserId,
         fromName: user.displayName || 'Unknown',
@@ -168,7 +170,7 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
       successDiv.innerHTML = `
         <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-6 rounded-2xl shadow-2xl flex items-center gap-4 animate-bounce max-w-md mx-4 text-center">
           <div class="text-4xl">📤</div>
-          <div class="text-lg font-semibold">Fam request sent to ${targetName}! 🎉</div>
+          <div class="text-lg font-semibold">Friend request sent to ${targetName}! 🎉</div>
         </div>
       `;
       document.body.appendChild(successDiv);
@@ -181,8 +183,8 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
       onRequestSent?.();
       
     } catch (error) {
-      console.error('Error sending fam request:', error);
-      alert('Failed to send fam request');
+      console.error('Error sending friend request:', error);
+      alert('Failed to send friend request');
     } finally {
       setActionLoading(null);
     }
