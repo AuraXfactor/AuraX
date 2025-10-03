@@ -1,8 +1,11 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client with conditional API key
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export interface AuraAIResponse {
   response: string;
@@ -53,8 +56,13 @@ export class AuraAIService {
   async generateEmpatheticResponse(
     userMessage: string,
     context: 'journal' | 'crisis' | 'general' | 'celebration' = 'general',
-    userHistory?: any[]
+    userHistory?: unknown[]
   ): Promise<AuraAIResponse> {
+    // Fallback response if OpenAI is not available
+    if (!openai) {
+      return this.getFallbackResponse(userMessage, context);
+    }
+
     const systemPrompt = this.getSystemPrompt(context);
     
     const messages = [
@@ -83,16 +91,16 @@ export class AuraAIService {
       };
     } catch (error) {
       console.error('OpenAI API error:', error);
-      return {
-        response: "I'm here for you. Sometimes the best support is just knowing someone is listening. How can I help you feel better right now?",
-        mood: 'neutral',
-        sentiment: 'neutral',
-        type: 'empathy'
-      };
+      return this.getFallbackResponse(userMessage, context);
     }
   }
 
   async analyzeJournalEntry(entryText: string, mood: string, activities: string[]): Promise<JournalAnalysis> {
+    // Fallback analysis if OpenAI is not available
+    if (!openai) {
+      return this.getFallbackJournalAnalysis(entryText, mood, activities);
+    }
+
     const prompt = `
 Analyze this journal entry and provide insights:
 
@@ -124,23 +132,20 @@ Provide analysis in JSON format:
       return JSON.parse(response);
     } catch (error) {
       console.error('Journal analysis error:', error);
-      return {
-        mood: 'neutral',
-        sentiment: 0,
-        themes: [],
-        insights: [],
-        recommendations: [],
-        riskFactors: [],
-        positivePatterns: []
-      };
+      return this.getFallbackJournalAnalysis(entryText, mood, activities);
     }
   }
 
   async generateSmartPrompts(
     currentMood: string,
     recentActivities: string[],
-    userHistory?: any[]
+    userHistory?: unknown[]
   ): Promise<SmartPrompt[]> {
+    // Fallback prompts if OpenAI is not available
+    if (!openai) {
+      return this.getFallbackPrompts(currentMood);
+    }
+
     const prompt = `
 Generate 5 personalized journal prompts for someone who is feeling ${currentMood} and has been doing: ${recentActivities.join(', ')}.
 
@@ -173,7 +178,12 @@ Return as JSON array:
     }
   }
 
-  async predictMood(userHistory: any[]): Promise<MoodPrediction> {
+  async predictMood(userHistory: unknown[]): Promise<MoodPrediction> {
+    // Fallback prediction if OpenAI is not available
+    if (!openai) {
+      return this.getFallbackMoodPrediction(userHistory);
+    }
+
     const prompt = `
 Based on this user's journal history, predict their likely mood and provide recommendations:
 
@@ -202,18 +212,16 @@ Return JSON:
       return JSON.parse(response);
     } catch (error) {
       console.error('Mood prediction error:', error);
-      return {
-        predictedMood: 'neutral',
-        confidence: 0.5,
-        riskLevel: 'low',
-        factors: [],
-        recommendations: [],
-        proactiveActions: []
-      };
+      return this.getFallbackMoodPrediction(userHistory);
     }
   }
 
   async generateMotivationalContent(mood: string, context: string): Promise<string[]> {
+    // Fallback content if OpenAI is not available
+    if (!openai) {
+      return this.getFallbackMotivationalContent(mood);
+    }
+
     const prompt = `
 Generate 3 motivational quotes or affirmations for someone feeling ${mood} in this context: ${context}.
 
@@ -238,11 +246,7 @@ Return as JSON array of strings.
       return JSON.parse(response);
     } catch (error) {
       console.error('Motivational content error:', error);
-      return [
-        "You're doing better than you think you are 💪",
-        "Every small step counts - you've got this! ✨",
-        "Your journey is unique and valuable 🌟"
-      ];
+      return this.getFallbackMotivationalContent(mood);
     }
   }
 
@@ -416,6 +420,140 @@ Respond as Aura would - with empathy, understanding, and a touch of swag. Keep r
         context: 'General reflection',
         priority: 'medium'
       }
+    ];
+  }
+
+  private getFallbackResponse(userMessage: string, context: string): AuraAIResponse {
+    const messageLower = userMessage.toLowerCase();
+    const isCrisis = ['sad', 'depressed', 'anxious', 'scared', 'hopeless', 'suicidal', 'hurt', 'pain'].some(word => 
+      messageLower.includes(word)
+    );
+    const isCelebration = ['happy', 'excited', 'proud', 'accomplished', 'grateful', 'amazing', 'wonderful'].some(word => 
+      messageLower.includes(word)
+    );
+
+    let response = '';
+    let type: AuraAIResponse['type'] = 'empathy';
+
+    if (isCrisis) {
+      response = "I can hear that you're going through a really tough time right now. Your feelings are completely valid, and I want you to know that you're not alone in this. Remember, it's okay to not be okay sometimes.";
+      type = 'crisis_support';
+    } else if (isCelebration) {
+      response = "That's absolutely wonderful! I'm so proud of you! Your positive energy is contagious and inspiring. I love hearing about your wins!";
+      type = 'celebration';
+    } else {
+      response = "I'm really glad you're sharing this with me. Your openness and honesty are such beautiful qualities. I'm here to listen and support you in whatever way feels right.";
+      type = 'empathy';
+    }
+
+    return {
+      response,
+      mood: this.extractMood(response),
+      sentiment: this.analyzeSentiment(response),
+      suggestions: this.extractSuggestions(response),
+      activities: this.extractActivities(response),
+      priority: this.determinePriority(userMessage),
+      type
+    };
+  }
+
+  private getFallbackJournalAnalysis(entryText: string, mood: string, activities: string[]): JournalAnalysis {
+    // Simple fallback analysis based on keywords
+    const text = entryText.toLowerCase();
+    const positiveWords = ['happy', 'good', 'great', 'amazing', 'wonderful', 'grateful', 'blessed'];
+    const negativeWords = ['sad', 'bad', 'terrible', 'awful', 'depressed', 'anxious', 'worried'];
+    
+    const positiveCount = positiveWords.filter(word => text.includes(word)).length;
+    const negativeCount = negativeWords.filter(word => text.includes(word)).length;
+    
+    const sentiment = positiveCount > negativeCount ? 0.5 : negativeCount > positiveCount ? -0.5 : 0;
+    
+    return {
+      mood: mood || 'neutral',
+      sentiment,
+      themes: this.extractThemes(entryText),
+      insights: [
+        'Keep journaling regularly to build self-awareness',
+        'Notice patterns in your mood and activities'
+      ],
+      recommendations: [
+        'Try to maintain a consistent journaling routine',
+        'Focus on gratitude and positive experiences'
+      ],
+      riskFactors: negativeCount > 3 ? ['Consider reaching out for support'] : [],
+      positivePatterns: positiveCount > 2 ? ['You show resilience and positivity'] : []
+    };
+  }
+
+  private extractThemes(text: string): string[] {
+    const themes: string[] = [];
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('work') || lowerText.includes('job')) themes.push('work');
+    if (lowerText.includes('family') || lowerText.includes('parent')) themes.push('family');
+    if (lowerText.includes('friend') || lowerText.includes('social')) themes.push('relationships');
+    if (lowerText.includes('health') || lowerText.includes('exercise')) themes.push('health');
+    if (lowerText.includes('future') || lowerText.includes('goal')) themes.push('goals');
+    
+    return themes;
+  }
+
+  private getFallbackMoodPrediction(userHistory: unknown[]): MoodPrediction {
+    // Simple fallback prediction based on recent entries
+    const recentMoods = userHistory.slice(-5).map((entry: any) => entry.moodTag || 'neutral');
+    const moodCounts = recentMoods.reduce((acc, mood) => {
+      acc[mood] = (acc[mood] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const dominantMood = Object.keys(moodCounts).reduce((a, b) => 
+      moodCounts[a] > moodCounts[b] ? a : b, 'neutral'
+    );
+    
+    return {
+      predictedMood: dominantMood,
+      confidence: 0.6,
+      riskLevel: dominantMood === 'sad' || dominantMood === 'anxious' ? 'medium' : 'low',
+      factors: ['Recent mood patterns', 'Journaling consistency'],
+      recommendations: [
+        'Continue your journaling practice',
+        'Focus on self-care activities'
+      ],
+      proactiveActions: [
+        'Try a 5-minute meditation',
+        'Take a walk outside'
+      ]
+    };
+  }
+
+  private getFallbackMotivationalContent(mood: string): string[] {
+    const contentByMood: Record<string, string[]> = {
+      'sad': [
+        "You're stronger than you know 💪",
+        "This feeling is temporary - you've got this! ✨",
+        "Every storm passes, and so will this 🌈"
+      ],
+      'happy': [
+        "Your joy is contagious! Keep shining! 🌟",
+        "You're absolutely crushing it! 🔥",
+        "This positive energy is everything! 💫"
+      ],
+      'anxious': [
+        "Breathe. You're safe. You're okay. 🧘‍♀️",
+        "One step at a time - you've got this! 👣",
+        "You're braver than you believe 💪"
+      ],
+      'neutral': [
+        "You're exactly where you need to be 🌟",
+        "Every day is a new opportunity ✨",
+        "You're doing great, keep going! 💪"
+      ]
+    };
+    
+    return contentByMood[mood] || [
+      "You're doing better than you think you are 💪",
+      "Every small step counts - you've got this! ✨",
+      "Your journey is unique and valuable 🌟"
     ];
   }
 }

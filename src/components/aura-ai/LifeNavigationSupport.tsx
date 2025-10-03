@@ -23,7 +23,7 @@ interface TherapyReferral {
 
 interface LifeNavigationSupportProps {
   currentMood?: string;
-  userHistory?: any[];
+  userHistory?: unknown[];
   onResourceSelected?: (resource: WellnessResource) => void;
 }
 
@@ -38,7 +38,7 @@ export default function LifeNavigationSupport({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'therapy' | 'emergency'>('content');
-  const [showCrisisSupport, setShowCrisisSupport] = useState(false);
+  // const [showCrisisSupport, setShowCrisisSupport] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -124,7 +124,7 @@ export default function LifeNavigationSupport({
     // Simple logic to determine if therapy referral is needed
     const crisisKeywords = ['suicidal', 'hurt', 'emergency', 'crisis', 'help'];
     const recentEntries = userHistory?.slice(-5) || [];
-    const hasCrisisContent = recentEntries.some(entry => 
+    const hasCrisisContent = recentEntries.some((entry: any) => 
       crisisKeywords.some(keyword => 
         entry.entryText?.toLowerCase().includes(keyword)
       )

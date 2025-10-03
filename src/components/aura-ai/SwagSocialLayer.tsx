@@ -213,7 +213,7 @@ export default function SwagSocialLayer({
               <div key={index} className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">✨</span>
-                  <p className="text-gray-800 dark:text-gray-200 italic">"{quote}"</p>
+                  <p className="text-gray-800 dark:text-gray-200 italic">&ldquo;{quote}&rdquo;</p>
                 </div>
               </div>
             ))}
