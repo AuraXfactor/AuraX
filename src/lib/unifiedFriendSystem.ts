@@ -7,7 +7,7 @@ import {
   getDoc, 
   getDocs, 
   collection, 
-  query, 
+  query as firestoreQuery, 
   where, 
   orderBy 
 } from 'firebase/firestore';
@@ -43,7 +43,7 @@ export async function getFriendsFromChats(userId: string): Promise<UnifiedFriend
     console.log('🔄 Loading friends from chat participants for user:', userId);
     
     // Get all chats where user is a participant
-    const chatsQuery = query(
+    const chatsQuery = firestoreQuery(
       collection(db, 'chats'),
       where(`participants.${userId}`, '!=', null),
       orderBy('lastActivity', 'desc')
@@ -83,7 +83,7 @@ export async function getFriendsFromChats(userId: string): Promise<UnifiedFriend
                 isOnline: profile.isOnline || false,
                 lastSeen: profile.lastSeen,
                 joinedAt: participant?.joinedAt || chatData.createdAt,
-                auraPoints: profile.auraPoints || 0,
+                auraPoints: 0, // Default aura points since it's not in PublicProfile
                 mutualConnections: 0, // We'll calculate this separately if needed
                 sharedInterests: profile.interests || [],
                 chatId: chatDoc.id,
@@ -240,7 +240,7 @@ export async function searchPublicProfiles(query: string): Promise<any[]> {
     
     // For now, we'll use a simple approach
     // In a real app, you'd want to implement proper search indexing
-    const profilesQuery = query(
+    const profilesQuery = firestoreQuery(
       collection(db, 'publicProfiles'),
       orderBy('name')
     );
