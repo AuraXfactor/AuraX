@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
-  getFamRequests,
-  respondToFamRequest,
-  FamRequest
-} from '@/lib/famTrackingSystem';
+  getFriendRequests,
+  respondToFriendRequest,
+  SimpleRequest
+} from '@/lib/simpleRequestSystem';
 
 interface FamRequestsProps {
   onRequestHandled?: () => void;
@@ -16,10 +16,10 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState<{
-    received: FamRequest[];
-    sent: FamRequest[];
-    accepted: FamRequest[];
-    declined: FamRequest[];
+    received: SimpleRequest[];
+    sent: SimpleRequest[];
+    accepted: SimpleRequest[];
+    declined: SimpleRequest[];
   }>({ received: [], sent: [], accepted: [], declined: [] });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -30,12 +30,12 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
     
     setLoading(true);
     try {
-      console.log('🔄 Loading fam requests...');
-      const famRequests = await getFamRequests(user.uid);
-      setRequests(famRequests);
-      console.log('✅ Fam requests loaded:', famRequests);
+      console.log('🔄 Loading friend requests...');
+      const friendRequests = await getFriendRequests(user.uid);
+      setRequests(friendRequests);
+      console.log('✅ Friend requests loaded:', friendRequests);
     } catch (error) {
-      console.error('Error loading fam requests:', error);
+      console.error('Error loading friend requests:', error);
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
     try {
       console.log('📝 Responding to fam request:', { requestId, response });
       
-      await respondToFamRequest({
+      await respondToFriendRequest({
         requestId,
         response,
         responderUserId: user.uid,
