@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
-  getFriendSuggestions,
-  sendFamRequest,
-  PublicProfile
+  sendFamRequest
 } from '@/lib/famTrackingSystem';
+import { getFriendSuggestions, PublicProfile } from '@/lib/socialSystem';
 
 interface FamSuggestionsProps {
   onRequestSent?: () => void;
@@ -54,6 +53,8 @@ export default function FamSuggestions({ onRequestSent }: FamSuggestionsProps) {
       await sendFamRequest({
         fromUserId: user.uid,
         toUserId: suggestion.userId,
+        fromName: user.displayName || user.email || 'Anonymous',
+        toName: suggestion.name,
         message: `Hey ${suggestion.name}! I'd love to connect and start aura farming together! 🌟`,
       });
       

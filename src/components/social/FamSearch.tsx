@@ -171,7 +171,7 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
           placeholder="Search by name, username, or interests..."
           className="w-full px-4 py-3 pl-12 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         />
@@ -201,7 +201,7 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
             </div>
           ) : (
             <div className="grid gap-4">
-              {searchResults.map((profile) => (
+              {searchResults.map((profile: any) => (
                 <div 
                   key={profile.uid}
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition"

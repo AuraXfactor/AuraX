@@ -329,7 +329,7 @@ export async function getFamRequests(userId: string): Promise<{
       orderBy('createdAt', 'desc')
     );
     const receivedSnapshot = await getDocs(receivedQuery);
-    const received: FamRequest[] = receivedSnapshot.docs.map(doc => ({
+    const received: FamRequest[] = receivedSnapshot.docs.map((doc: any) => ({
       ...doc.data() as FamRequest,
       id: doc.id,
     }));
@@ -341,7 +341,7 @@ export async function getFamRequests(userId: string): Promise<{
       orderBy('createdAt', 'desc')
     );
     const sentSnapshot = await getDocs(sentQuery);
-    const sent: FamRequest[] = sentSnapshot.docs.map(doc => ({
+    const sent: FamRequest[] = sentSnapshot.docs.map((doc: any) => ({
       ...doc.data() as FamRequest,
       id: doc.id,
     }));
@@ -383,7 +383,7 @@ export async function removeFamMember(params: {
       where('famUserId', '==', famUserId)
     );
     const famSnapshot1 = await getDocs(famQuery1);
-    famSnapshot1.docs.forEach(doc => batch.delete(doc.ref));
+    famSnapshot1.docs.forEach((doc: any) => batch.delete(doc.ref));
     
     const famQuery2 = firestoreQuery(
       collection(db, 'famMembers'),
@@ -391,7 +391,7 @@ export async function removeFamMember(params: {
       where('famUserId', '==', userId)
     );
     const famSnapshot2 = await getDocs(famQuery2);
-    famSnapshot2.docs.forEach(doc => batch.delete(doc.ref));
+    famSnapshot2.docs.forEach((doc: any) => batch.delete(doc.ref));
     
     await batch.commit();
     console.log('✅ Fam member removed');
@@ -419,9 +419,9 @@ export function listenToFamChanges(
     where('status', '==', 'active')
   );
   
-  return onSnapshot(famQuery, async (snapshot) => {
+  return onSnapshot(famQuery, async (snapshot: any) => {
     try {
-      const members: FamMember[] = snapshot.docs.map(doc => ({
+      const members: FamMember[] = snapshot.docs.map((doc: any) => ({
         ...doc.data() as FamMember,
         id: doc.id,
       }));
@@ -498,7 +498,7 @@ export async function searchPublicProfiles(query: string): Promise<any[]> {
     );
     
     const snapshot = await getDocs(profilesQuery);
-    const profiles = snapshot.docs.map(doc => ({
+    const profiles = snapshot.docs.map((doc: any) => ({
       ...doc.data(),
       uid: doc.id,
     })) as any[];

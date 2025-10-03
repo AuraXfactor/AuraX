@@ -152,13 +152,13 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
   const getCurrentRequests = () => {
     switch (activeTab) {
       case 'received':
-        return requests.received.filter(req => req.status === 'pending');
+        return requests.received.filter((req: any) => req.status === 'pending');
       case 'sent':
-        return requests.sent.filter(req => req.status === 'pending');
+        return requests.sent.filter((req: any) => req.status === 'pending');
       case 'accepted':
-        return requests.received.filter(req => req.status === 'accepted');
+        return requests.received.filter((req: any) => req.status === 'accepted');
       case 'declined':
-        return requests.received.filter(req => req.status === 'declined');
+        return requests.received.filter((req: any) => req.status === 'declined');
       default:
         return [];
     }
@@ -166,10 +166,10 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
 
   const getTabCounts = () => {
     return {
-      received: requests.received.filter(req => req.status === 'pending').length,
-      sent: requests.sent.filter(req => req.status === 'pending').length,
-      accepted: requests.received.filter(req => req.status === 'accepted').length,
-      declined: requests.received.filter(req => req.status === 'declined').length,
+      received: requests.received.filter((req: any) => req.status === 'pending').length,
+      sent: requests.sent.filter((req: any) => req.status === 'pending').length,
+      accepted: requests.received.filter((req: any) => req.status === 'accepted').length,
+      declined: requests.received.filter((req: any) => req.status === 'declined').length,
     };
   };
 
