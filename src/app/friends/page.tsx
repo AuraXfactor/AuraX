@@ -41,8 +41,9 @@ function FriendsPageContent() {
   const handleRequestsUpdate = () => {
     // This will be called when requests are handled
     console.log('Friend requests updated - refreshing friends list');
-    // Force a page refresh to show the new friend immediately
-    window.location.reload();
+    // Trigger a custom event to refresh friends list
+    const event = new CustomEvent('refreshFriendsList');
+    window.dispatchEvent(event);
   };
 
   if (!user) {

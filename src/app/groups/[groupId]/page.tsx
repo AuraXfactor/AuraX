@@ -10,6 +10,7 @@ import {
   createGroupChatFromGroup,
   GroupChatMessage 
 } from '@/lib/groupChatSystem';
+import GroupManagement from '@/components/social/GroupManagement';
 import { doc, getDoc, updateDoc, arrayRemove, deleteField } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -26,6 +27,7 @@ export default function GroupChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [showManagement, setShowManagement] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,8 +120,23 @@ export default function GroupChatPage() {
     }
     
     if (!chatId) {
-      alert('❌ Group chat not ready yet');
-      return;
+      // Show a more user-friendly message and try to create chat
+      console.log('Chat not ready, attempting to create...');
+      try {
+        const newChatId = await createGroupChatFromGroup(groupId);
+        setChatId(newChatId);
+        // Retry sending the message
+        setTimeout(() => {
+          if (newChatId) {
+            handleSendMessage();
+          }
+        }, 1000);
+        return;
+      } catch (error) {
+        console.error('Failed to create group chat:', error);
+        alert('❌ Unable to start group chat. Please try again.');
+        return;
+      }
     }
     
     setSending(true);
@@ -298,12 +315,20 @@ export default function GroupChatPage() {
             </div>
           </div>
           
-          <button
-            onClick={() => setShowMembers(true)}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-          >
-            Members
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowMembers(true)}
+              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+            >
+              Members
+            </button>
+            <button
+              onClick={() => setShowManagement(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+            >
+              Manage
+            </button>
+          </div>
         </div>
       </div>
 
@@ -432,6 +457,33 @@ export default function GroupChatPage() {
 
       {/* Members Modal */}
       {showMembers && renderMembersModal()}
+
+      {/* Group Management Modal */}
+      {showManagement && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Group Management</h2>
+                <button
+                  onClick={() => setShowManagement(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <GroupManagement 
+                groupId={groupId} 
+                onMemberUpdate={() => {
+                  // Refresh group data
+                  loadGroup();
+                }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

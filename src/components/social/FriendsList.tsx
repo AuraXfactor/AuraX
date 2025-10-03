@@ -27,6 +27,18 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
     }
   }, [user]);
 
+  // Listen for refresh events
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (user) {
+        loadFriends();
+      }
+    };
+
+    window.addEventListener('refreshFriendsList', handleRefresh);
+    return () => window.removeEventListener('refreshFriendsList', handleRefresh);
+  }, [user]);
+
   const loadFriends = async () => {
     if (!user) return;
     
