@@ -60,10 +60,15 @@ export default function ClientAppWrapper({ children }: ClientAppWrapperProps) {
     }
   }, [startTour]);
 
-  // Auto-sync when coming back online
+  // Auto-sync when coming back online (with debouncing to prevent flickering)
   React.useEffect(() => {
     if (isOnline && syncStatus === 'idle') {
-      triggerSync();
+      // Add a small delay to prevent immediate flickering
+      const timer = setTimeout(() => {
+        triggerSync();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
   }, [isOnline, syncStatus, triggerSync]);
 

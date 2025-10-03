@@ -1,24 +1,35 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import FriendSearch from '@/components/social/FriendSearch';
-import FriendRequests from '@/components/social/FriendRequests';
+import EnhancedFriendRequests from '@/components/social/EnhancedFriendRequests';
+import EnhancedFriendSuggestions from '@/components/social/EnhancedFriendSuggestions';
 import FriendsList from '@/components/social/FriendsList';
 import SocialFeed from '@/components/social/SocialFeed';
 
 const tabs = [
   { id: 'friends', label: 'Friends', icon: '👥' },
   { id: 'discover', label: 'Discover', icon: '🔍' },
+  { id: 'suggestions', label: 'Suggestions', icon: '💡' },
   { id: 'requests', label: 'Requests', icon: '📬' },
   { id: 'feed', label: 'Social Feed', icon: '📱' },
 ];
 
-export default function FriendsPage() {
+function FriendsPageContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('friends');
   const [requestCount, setRequestCount] = useState(0);
+
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['friends', 'discover', 'suggestions', 'requests', 'feed'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   React.useEffect(() => {
     if (!user) {
@@ -77,10 +88,23 @@ export default function FriendsPage() {
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
           {activeTab === 'friends' && <FriendsList onFriendRemoved={handleRequestsUpdate} />}
           {activeTab === 'discover' && <FriendSearch onRequestSent={handleRequestsUpdate} />}
-          {activeTab === 'requests' && <FriendRequests onRequestHandled={handleRequestsUpdate} />}
+          {activeTab === 'suggestions' && <EnhancedFriendSuggestions onRequestSent={handleRequestsUpdate} />}
+          {activeTab === 'requests' && <EnhancedFriendRequests onRequestHandled={handleRequestsUpdate} />}
           {activeTab === 'feed' && <SocialFeed />}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FriendsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <FriendsPageContent />
+    </Suspense>
   );
 }
