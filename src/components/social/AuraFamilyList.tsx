@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
@@ -28,38 +28,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'auraPoints' | 'recent' | 'online'>('recent');
 
-  useEffect(() => {
-    if (user) {
-      loadAuraFamily();
-    }
-  }, [user]);
-
-  // Listen for Aura Family updates
-  useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = listenToAuraFamily(user.uid, (members, familyStats) => {
-      setFamilyMembers(members);
-      setStats(familyStats);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // Listen for custom Aura Family update events
-  useEffect(() => {
-    const handleAuraFamilyUpdate = () => {
-      if (user) {
-        loadAuraFamily();
-      }
-    };
-
-    window.addEventListener('auraFamilyUpdated', handleAuraFamilyUpdate);
-    return () => window.removeEventListener('auraFamilyUpdated', handleAuraFamilyUpdate);
-  }, [user]);
-
-  const loadAuraFamily = async () => {
+  const loadAuraFamily = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -97,7 +66,39 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadAuraFamily();
+    }
+  }, [user, loadAuraFamily]);
+
+  // Listen for Aura Family updates
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = listenToAuraFamily(user.uid, (members, familyStats) => {
+      setFamilyMembers(members);
+      setStats(familyStats);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Listen for custom Aura Family update events
+  useEffect(() => {
+    const handleAuraFamilyUpdate = () => {
+      if (user) {
+        console.log('Aura Family update event received, refreshing...');
+        loadAuraFamily();
+      }
+    };
+
+    window.addEventListener('auraFamilyUpdated', handleAuraFamilyUpdate);
+    return () => window.removeEventListener('auraFamilyUpdated', handleAuraFamilyUpdate);
+  }, [user, loadAuraFamily]);
 
   const handleRemoveMember = async (member: AuraFamilyMember) => {
     if (!user || !confirm(`Remove ${member.name} from your Aura Family?`)) {

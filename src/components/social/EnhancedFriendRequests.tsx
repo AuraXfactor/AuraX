@@ -11,7 +11,6 @@ import {
   EnhancedFriendRequest,
   FriendRequestCounts
 } from '@/lib/enhancedFriendSystem';
-import { addAuraFamilyMember } from '@/lib/auraFamilySystem';
 
 interface EnhancedFriendRequestsProps {
   onRequestHandled?: () => void;
@@ -57,17 +56,15 @@ export default function EnhancedFriendRequests({
         response,
       });
       
-      // If accepted, add to Aura Family
+      // If accepted, trigger Aura Family refresh
       if (response === 'accepted' && request) {
-        try {
-          await addAuraFamilyMember({
-            currentUserId: user.uid,
-            newMemberId: request.fromUserId,
-            newMemberName: fromName,
+        // Small delay to ensure friend request processing is complete
+        setTimeout(() => {
+          const event = new CustomEvent('auraFamilyUpdated', {
+            detail: { action: 'memberAdded', memberName: fromName }
           });
-        } catch (familyError) {
-          console.error('Error adding to Aura Family:', familyError);
-        }
+          window.dispatchEvent(event);
+        }, 1000);
       }
       
       onRequestHandled?.();
