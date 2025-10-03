@@ -7,7 +7,12 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  type?: 'text' | 'suggestion' | 'encouragement' | 'crisis_support' | 'celebration';
+  type?: 'text' | 'suggestion' | 'encouragement' | 'crisis_support' | 'celebration' | 'empathy' | 'guidance';
+  mood?: string;
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  suggestions?: string[];
+  activities?: string[];
+  priority?: 'high' | 'medium' | 'low';
 }
 
 interface AuraAIChatProps {
@@ -74,10 +79,51 @@ export default function AuraAIChat({
   };
 
   const generateAuraResponse = async (userMessage: string): Promise<ChatMessage> => {
-    // Simulate AI processing time
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
-    // Analyze user message for context
+    try {
+      const response = await fetch('/api/aura-ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          context,
+          userId: user.uid,
+          userHistory: messages.slice(-5) // Send last 5 messages for context
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      const aiResponse = data.response;
+
+      return {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: aiResponse.response,
+        timestamp: new Date(),
+        type: aiResponse.type || 'text',
+        mood: aiResponse.mood,
+        sentiment: aiResponse.sentiment,
+        suggestions: aiResponse.suggestions,
+        activities: aiResponse.activities,
+        priority: aiResponse.priority
+      };
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      // Fallback to local response generation
+      return generateFallbackResponse(userMessage);
+    }
+  };
+
+  const generateFallbackResponse = (userMessage: string): ChatMessage => {
     const messageLower = userMessage.toLowerCase();
     const isCrisis = ['sad', 'depressed', 'anxious', 'scared', 'hopeless', 'suicidal', 'hurt', 'pain'].some(word => 
       messageLower.includes(word)
@@ -85,7 +131,6 @@ export default function AuraAIChat({
     const isCelebration = ['happy', 'excited', 'proud', 'accomplished', 'grateful', 'amazing', 'wonderful'].some(word => 
       messageLower.includes(word)
     );
-    const isQuestion = messageLower.includes('?') || messageLower.startsWith('how') || messageLower.startsWith('what') || messageLower.startsWith('why');
 
     let response = '';
     let type: ChatMessage['type'] = 'text';
@@ -96,12 +141,9 @@ export default function AuraAIChat({
     } else if (isCelebration) {
       response = generateCelebrationResponse(userMessage);
       type = 'celebration';
-    } else if (isQuestion) {
-      response = generateQuestionResponse(userMessage);
-      type = 'suggestion';
     } else {
       response = generateGeneralResponse(userMessage);
-      type = 'encouragement';
+      type = 'empathy';
     }
 
     return {
@@ -213,11 +255,31 @@ export default function AuraAIChat({
       case 'celebration':
         return `${baseStyle} bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800`;
       case 'suggestion':
+      case 'guidance':
         return `${baseStyle} bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-800`;
       case 'encouragement':
+      case 'empathy':
         return `${baseStyle} bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800`;
       default:
         return `${baseStyle} bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200`;
+    }
+  };
+
+  const getPriorityIcon = (priority?: string) => {
+    switch (priority) {
+      case 'high': return '🔴';
+      case 'medium': return '🟡';
+      case 'low': return '🟢';
+      default: return '';
+    }
+  };
+
+  const getSentimentIcon = (sentiment?: string) => {
+    switch (sentiment) {
+      case 'positive': return '😊';
+      case 'negative': return '😔';
+      case 'neutral': return '😐';
+      default: return '';
     }
   };
 
@@ -252,7 +314,46 @@ export default function AuraAIChat({
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={getMessageStyle(message)}>
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <div className="flex items-start gap-2 mb-2">
+                <p className="whitespace-pre-wrap flex-1">{message.content}</p>
+                {message.priority && (
+                  <span className="text-xs" title={`Priority: ${message.priority}`}>
+                    {getPriorityIcon(message.priority)}
+                  </span>
+                )}
+                {message.sentiment && (
+                  <span className="text-xs" title={`Sentiment: ${message.sentiment}`}>
+                    {getSentimentIcon(message.sentiment)}
+                  </span>
+                )}
+              </div>
+              
+              {/* Show suggestions if available */}
+              {message.suggestions && message.suggestions.length > 0 && (
+                <div className="mt-2 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">💡 Suggestions:</div>
+                  <ul className="text-xs space-y-1">
+                    {message.suggestions.map((suggestion, index) => (
+                      <li key={index} className="text-gray-700 dark:text-gray-300">• {suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Show activities if available */}
+              {message.activities && message.activities.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {message.activities.map((activity, index) => (
+                    <span
+                      key={index}
+                      className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                    >
+                      {activity}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
               <p className="text-xs opacity-70 mt-1">
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>

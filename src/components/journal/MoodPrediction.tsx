@@ -45,12 +45,20 @@ export default function MoodPrediction({ onPredictionLoaded }: MoodPredictionPro
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/insights/predict', {
+      // First, get user's journal history
+      const historyResponse = await fetch(`/api/journals/history?userId=${user.uid}&limit=20`);
+      const historyData = await historyResponse.json();
+      const userHistory = historyData.entries || [];
+      
+      const response = await fetch('/api/aura-ai/mood-prediction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: user.uid }),
+        body: JSON.stringify({ 
+          userId: user.uid,
+          userHistory 
+        }),
       });
       
       if (!response.ok) {
@@ -59,7 +67,7 @@ export default function MoodPrediction({ onPredictionLoaded }: MoodPredictionPro
       
       const data = await response.json();
       setPrediction(data.prediction);
-      setSuggestions(data.suggestions);
+      setSuggestions(data.suggestions || []);
       onPredictionLoaded?.(data.prediction);
     } catch (err) {
       console.error('Error loading prediction:', err);

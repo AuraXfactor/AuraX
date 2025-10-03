@@ -41,7 +41,7 @@ export default function SmartPrompts({
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/insights/prompts', {
+      const response = await fetch('/api/aura-ai/smart-prompts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
