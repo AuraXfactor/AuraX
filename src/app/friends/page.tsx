@@ -6,13 +6,14 @@ import FriendSearch from '@/components/social/FriendSearch';
 import EnhancedFriendRequests from '@/components/social/EnhancedFriendRequests';
 import EnhancedFriendSuggestions from '@/components/social/EnhancedFriendSuggestions';
 import FriendsList from '@/components/social/FriendsList';
+import AuraFamilyList from '@/components/social/AuraFamilyList';
 import SocialFeed from '@/components/social/SocialFeed';
 
 const tabs = [
-  { id: 'friends', label: 'Friends', icon: '👥' },
+  { id: 'friends', label: 'Aura Family', icon: '👨‍👩‍👧‍👦' },
   { id: 'discover', label: 'Discover', icon: '🔍' },
   { id: 'suggestions', label: 'Suggestions', icon: '💡' },
-  { id: 'requests', label: 'Requests', icon: '📬' },
+  { id: 'requests', label: 'Family Requests', icon: '📬' },
   { id: 'feed', label: 'Social Feed', icon: '📱' },
 ];
 
@@ -58,9 +59,9 @@ function FriendsPageContent() {
     <div className="min-h-screen p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Friends</h1>
+          <h1 className="text-4xl font-bold mb-2">Aura Family</h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Connect with others and build your support network
+            Your chosen family for aura farming and growth together
           </p>
         </div>
 
@@ -89,7 +90,7 @@ function FriendsPageContent() {
 
         {/* Tab Content */}
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
-          {activeTab === 'friends' && <FriendsList onFriendRemoved={handleRequestsUpdate} />}
+          {activeTab === 'friends' && <AuraFamilyList onMemberRemoved={handleRequestsUpdate} />}
           {activeTab === 'discover' && <FriendSearch onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'suggestions' && <EnhancedFriendSuggestions onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'requests' && <EnhancedFriendRequests onRequestHandled={handleRequestsUpdate} />}

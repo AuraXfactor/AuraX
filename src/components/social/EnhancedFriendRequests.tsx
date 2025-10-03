@@ -11,6 +11,7 @@ import {
   EnhancedFriendRequest,
   FriendRequestCounts
 } from '@/lib/enhancedFriendSystem';
+import { addAuraFamilyMember } from '@/lib/auraFamilySystem';
 
 interface EnhancedFriendRequestsProps {
   onRequestHandled?: () => void;
@@ -46,32 +47,49 @@ export default function EnhancedFriendRequests({
     
     setActionLoading(requestId);
     try {
+      // Find the request to get the fromName
+      const request = receivedRequests.find(r => r.id === requestId);
+      const fromName = request?.fromProfile?.name || 'Unknown';
+      
       await respondToFriendRequest({
         user,
         requestId,
         response,
       });
       
+      // If accepted, add to Aura Family
+      if (response === 'accepted' && request) {
+        try {
+          await addAuraFamilyMember({
+            currentUserId: user.uid,
+            newMemberId: request.fromUserId,
+            newMemberName: fromName,
+          });
+        } catch (familyError) {
+          console.error('Error adding to Aura Family:', familyError);
+        }
+      }
+      
       onRequestHandled?.();
       
       // Show success message with toast notification
       const message = response === 'accepted' 
-        ? '✅ Friend request accepted! They are now in your friends list.' 
+        ? `🎉 <strong>${fromName}</strong> is now your fam🎉, start aura farming together✈️`
         : '❌ Friend request declined';
       
-      // Create a temporary success message element
+      // Create a temporary success message element with Aura Family styling
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse';
+      successDiv.className = 'fixed top-4 right-4 z-50 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-pulse';
       successDiv.innerHTML = `
-        <span>${response === 'accepted' ? '✅' : '❌'}</span>
+        <span>${response === 'accepted' ? '🎉' : '❌'}</span>
         <span>${message}</span>
       `;
       document.body.appendChild(successDiv);
       
-      // Remove the message after 3 seconds
+      // Remove the message after 4 seconds
       setTimeout(() => {
         successDiv.remove();
-      }, 3000);
+      }, 4000);
       
     } catch (error) {
       console.error(`Error ${response} friend request:`, error);

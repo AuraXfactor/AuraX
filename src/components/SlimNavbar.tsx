@@ -81,7 +81,7 @@ export default function SlimNavbar() {
                         ? 'bg-purple-500 text-white' 
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-500'
                     }`}
-                    title="Friend Requests"
+                    title="Aura Family Requests"
                   >
                     <Bell size={18} />
                     {friendRequestCount > 0 && (
