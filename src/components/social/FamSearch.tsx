@@ -20,6 +20,8 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [existingFam, setExistingFam] = useState<string[]>([]);
+  const [sentRequests, setSentRequests] = useState<string[]>([]);
+  const [receivedRequests, setReceivedRequests] = useState<string[]>([]);
 
   const loadExistingFam = useCallback(async () => {
     if (!user) return;
@@ -33,11 +35,29 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
     }
   }, [user]);
 
+  const loadRequestStatus = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const { getFamRequests } = await import('@/lib/famTrackingSystem');
+      const requests = await getFamRequests(user.uid);
+      
+      const sentIds = requests.sent.map(req => req.toUserId);
+      const receivedIds = requests.received.map(req => req.fromUserId);
+      
+      setSentRequests(sentIds);
+      setReceivedRequests(receivedIds);
+    } catch (error) {
+      console.error('Error loading request status:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadExistingFam();
+      loadRequestStatus();
     }
-  }, [user, loadExistingFam]);
+  }, [user, loadExistingFam, loadRequestStatus]);
 
   const handleSearch = async (query: string) => {
     if (!user || !query.trim()) {
@@ -97,6 +117,9 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
       
       onRequestSent?.();
       
+      // Refresh request status
+      await loadRequestStatus();
+      
     } catch (error) {
       console.error('Error sending fam request:', error);
       alert('Failed to send fam request');
@@ -107,6 +130,19 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
 
   const handleViewProfile = (userId: string) => {
     router.push(`/profile/${userId}`);
+  };
+
+  const getUserStatus = (userId: string) => {
+    if (existingFam.includes(userId)) {
+      return { status: 'fam', label: 'Already Fam', color: 'green' };
+    }
+    if (sentRequests.includes(userId)) {
+      return { status: 'sent', label: 'Request Sent', color: 'blue' };
+    }
+    if (receivedRequests.includes(userId)) {
+      return { status: 'received', label: 'Request Received', color: 'purple' };
+    }
+    return { status: 'none', label: 'Add Fam', color: 'purple' };
   };
 
   // Debounced search
@@ -192,9 +228,24 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
                       </div>
                       
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
-                          {profile.name}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {profile.name}
+                          </h3>
+                          {(() => {
+                            const userStatus = getUserStatus(profile.uid);
+                            return (
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                userStatus.color === 'green' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                userStatus.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                userStatus.color === 'purple' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+                                'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {userStatus.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           @{profile.username}
                         </p>
@@ -224,19 +275,73 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleViewProfile(profile.uid)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
-                      >
-                        Profile
-                      </button>
-                      <button
-                        onClick={() => handleSendRequest(profile.uid, profile.name)}
-                        disabled={actionLoading === profile.uid}
-                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm disabled:opacity-50"
-                      >
-                        {actionLoading === profile.uid ? 'Sending...' : 'Add Fam'}
-                      </button>
+                      {(() => {
+                        const userStatus = getUserStatus(profile.uid);
+                        if (userStatus.status === 'fam') {
+                          return (
+                            <>
+                              <button
+                                onClick={() => handleViewProfile(profile.uid)}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                              >
+                                View Profile
+                              </button>
+                              <button
+                                onClick={() => router.push(`/soulchat/${profile.uid}`)}
+                                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm"
+                              >
+                                Chat
+                              </button>
+                            </>
+                          );
+                        } else if (userStatus.status === 'sent') {
+                          return (
+                            <>
+                              <button
+                                onClick={() => handleViewProfile(profile.uid)}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                              >
+                                View Profile
+                              </button>
+                              <span className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-sm">
+                                Request Sent
+                              </span>
+                            </>
+                          );
+                        } else if (userStatus.status === 'received') {
+                          return (
+                            <>
+                              <button
+                                onClick={() => handleViewProfile(profile.uid)}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                              >
+                                View Profile
+                              </button>
+                              <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm">
+                                Check Requests Tab
+                              </span>
+                            </>
+                          );
+                        } else {
+                          return (
+                            <>
+                              <button
+                                onClick={() => handleSendRequest(profile.uid, profile.name)}
+                                disabled={actionLoading === profile.uid}
+                                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm disabled:opacity-50"
+                              >
+                                {actionLoading === profile.uid ? 'Sending...' : 'Add Fam'}
+                              </button>
+                              <button
+                                onClick={() => handleViewProfile(profile.uid)}
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
+                              >
+                                Profile
+                              </button>
+                            </>
+                          );
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>

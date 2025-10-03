@@ -296,6 +296,14 @@ export async function respondToFamRequest(params: {
     if (response === 'accepted') {
       const friendsEvent = new CustomEvent('refreshFriendsList');
       window.dispatchEvent(friendsEvent);
+      
+      // Trigger immediate UI update for better UX
+      setTimeout(() => {
+        const immediateUpdate = new CustomEvent('famUpdated', {
+          detail: { action: 'immediateUpdate' }
+        });
+        window.dispatchEvent(immediateUpdate);
+      }, 100);
     }
     
   } catch (error) {

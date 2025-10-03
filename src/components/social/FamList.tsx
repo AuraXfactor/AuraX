@@ -47,6 +47,24 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
     }
   }, [user]);
 
+  // Optimized refresh function that doesn't show loading for background updates
+  const refreshFamMembers = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      console.log('🔄 Refreshing fam members...');
+      const [members, famStats] = await Promise.all([
+        getFamMembers(user.uid),
+        getFamStats(user.uid)
+      ]);
+      setFamMembers(members);
+      setStats(famStats);
+      console.log('✅ Fam members refreshed:', members.length);
+    } catch (error) {
+      console.error('Error refreshing fam members:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadFamMembers();
@@ -75,8 +93,20 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
       }
     };
 
+    const handleFriendsListRefresh = () => {
+      if (user) {
+        console.log('🔄 Friends list refresh event received, refreshing fam...');
+        refreshFamMembers();
+      }
+    };
+
     window.addEventListener('famUpdated', handleFamUpdate);
-    return () => window.removeEventListener('famUpdated', handleFamUpdate);
+    window.addEventListener('refreshFriendsList', handleFriendsListRefresh);
+    
+    return () => {
+      window.removeEventListener('famUpdated', handleFamUpdate);
+      window.removeEventListener('refreshFriendsList', handleFriendsListRefresh);
+    };
   }, [user, loadFamMembers]);
 
   const handleRemoveMember = async (member: FamMember) => {

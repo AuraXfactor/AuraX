@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import FamSearch from '@/components/social/FamSearch';
 import FamRequests from '@/components/social/FamRequests';
 import FamList from '@/components/social/FamList';
+import FamSuggestions from '@/components/social/FamSuggestions';
 
 const tabs = [
-  { id: 'friends', label: 'Aura Fam', icon: '👨‍👩‍👧‍👦' },
+  { id: 'friends', label: 'Fam', icon: '👨‍👩‍👧‍👦' },
   { id: 'discover', label: 'Discover', icon: '🔍' },
+  { id: 'suggestions', label: 'Suggestions', icon: '💡' },
   { id: 'requests', label: 'Fam Requests', icon: '📬' },
 ];
 
@@ -87,6 +89,7 @@ function FriendsPageContent() {
         <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
           {activeTab === 'friends' && <FamList onMemberRemoved={handleRequestsUpdate} />}
           {activeTab === 'discover' && <FamSearch onRequestSent={handleRequestsUpdate} />}
+          {activeTab === 'suggestions' && <FamSuggestions onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'requests' && <FamRequests onRequestHandled={handleRequestsUpdate} />}
         </div>
       </div>
