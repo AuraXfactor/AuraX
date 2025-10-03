@@ -203,7 +203,7 @@ export default function EnhancedFriendSuggestions({
                       Sending...
                     </div>
                   ) : (
-                    'Add Friend'
+                    'Add Fam'
                   )}
                 </button>
                 

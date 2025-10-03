@@ -40,7 +40,7 @@ const NAV_TABS: NavTab[] = [
     color: 'from-purple-500 to-pink-500',
     items: [
       { label: 'Aura Feed', href: '/aura', icon: '✨', description: 'View friends\' 24h glimpses' },
-      { label: 'Friends', href: '/friends', icon: '👥', description: 'Manage your network' },
+      { label: 'Aura Fam', href: '/friends', icon: '👨‍👩‍👧‍👦', description: 'Manage your fam' },
       { label: 'Groups', href: '/groups', icon: '💬', description: 'Group conversations' },
       { label: 'Messages', href: '/messages', icon: '💬', description: 'Secure encrypted messaging' },
     ],

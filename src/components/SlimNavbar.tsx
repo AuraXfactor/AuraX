@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logOut } from '@/lib/firebaseAuth';
 import { getFriendRequestCounts } from '@/lib/enhancedFriendSystem';
 import { Bell, Search, Menu, X } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 export default function SlimNavbar() {
   const { user } = useAuth();
@@ -74,22 +75,7 @@ export default function SlimNavbar() {
                   </button>
 
                   {/* Notifications */}
-                  <Link
-                    href="/friends?tab=requests"
-                    className={`relative p-2 rounded-xl transition ${
-                      showNotifications 
-                        ? 'bg-purple-500 text-white' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-500'
-                    }`}
-                    title="Aura Family Requests"
-                  >
-                    <Bell size={18} />
-                    {friendRequestCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                        {friendRequestCount > 99 ? '99+' : friendRequestCount}
-                      </span>
-                    )}
-                  </Link>
+                  <NotificationCenter />
 
                   {/* Profile Menu */}
                   <button

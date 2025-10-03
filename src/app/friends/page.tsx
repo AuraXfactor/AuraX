@@ -10,11 +10,10 @@ import AuraFamilyList from '@/components/social/AuraFamilyList';
 import SocialFeed from '@/components/social/SocialFeed';
 
 const tabs = [
-  { id: 'friends', label: 'Aura Family', icon: '👨‍👩‍👧‍👦' },
+  { id: 'friends', label: 'Aura Fam', icon: '👨‍👩‍👧‍👦' },
   { id: 'discover', label: 'Discover', icon: '🔍' },
   { id: 'suggestions', label: 'Suggestions', icon: '💡' },
-  { id: 'requests', label: 'Family Requests', icon: '📬' },
-  { id: 'feed', label: 'Social Feed', icon: '📱' },
+  { id: 'requests', label: 'Fam Requests', icon: '📬' },
 ];
 
 function FriendsPageContent() {
@@ -59,9 +58,9 @@ function FriendsPageContent() {
     <div className="min-h-screen p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Aura Family</h1>
+          <h1 className="text-4xl font-bold mb-2">Aura Fam</h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Your chosen family for aura farming and growth together
+            Your chosen fam for aura farming and growth together
           </p>
         </div>
 
@@ -94,7 +93,6 @@ function FriendsPageContent() {
           {activeTab === 'discover' && <FriendSearch onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'suggestions' && <EnhancedFriendSuggestions onRequestSent={handleRequestsUpdate} />}
           {activeTab === 'requests' && <EnhancedFriendRequests onRequestHandled={handleRequestsUpdate} />}
-          {activeTab === 'feed' && <SocialFeed />}
         </div>
       </div>
     </div>

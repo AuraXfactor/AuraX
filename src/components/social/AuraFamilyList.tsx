@@ -46,6 +46,18 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
     return () => unsubscribe();
   }, [user]);
 
+  // Listen for custom Aura Family update events
+  useEffect(() => {
+    const handleAuraFamilyUpdate = () => {
+      if (user) {
+        loadAuraFamily();
+      }
+    };
+
+    window.addEventListener('auraFamilyUpdated', handleAuraFamilyUpdate);
+    return () => window.removeEventListener('auraFamilyUpdated', handleAuraFamilyUpdate);
+  }, [user]);
+
   const loadAuraFamily = async () => {
     if (!user) return;
     
@@ -114,7 +126,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
       {/* Aura Family Stats */}
       {stats && (
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
-          <h2 className="text-2xl font-bold mb-4">Aura Family Stats</h2>
+          <h2 className="text-2xl font-bold mb-4">Aura Fam Stats</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-3xl font-bold">{stats.totalMembers}</div>
@@ -143,7 +155,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search Aura Family..."
+            placeholder="Search Aura Fam..."
             className="w-full px-4 py-2.5 pl-10 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -172,11 +184,11 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
             {familyMembers.length === 0 ? '👨‍👩‍👧‍👦' : '🔍'}
           </div>
           <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-            {familyMembers.length === 0 ? 'No Aura Family yet' : 'No family found'}
+            {familyMembers.length === 0 ? 'No Aura Fam yet' : 'No fam found'}
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
             {familyMembers.length === 0 
-              ? 'Start by discovering your Aura Family or searching for connections!'
+              ? 'Start by discovering your Aura Fam or searching for connections!'
               : 'Try adjusting your search or sort criteria'
             }
           </p>

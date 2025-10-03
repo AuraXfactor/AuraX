@@ -77,19 +77,21 @@ export default function EnhancedFriendRequests({
         ? `🎉 <strong>${fromName}</strong> is now your fam🎉, start aura farming together✈️`
         : '❌ Friend request declined';
       
-      // Create a temporary success message element with Aura Family styling
+      // Create a centered, animated success message
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 z-50 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-pulse';
+      successDiv.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
       successDiv.innerHTML = `
-        <span>${response === 'accepted' ? '🎉' : '❌'}</span>
-        <span>${message}</span>
+        <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-6 rounded-2xl shadow-2xl flex items-center gap-4 animate-bounce max-w-md mx-4 text-center">
+          <div class="text-4xl">${response === 'accepted' ? '🎉' : '❌'}</div>
+          <div class="text-lg font-semibold">${message}</div>
+        </div>
       `;
       document.body.appendChild(successDiv);
       
-      // Remove the message after 4 seconds
+      // Remove the message after 5 seconds
       setTimeout(() => {
         successDiv.remove();
-      }, 4000);
+      }, 5000);
       
     } catch (error) {
       console.error(`Error ${response} friend request:`, error);
