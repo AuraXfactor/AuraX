@@ -262,6 +262,25 @@ export async function respondToFamRequest(params: {
         sharedInterests: [],
         status: 'active',
       });
+
+      // ALSO create friendship records in socialSystem structure for compatibility
+      // This ensures that both FamList and FriendsList components work
+      const friendship1Ref = doc(db, 'friends', requestData.fromUserId, 'friendships', requestData.toUserId);
+      const friendship2Ref = doc(db, 'friends', requestData.toUserId, 'friendships', requestData.fromUserId);
+      
+      batch.set(friendship1Ref, {
+        userId: requestData.fromUserId,
+        friendId: requestData.toUserId,
+        friendSince: timestamp,
+        lastInteraction: timestamp,
+      });
+
+      batch.set(friendship2Ref, {
+        userId: requestData.toUserId,
+        friendId: requestData.fromUserId,
+        friendSince: timestamp,
+        lastInteraction: timestamp,
+      });
     }
     
     await batch.commit();
@@ -272,6 +291,20 @@ export async function respondToFamRequest(params: {
       detail: { action: response === 'accepted' ? 'memberAdded' : 'requestDeclined' }
     });
     window.dispatchEvent(event);
+
+    // Also trigger friends list refresh for socialSystem compatibility
+    if (response === 'accepted') {
+      const friendsEvent = new CustomEvent('refreshFriendsList');
+      window.dispatchEvent(friendsEvent);
+      
+      // Trigger immediate UI update for better UX
+      setTimeout(() => {
+        const immediateUpdate = new CustomEvent('famUpdated', {
+          detail: { action: 'immediateUpdate' }
+        });
+        window.dispatchEvent(immediateUpdate);
+      }, 100);
+    }
     
   } catch (error) {
     console.error('Error responding to fam request:', error);
@@ -296,7 +329,7 @@ export async function getFamRequests(userId: string): Promise<{
       orderBy('createdAt', 'desc')
     );
     const receivedSnapshot = await getDocs(receivedQuery);
-    const received: FamRequest[] = receivedSnapshot.docs.map(doc => ({
+    const received: FamRequest[] = receivedSnapshot.docs.map((doc: any) => ({
       ...doc.data() as FamRequest,
       id: doc.id,
     }));
@@ -308,7 +341,7 @@ export async function getFamRequests(userId: string): Promise<{
       orderBy('createdAt', 'desc')
     );
     const sentSnapshot = await getDocs(sentQuery);
-    const sent: FamRequest[] = sentSnapshot.docs.map(doc => ({
+    const sent: FamRequest[] = sentSnapshot.docs.map((doc: any) => ({
       ...doc.data() as FamRequest,
       id: doc.id,
     }));
@@ -350,7 +383,7 @@ export async function removeFamMember(params: {
       where('famUserId', '==', famUserId)
     );
     const famSnapshot1 = await getDocs(famQuery1);
-    famSnapshot1.docs.forEach(doc => batch.delete(doc.ref));
+    famSnapshot1.docs.forEach((doc: any) => batch.delete(doc.ref));
     
     const famQuery2 = firestoreQuery(
       collection(db, 'famMembers'),
@@ -358,7 +391,7 @@ export async function removeFamMember(params: {
       where('famUserId', '==', userId)
     );
     const famSnapshot2 = await getDocs(famQuery2);
-    famSnapshot2.docs.forEach(doc => batch.delete(doc.ref));
+    famSnapshot2.docs.forEach((doc: any) => batch.delete(doc.ref));
     
     await batch.commit();
     console.log('✅ Fam member removed');
@@ -386,9 +419,9 @@ export function listenToFamChanges(
     where('status', '==', 'active')
   );
   
-  return onSnapshot(famQuery, async (snapshot) => {
+  return onSnapshot(famQuery, async (snapshot: any) => {
     try {
-      const members: FamMember[] = snapshot.docs.map(doc => ({
+      const members: FamMember[] = snapshot.docs.map((doc: any) => ({
         ...doc.data() as FamMember,
         id: doc.id,
       }));
@@ -465,7 +498,7 @@ export async function searchPublicProfiles(query: string): Promise<any[]> {
     );
     
     const snapshot = await getDocs(profilesQuery);
-    const profiles = snapshot.docs.map(doc => ({
+    const profiles = snapshot.docs.map((doc: any) => ({
       ...doc.data(),
       uid: doc.id,
     })) as any[];

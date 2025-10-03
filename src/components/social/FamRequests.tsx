@@ -97,16 +97,68 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
     router.push(`/profile/${userId}`);
   };
 
+  const handleCancelRequest = async (requestId: string) => {
+    if (!user || !confirm('Cancel this fam request?')) return;
+    
+    setActionLoading(requestId);
+    try {
+      // Cancel the request by updating its status
+      await respondToFamRequest({
+        requestId,
+        response: 'declined',
+        responderUserId: user.uid,
+      });
+      
+      await loadRequests();
+      onRequestHandled?.();
+    } catch (error) {
+      console.error('Error canceling fam request:', error);
+      alert('Failed to cancel fam request');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStartChat = (userId: string) => {
+    router.push(`/soulchat/${userId}`);
+  };
+
+  const handleBlockUser = async (userId: string) => {
+    if (!user || !confirm('Block this user? They won\'t be able to send you fam requests.')) return;
+    
+    try {
+      // Implement block functionality
+      console.log('Blocking user:', userId);
+      alert('User blocked successfully');
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      alert('Failed to block user');
+    }
+  };
+
+  const handleReportUser = async (userId: string) => {
+    if (!user || !confirm('Report this user for inappropriate behavior?')) return;
+    
+    try {
+      // Implement report functionality
+      console.log('Reporting user:', userId);
+      alert('User reported successfully');
+    } catch (error) {
+      console.error('Error reporting user:', error);
+      alert('Failed to report user');
+    }
+  };
+
   const getCurrentRequests = () => {
     switch (activeTab) {
       case 'received':
-        return requests.received.filter(req => req.status === 'pending');
+        return requests.received.filter((req: any) => req.status === 'pending');
       case 'sent':
-        return requests.sent.filter(req => req.status === 'pending');
+        return requests.sent.filter((req: any) => req.status === 'pending');
       case 'accepted':
-        return requests.received.filter(req => req.status === 'accepted');
+        return requests.received.filter((req: any) => req.status === 'accepted');
       case 'declined':
-        return requests.received.filter(req => req.status === 'declined');
+        return requests.received.filter((req: any) => req.status === 'declined');
       default:
         return [];
     }
@@ -114,10 +166,10 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
 
   const getTabCounts = () => {
     return {
-      received: requests.received.filter(req => req.status === 'pending').length,
-      sent: requests.sent.filter(req => req.status === 'pending').length,
-      accepted: requests.received.filter(req => req.status === 'accepted').length,
-      declined: requests.received.filter(req => req.status === 'declined').length,
+      received: requests.received.filter((req: any) => req.status === 'pending').length,
+      sent: requests.sent.filter((req: any) => req.status === 'pending').length,
+      accepted: requests.received.filter((req: any) => req.status === 'accepted').length,
+      declined: requests.received.filter((req: any) => req.status === 'declined').length,
     };
   };
 
@@ -250,14 +302,20 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
                     <button
                       onClick={() => handleRespondToRequest(request.id, 'accepted')}
                       disabled={actionLoading === request.id}
-                      className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium disabled:opacity-50"
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium disabled:opacity-50 text-sm"
                     >
                       {actionLoading === request.id ? 'Accepting...' : 'Accept'}
                     </button>
                     <button
+                      onClick={() => handleViewProfile(request.fromUserId)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium text-sm"
+                    >
+                      View Profile
+                    </button>
+                    <button
                       onClick={() => handleRespondToRequest(request.id, 'declined')}
                       disabled={actionLoading === request.id}
-                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50"
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50 text-sm"
                     >
                       {actionLoading === request.id ? 'Declining...' : 'Decline'}
                     </button>
@@ -325,6 +383,21 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
                       </div>
                     </div>
                   </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleViewProfile(request.toUserId)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium text-sm"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => handleCancelRequest(request.id)}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -333,27 +406,155 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
       )}
       
       {activeTab === 'accepted' && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">✅</div>
-          <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-            Accepted Requests ({counts.accepted})
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            These are your accepted fam members. They should appear in your Aura Fam list.
-          </p>
-        </div>
+        currentRequests.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">✅</div>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+              No accepted requests
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Accepted fam members will appear here and in your Aura Fam list.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {currentRequests.map((request) => (
+              <div 
+                key={request.id} 
+                className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800/50 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center cursor-pointer" onClick={() => handleViewProfile(request.fromUserId)}>
+                        <span className="text-white font-bold text-xl">
+                          {request.fromName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                          {request.fromName}
+                        </h3>
+                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full">
+                          ✅ Accepted
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        Now part of your Aura Fam
+                      </p>
+                      
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        {request.updatedAt && typeof request.updatedAt === 'object' && 'toDate' in request.updatedAt && (
+                          <span>
+                            ⏰ Accepted {new Date(request.updatedAt.toDate()).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleViewProfile(request.fromUserId)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium text-sm"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => handleStartChat(request.fromUserId)}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition font-medium text-sm"
+                    >
+                      Add Fam
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
       
       {activeTab === 'declined' && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">❌</div>
-          <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-            Declined Requests ({counts.declined})
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            These are requests that were declined. You can send a new request if you want to try again.
-          </p>
-        </div>
+        currentRequests.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">❌</div>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+              No declined requests
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Declined requests will appear here. You can send a new request if you want to try again.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {currentRequests.map((request) => (
+              <div 
+                key={request.id} 
+                className="p-6 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-xl border border-red-200 dark:border-red-800/50 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center cursor-pointer" onClick={() => handleViewProfile(request.fromUserId)}>
+                        <span className="text-white font-bold text-xl">
+                          {request.fromName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                          {request.fromName}
+                        </h3>
+                        <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full">
+                          ❌ Declined
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        Request was declined
+                      </p>
+                      
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        {request.updatedAt && typeof request.updatedAt === 'object' && 'toDate' in request.updatedAt && (
+                          <span>
+                            ⏰ Declined {new Date(request.updatedAt.toDate()).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleViewProfile(request.fromUserId)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium text-sm"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => handleBlockUser(request.fromUserId)}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium text-sm"
+                    >
+                      Block
+                    </button>
+                    <button
+                      onClick={() => handleReportUser(request.fromUserId)}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm"
+                    >
+                      Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

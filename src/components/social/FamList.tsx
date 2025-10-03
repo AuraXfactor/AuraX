@@ -47,6 +47,24 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
     }
   }, [user]);
 
+  // Optimized refresh function that doesn't show loading for background updates
+  const refreshFamMembers = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      console.log('🔄 Refreshing fam members...');
+      const [members, famStats] = await Promise.all([
+        getFamMembers(user.uid),
+        getFamStats(user.uid)
+      ]);
+      setFamMembers(members);
+      setStats(famStats);
+      console.log('✅ Fam members refreshed:', members.length);
+    } catch (error) {
+      console.error('Error refreshing fam members:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadFamMembers();
@@ -75,8 +93,20 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
       }
     };
 
+    const handleFriendsListRefresh = () => {
+      if (user) {
+        console.log('🔄 Friends list refresh event received, refreshing fam...');
+        refreshFamMembers();
+      }
+    };
+
     window.addEventListener('famUpdated', handleFamUpdate);
-    return () => window.removeEventListener('famUpdated', handleFamUpdate);
+    window.addEventListener('refreshFriendsList', handleFriendsListRefresh);
+    
+    return () => {
+      window.removeEventListener('famUpdated', handleFamUpdate);
+      window.removeEventListener('refreshFriendsList', handleFriendsListRefresh);
+    };
   }, [user, loadFamMembers]);
 
   const handleRemoveMember = async (member: FamMember) => {
@@ -156,7 +186,7 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
             placeholder="Search Aura Fam..."
             className="w-full px-4 py-2.5 pl-10 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
@@ -169,7 +199,7 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
         
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
+          onChange={(e: any) => setSortBy(e.target.value as any)}
           className="px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         >
           <option value="recent">Recent Activity</option>

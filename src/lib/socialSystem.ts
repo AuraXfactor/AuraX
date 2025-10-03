@@ -324,6 +324,14 @@ export async function respondToFriendRequest(params: {
   const batch = writeBatch(db);
   const requestRef = doc(getFriendRequestsRef(), requestId);
   
+  // Get request data BEFORE updating it
+  const requestDoc = await getDoc(requestRef);
+  if (!requestDoc.exists()) {
+    throw new Error('Friend request not found');
+  }
+  
+  const requestData = requestDoc.data() as EnhancedFriendRequest;
+  
   // Update request status
   batch.update(requestRef, {
     status: response,
@@ -331,14 +339,6 @@ export async function respondToFriendRequest(params: {
   });
 
   if (response === 'accepted') {
-    // Get request data to create friendship
-    const requestDoc = await getDoc(requestRef);
-    if (!requestDoc.exists()) {
-      throw new Error('Friend request not found');
-    }
-    
-    const requestData = requestDoc.data() as EnhancedFriendRequest;
-    
     // Create bidirectional friendship
     const friendship1Ref = getFriendDocRef(user.uid, requestData.fromUserId);
     const friendship2Ref = getFriendDocRef(requestData.fromUserId, user.uid);
