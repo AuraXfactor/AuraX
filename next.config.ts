@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false, // Keep TypeScript error checking
   },
+  // Suppress SSR warnings during build
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   headers: async () => {
     return [
       {

@@ -181,7 +181,9 @@ export default function TourGuide({ isActive, onComplete, onSkip }: TourGuidePro
         break;
       case 'navigate':
         if (step.action.url) {
-          window.location.href = step.action.url;
+          if (typeof window !== 'undefined') {
+            window.location.href = step.action.url;
+          }
         }
         break;
     }

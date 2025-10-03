@@ -185,7 +185,7 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
         <div className="grid gap-4">
           {filteredAndSortedMembers.map((member) => (
             <div 
-              key={member.id}
+              key={member.userId}
               className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition"
             >
               <div className="flex items-center justify-between">

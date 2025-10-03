@@ -233,7 +233,9 @@ export default function NotificationCenter() {
               onClick={() => {
                 setIsOpen(false);
                 // Navigate to notifications page
-                window.location.href = '/notifications';
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/notifications';
+                }
               }}
               className="w-full text-center text-sm text-purple-500 hover:text-purple-600"
             >

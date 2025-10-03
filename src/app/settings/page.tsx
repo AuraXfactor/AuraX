@@ -238,7 +238,7 @@ export default function SettingsPage() {
           challenge: new Uint8Array(32),
           rp: {
             name: "AuraX",
-            id: window.location.hostname,
+            id: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
           },
           user: {
             id: new TextEncoder().encode(user?.uid || ''),
