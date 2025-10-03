@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
+import SwagSocialLayer from '@/components/aura-ai/SwagSocialLayer';
+import LifeNavigationSupport from '@/components/aura-ai/LifeNavigationSupport';
+import GrowthReports from '@/components/aura-ai/GrowthReports';
 
 const aiPersonalities = [
   {
@@ -52,6 +55,8 @@ export default function AuraAIPage() {
   const [selectedPersonality, setSelectedPersonality] = useState(aiPersonalities[0]);
   const [showChat, setShowChat] = useState(false);
   const [initialMessage, setInitialMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<'chat' | 'swag' | 'navigation' | 'reports'>('chat');
+  const [currentMood, setCurrentMood] = useState('neutral');
 
   React.useEffect(() => {
     if (!user) {
@@ -160,40 +165,119 @@ export default function AuraAIPage() {
           </div>
         </div>
 
-        {/* Features */}
-        <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-8">
-          <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-            What Aura AI Can Do For You
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🧠</div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
-                Emotional Intelligence
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Understands your emotions and provides empathetic responses tailored to your mental state.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">🎯</div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
-                Personalized Guidance
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Offers customized advice and strategies based on your unique wellness journey.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl mb-4">💝</div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
-                24/7 Support
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Always available when you need someone to talk to, day or night.
-              </p>
+        {/* Enhanced AI Features */}
+        <div className="space-y-8">
+          {/* Tab Navigation */}
+          <div className="flex justify-center">
+            <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-2xl border border-white/20 p-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                    activeTab === 'chat' 
+                      ? 'bg-purple-500 text-white' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  💬 Chat
+                </button>
+                <button
+                  onClick={() => setActiveTab('swag')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                    activeTab === 'swag' 
+                      ? 'bg-purple-500 text-white' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  ✨ Swag
+                </button>
+                <button
+                  onClick={() => setActiveTab('navigation')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                    activeTab === 'navigation' 
+                      ? 'bg-purple-500 text-white' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  🧭 Guide
+                </button>
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                    activeTab === 'reports' 
+                      ? 'bg-purple-500 text-white' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  📊 Reports
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Tab Content */}
+          {activeTab === 'chat' && (
+            <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-8">
+              <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+                Chat with Aura AI
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">🧠</div>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
+                    Emotional Intelligence
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Understands your emotions and provides empathetic responses tailored to your mental state.
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl mb-4">🎯</div>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
+                    Personalized Guidance
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Offers customized advice and strategies based on your unique wellness journey.
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl mb-4">💝</div>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
+                    24/7 Support
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Always available when you need someone to talk to, day or night.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'swag' && (
+            <SwagSocialLayer 
+              currentMood={currentMood}
+              onContentLoaded={(content) => {
+                console.log('Swag content loaded:', content);
+              }}
+            />
+          )}
+
+          {activeTab === 'navigation' && (
+            <LifeNavigationSupport 
+              currentMood={currentMood}
+              onResourceSelected={(resource) => {
+                console.log('Resource selected:', resource);
+              }}
+            />
+          )}
+
+          {activeTab === 'reports' && (
+            <GrowthReports 
+              onReportGenerated={(report) => {
+                console.log('Report generated:', report);
+              }}
+            />
+          )}
         </div>
 
         {/* Safety Notice */}
