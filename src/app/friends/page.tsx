@@ -7,7 +7,7 @@ import FamRequests from '@/components/social/FamRequests';
 import FamList from '@/components/social/FamList';
 
 const tabs = [
-  { id: 'friends', label: 'Aura Fam', icon: '👨‍👩‍👧‍👦' },
+  { id: 'friends', label: 'Fam', icon: '👨‍👩‍👧‍👦' },
   { id: 'discover', label: 'Discover', icon: '🔍' },
   { id: 'requests', label: 'Fam Requests', icon: '📬' },
 ];
