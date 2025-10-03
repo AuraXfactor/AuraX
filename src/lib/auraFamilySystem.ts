@@ -5,6 +5,8 @@ import { User } from 'firebase/auth';
 import {
   doc,
   getDoc,
+  getDocs,
+  collection,
   updateDoc,
   arrayUnion,
   arrayRemove,
@@ -41,50 +43,43 @@ export type AuraFamilyStats = {
 // Get Aura Family members with enhanced tracking
 export async function getAuraFamilyMembers(currentUserId: string): Promise<AuraFamilyMember[]> {
   try {
-    const userDoc = await getDoc(doc(db, 'users', currentUserId));
-    if (!userDoc.exists()) {
-      return [];
-    }
-
-    const userData = userDoc.data();
-    const friendIds = userData.friends || [];
-
-    if (friendIds.length === 0) {
-      return [];
-    }
-
-    // Get all friend profiles in batch
-    const friendPromises = friendIds.map(async (friendId: string) => {
+    // Use the same approach as getFriends - query the friends collection
+    const friendsSnapshot = await getDocs(collection(db, 'users', currentUserId, 'friends'));
+    
+    const familyMembers: AuraFamilyMember[] = [];
+    
+    for (const friendDoc of friendsSnapshot.docs) {
       try {
-        const friendDoc = await getDoc(doc(db, 'users', friendId));
-        if (!friendDoc.exists()) return null;
-
+        const friendId = friendDoc.id;
         const friendData = friendDoc.data();
         
-        // Get friendship data
+        // Get friend's public profile
+        const friendProfileDoc = await getDoc(doc(db, 'publicProfiles', friendId));
+        const friendProfile = friendProfileDoc.exists() ? friendProfileDoc.data() : null;
+        
+        // Get friendship data for additional info
         const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
         const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
-        return {
+        familyMembers.push({
           userId: friendId,
-          name: friendData.name || 'Unknown',
-          username: friendData.username || 'unknown',
-          avatar: friendData.avatar,
-          joinedAt: friendshipData.createdAt,
-          auraPoints: friendData.auraPoints || 0,
-          lastActivity: friendData.lastSeen,
-          isOnline: friendData.isOnline || false,
+          name: friendProfile?.name || friendData.name || 'Unknown',
+          username: friendProfile?.username || friendData.username || 'unknown',
+          avatar: friendProfile?.avatar || friendData.avatar,
+          joinedAt: friendData.createdAt || friendshipData.createdAt,
+          auraPoints: friendProfile?.auraPoints || friendData.auraPoints || 0,
+          lastActivity: friendProfile?.lastSeen || friendData.lastSeen,
+          isOnline: friendProfile?.isOnline || friendData.isOnline || false,
           mutualConnections: friendshipData.mutualFriends || 0,
-          sharedInterests: friendshipData.sharedInterests || [],
-        } as AuraFamilyMember;
+          sharedInterests: friendshipData.sharedInterests || friendProfile?.interests || [],
+        });
       } catch (error) {
-        console.error(`Error loading friend ${friendId}:`, error);
-        return null;
+        console.error(`Error loading friend ${friendDoc.id}:`, error);
+        continue;
       }
-    });
-
-    const familyMembers = await Promise.all(friendPromises);
-    return familyMembers.filter(member => member !== null) as AuraFamilyMember[];
+    }
+    
+    return familyMembers;
   } catch (error) {
     console.error('Error loading Aura Family members:', error);
     return [];
@@ -106,8 +101,13 @@ export async function getAuraFamilyStats(currentUserId: string): Promise<AuraFam
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const newMembersThisWeek = familyMembers.filter(member => {
       if (!member.joinedAt) return false;
-      const joinedDate = member.joinedAt.toDate ? member.joinedAt.toDate() : new Date(member.joinedAt);
-      return joinedDate > oneWeekAgo;
+      try {
+        const joinedDate = member.joinedAt.toDate ? member.joinedAt.toDate() : new Date(member.joinedAt);
+        return joinedDate > oneWeekAgo;
+      } catch (error) {
+        console.warn('Error parsing joinedAt date:', error);
+        return false;
+      }
     }).length;
 
     // Get top contributors (by aura points)

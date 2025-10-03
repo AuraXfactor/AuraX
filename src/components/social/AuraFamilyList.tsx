@@ -12,6 +12,7 @@ import {
   AuraFamilyMember,
   AuraFamilyStats
 } from '@/lib/auraFamilySystem';
+import { getFriends } from '@/lib/socialSystem';
 
 interface AuraFamilyListProps {
   onMemberRemoved?: () => void;
@@ -63,12 +64,34 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
     
     setLoading(true);
     try {
-      const [members, familyStats] = await Promise.all([
-        getAuraFamilyMembers(user.uid),
-        getAuraFamilyStats(user.uid)
-      ]);
+      // Try the new Aura Family system first
+      let members = await getAuraFamilyMembers(user.uid);
+      
+      // If no members found, fallback to the original friends system
+      if (members.length === 0) {
+        console.log('No Aura Family members found, trying fallback to friends system...');
+        const friends = await getFriends(user.uid);
+        
+        // Convert friends to AuraFamilyMember format
+        members = friends.map(friend => ({
+          userId: friend.friendId,
+          name: friend.friendProfile?.name || 'Unknown',
+          username: friend.friendProfile?.username || 'unknown',
+          avatar: friend.friendProfile?.avatar,
+          joinedAt: friend.friendSince,
+          auraPoints: 0, // Default aura points since it's not in PublicProfile
+          lastActivity: friend.friendProfile?.lastSeen,
+          isOnline: friend.friendProfile?.isOnline || false,
+          mutualConnections: friend.mutualFriends || 0,
+          sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+        }));
+      }
+      
+      const familyStats = await getAuraFamilyStats(user.uid);
       setFamilyMembers(members);
       setStats(familyStats);
+      
+      console.log('Loaded Aura Family members:', members.length);
     } catch (error) {
       console.error('Error loading Aura Family:', error);
     } finally {
