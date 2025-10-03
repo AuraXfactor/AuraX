@@ -262,6 +262,25 @@ export async function respondToFamRequest(params: {
         sharedInterests: [],
         status: 'active',
       });
+
+      // ALSO create friendship records in socialSystem structure for compatibility
+      // This ensures that both FamList and FriendsList components work
+      const friendship1Ref = doc(db, 'friends', requestData.fromUserId, 'friendships', requestData.toUserId);
+      const friendship2Ref = doc(db, 'friends', requestData.toUserId, 'friendships', requestData.fromUserId);
+      
+      batch.set(friendship1Ref, {
+        userId: requestData.fromUserId,
+        friendId: requestData.toUserId,
+        friendSince: timestamp,
+        lastInteraction: timestamp,
+      });
+
+      batch.set(friendship2Ref, {
+        userId: requestData.toUserId,
+        friendId: requestData.fromUserId,
+        friendSince: timestamp,
+        lastInteraction: timestamp,
+      });
     }
     
     await batch.commit();
@@ -272,6 +291,12 @@ export async function respondToFamRequest(params: {
       detail: { action: response === 'accepted' ? 'memberAdded' : 'requestDeclined' }
     });
     window.dispatchEvent(event);
+
+    // Also trigger friends list refresh for socialSystem compatibility
+    if (response === 'accepted') {
+      const friendsEvent = new CustomEvent('refreshFriendsList');
+      window.dispatchEvent(friendsEvent);
+    }
     
   } catch (error) {
     console.error('Error responding to fam request:', error);
