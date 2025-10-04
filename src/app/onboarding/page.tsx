@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveOnboardingProfile } from '@/lib/userProfile';
 import { motion, AnimatePresence } from 'framer-motion';
+import DatePicker from '@/components/DatePicker';
+import AuraAvatarGallery from '@/components/AuraAvatarGallery';
+import { AuraAvatar } from '@/lib/auraAvatars';
 
 const focusOptions = [
   'Stress Relief',
@@ -55,6 +58,8 @@ export default function Onboarding() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState<string>('');
+  const [selectedAuraAvatar, setSelectedAuraAvatar] = useState<AuraAvatar | null>(null);
+  const [bio, setBio] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState<string>('');
   const [country, setCountry] = useState<string>('Uganda');
@@ -68,6 +73,7 @@ export default function Onboarding() {
   const steps = useMemo(() => [
     'Profile',
     'Avatar',
+    'Bio',
     'Personal Info',
     'Mood Baseline',
     'Focus Areas',
@@ -97,14 +103,15 @@ export default function Onboarding() {
 
   const canContinue = useMemo(() => {
     if (step === 0) return name.trim().length > 0 && username.trim().length > 0;
-    if (step === 1) return avatar.length > 0;
-    if (step === 2) return dateOfBirth.length > 0 && gender.length > 0 && country.length > 0 && town.trim().length > 0;
-    if (step === 3) return moodBaseline.length === 3;
-    if (step === 4) return focusAreas.length >= 2 && focusAreas.length <= 3;
-    if (step === 5) return ['Morning','Afternoon','Evening'].includes(reminderTime);
-    if (step === 6) return termsAccepted; // terms acceptance required
+    if (step === 1) return selectedAuraAvatar !== null;
+    if (step === 2) return true; // Bio is optional
+    if (step === 3) return dateOfBirth.length > 0 && gender.length > 0 && country.length > 0 && town.trim().length > 0;
+    if (step === 4) return moodBaseline.length === 3;
+    if (step === 5) return focusAreas.length >= 2 && focusAreas.length <= 3;
+    if (step === 6) return ['Morning','Afternoon','Evening'].includes(reminderTime);
+    if (step === 7) return termsAccepted; // terms acceptance required
     return true;
-  }, [step, name, username, avatar, dateOfBirth, gender, country, town, moodBaseline, focusAreas, reminderTime, termsAccepted]);
+  }, [step, name, username, selectedAuraAvatar, bio, dateOfBirth, gender, country, town, moodBaseline, focusAreas, reminderTime, termsAccepted]);
 
 
   const save = async () => {
@@ -115,7 +122,9 @@ export default function Onboarding() {
         name: name.trim(),
         username: username.trim(),
         email: user.email ?? null,
-        avatar: avatar,
+        avatar: selectedAuraAvatar?.emoji || avatar,
+        auraAvatarId: selectedAuraAvatar?.id,
+        bio: bio.trim(),
         dateOfBirth,
         gender,
         country,
@@ -164,34 +173,78 @@ export default function Onboarding() {
 
           {step === 1 && stepCard(
             <div>
-              <div className="text-lg font-semibold mb-2">Choose Your Avatar</div>
-              <div className="text-sm opacity-75 mb-3">Pick an emoji that represents you</div>
-              <div className="grid grid-cols-10 gap-2 text-2xl">
-                {avatarOptions.map((emoji) => (
-                  <button 
-                    key={emoji} 
-                    onClick={() => setAvatar(emoji)} 
-                    className={`h-12 rounded-lg border ${avatar === emoji ? 'border-blue-500 ring-2 ring-blue-300' : 'border-white/20'}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-              {avatar && <div className="mt-2 text-sm opacity-70">Selected: {avatar}</div>}
+              <AuraAvatarGallery
+                selectedAvatarId={selectedAuraAvatar?.id}
+                onSelectAvatar={(avatar) => {
+                  setSelectedAuraAvatar(avatar);
+                  setAvatar(avatar.emoji);
+                }}
+                userLevel={1}
+                showCategories={true}
+                showRarity={true}
+              />
+              {selectedAuraAvatar && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{selectedAuraAvatar.emoji}</span>
+                    <div>
+                      <div className="font-semibold text-purple-800 dark:text-purple-200">
+                        {selectedAuraAvatar.name}
+                      </div>
+                      <div className="text-sm text-purple-600 dark:text-purple-300">
+                        {selectedAuraAvatar.description}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {step === 2 && stepCard(
             <div>
+              <div className="text-lg font-semibold mb-2">Tell Us About Yourself</div>
+              <div className="text-sm opacity-75 mb-4">
+                Share a bit about yourself (optional) - this helps others connect with you ✨
+              </div>
+              <div>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="What makes you unique? What are you passionate about? Share your vibe..."
+                  maxLength={160}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 resize-none"
+                  rows={4}
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {bio.length}/160 characters
+                  </div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400">
+                    {bio.length > 0 ? '✨ Express yourself!' : '💭 Optional but fun!'}
+                  </div>
+                </div>
+              </div>
+              {bio.trim() && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                  <div className="text-sm text-purple-700 dark:text-purple-300">
+                    <strong>Preview:</strong> {bio.trim()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 3 && stepCard(
+            <div>
               <div className="text-lg font-semibold mb-2">Personal Information</div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Date of Birth</label>
-                  <input 
-                    type="date" 
-                    value={dateOfBirth} 
-                    onChange={(e) => setDateOfBirth(e.target.value)} 
-                    className="w-full px-3 py-2 rounded-md border" 
+                  <DatePicker
+                    value={dateOfBirth}
+                    onChange={setDateOfBirth}
+                    placeholder="Select your birth date"
                   />
                 </div>
                 <div>
@@ -234,7 +287,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 3 && stepCard(
+          {step === 4 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Mood Baseline</div>
               <div className="text-sm opacity-75 mb-3">Select 3 emojis representing your vibe</div>
@@ -247,7 +300,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 4 && stepCard(
+          {step === 5 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Wellness Focus Areas</div>
               <div className="text-sm opacity-75 mb-3">Choose top 2-3</div>
@@ -259,7 +312,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 5 && stepCard(
+          {step === 6 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-2">Journaling Reminder</div>
               <div className="flex gap-2">
@@ -270,7 +323,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 6 && stepCard(
+          {step === 7 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-4">Terms of Service</div>
               <div className="space-y-4">
@@ -296,19 +349,28 @@ export default function Onboarding() {
             </div>
           )}
 
-          {step === 7 && stepCard(
+          {step === 8 && stepCard(
             <div>
               <div className="text-lg font-semibold mb-3">Profile Summary</div>
               <div className="p-4 rounded-2xl border bg-white/60 dark:bg-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
-                    {avatar || '🌟'}
+                    {selectedAuraAvatar?.emoji || avatar || '🌟'}
                   </div>
                   <div>
                     <div className="font-bold">{name} @{username}</div>
-                    <div className="text-sm opacity-70">Focus: {focusAreas.join(', ')}</div>
+                    <div className="text-sm opacity-70">
+                      {selectedAuraAvatar ? `${selectedAuraAvatar.name} • ` : ''}Focus: {focusAreas.join(', ')}
+                    </div>
                   </div>
                 </div>
+                {bio.trim() && (
+                  <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                    <div className="text-sm text-purple-700 dark:text-purple-300">
+                      <strong>Bio:</strong> {bio.trim()}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-3 text-sm">Location: {town}, {country}</div>
                 <div className="mt-1 text-sm">Gender: {gender}</div>
                 <div className="mt-1 text-sm">DOB: {dateOfBirth}</div>

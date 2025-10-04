@@ -7,9 +7,12 @@ import Link from 'next/link';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import AuraThemeSelector from '@/components/AuraThemeSelector';
+import { AuraTheme } from '@/lib/auraThemes';
 
 interface SettingsData {
   theme?: string;
+  auraTheme?: string;
   notifications?: {
     journal?: boolean;
     recovery?: boolean;
@@ -91,6 +94,7 @@ export default function SettingsPage() {
         const userData = userDoc.data();
         setSettings({
           theme: userData.theme || 'auto',
+          auraTheme: userData.auraTheme || 'light-pastel',
           notifications: {
             journal: userData.notifications?.journal ?? true,
             recovery: userData.notifications?.recovery ?? true,
@@ -316,6 +320,16 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Aura Flex Themes */}
+          <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+            <AuraThemeSelector
+              selectedThemeId={settings.auraTheme}
+              onSelectTheme={(theme) => updateSetting('auraTheme', theme.id)}
+              showCategories={true}
+              userLevel={1}
+            />
           </div>
 
           {/* Notification Settings */}
