@@ -567,7 +567,7 @@ export default function ProfilePage() {
                   friendsAdded: 0,
                   vibeChecks: 0,
                   focusGoals: 0,
-                  daysActive: profile.createdAt ? Math.floor((Date.now() - profile.createdAt.toDate().getTime()) / (1000 * 60 * 60 * 24)) : 0,
+                  daysActive: profile.createdAt?.toDate ? Math.floor((Date.now() - profile.createdAt.toDate().getTime()) / (1000 * 60 * 60 * 24)) : 0,
                   isEarlyAdopter: false,
                   unlockedAvatars: 1,
                   completedFocusAreas: profile.focusAreas?.length || 0,
