@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DatePickerProps {
@@ -88,6 +88,8 @@ export default function DatePicker({ value, onChange, className = '', placeholde
     type: 'day' | 'month' | 'year';
   }) => {
     const [scrollPosition, setScrollPosition] = useState(0);
+    const [isScrolling, setIsScrolling] = useState(false);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const itemHeight = 40;
     const visibleItems = 5;
     const containerHeight = itemHeight * visibleItems;
@@ -102,23 +104,46 @@ export default function DatePicker({ value, onChange, className = '', placeholde
     }, [selectedValue, items]);
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-      const scrollTop = e.currentTarget.scrollTop;
-      const index = Math.round(scrollTop / itemHeight);
-      const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+      setIsScrolling(true);
       
-      const item = items[clampedIndex];
-      const value = typeof item === 'number' ? item : item.value;
-      
-      if (value !== selectedValue) {
-        onValueChange(value);
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
       }
+      
+      // Set new timeout to detect when scrolling stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+        
+        // Snap to nearest item when scrolling stops
+        const scrollTop = e.currentTarget.scrollTop;
+        const index = Math.round(scrollTop / itemHeight);
+        const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+        
+        // Smooth scroll to the exact position
+        const targetScrollTop = clampedIndex * itemHeight;
+        e.currentTarget.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+        
+        const item = items[clampedIndex];
+        const value = typeof item === 'number' ? item : item.value;
+        
+        if (value !== selectedValue) {
+          onValueChange(value);
+        }
+      }, 150); // Wait 150ms after scrolling stops
     };
 
     return (
       <div className="relative h-48 overflow-hidden">
         <div
-          className="overflow-y-auto scrollbar-hide"
-          style={{ height: containerHeight }}
+          className="overflow-y-auto scrollbar-hide scroll-smooth"
+          style={{ 
+            height: containerHeight,
+            scrollSnapType: 'y mandatory'
+          }}
           onScroll={handleScroll}
         >
           <div style={{ height: itemHeight * items.length }}>
@@ -130,12 +155,15 @@ export default function DatePicker({ value, onChange, className = '', placeholde
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-center h-10 text-sm transition ${
+                  className={`flex items-center justify-center h-10 text-sm transition-all duration-200 ${
                     isSelected 
-                      ? 'text-purple-600 dark:text-purple-400 font-semibold' 
+                      ? 'text-purple-600 dark:text-purple-400 font-semibold scale-110' 
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
-                  style={{ height: itemHeight }}
+                  style={{ 
+                    height: itemHeight,
+                    scrollSnapAlign: 'center'
+                  }}
                 >
                   {display}
                 </div>
@@ -145,7 +173,11 @@ export default function DatePicker({ value, onChange, className = '', placeholde
         </div>
         
         {/* Selection indicator */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg pointer-events-none" />
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg pointer-events-none border border-purple-200 dark:border-purple-700" />
+        
+        {/* Gradient overlays for better visual effect */}
+        <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-white dark:from-gray-800 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none" />
       </div>
     );
   };
