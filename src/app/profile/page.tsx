@@ -25,6 +25,8 @@ interface UserProfile {
   moodBaselineLastUpdated?: { toDate?: () => Date } | null;
   auraPoints?: number;
   auraTotal?: number;
+  town?: string;
+  country?: string;
   createdAt?: { toDate?: () => Date } | null;
   lastLogin?: { toDate?: () => Date } | null;
 }
