@@ -18,7 +18,8 @@ export default function DatePicker({ value, onChange, className = '', placeholde
   });
 
   // Generate arrays for days, months, years
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const daysInSelectedMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
+  const days = Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   const months = [
     { value: 1, name: 'January' },
     { value: 2, name: 'February' },
@@ -53,7 +54,11 @@ export default function DatePicker({ value, onChange, className = '', placeholde
 
   // Update parent when date changes
   useEffect(() => {
-    const dateString = `${selectedDate.year}-${selectedDate.month.toString().padStart(2, '0')}-${selectedDate.day.toString().padStart(2, '0')}`;
+    // Validate the date before creating the string
+    const daysInMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
+    const validDay = Math.min(selectedDate.day, daysInMonth);
+    
+    const dateString = `${selectedDate.year}-${selectedDate.month.toString().padStart(2, '0')}-${validDay.toString().padStart(2, '0')}`;
     onChange(dateString);
   }, [selectedDate, onChange]);
 
@@ -87,21 +92,33 @@ export default function DatePicker({ value, onChange, className = '', placeholde
     onValueChange: (value: number) => void;
     type: 'day' | 'month' | 'year';
   }) => {
-    const [scrollPosition, setScrollPosition] = useState(0);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const [isScrolling, setIsScrolling] = useState(false);
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const itemHeight = 40;
     const visibleItems = 5;
     const containerHeight = itemHeight * visibleItems;
+    const centerOffset = itemHeight * 2; // Offset to center the first item
 
+    // Initialize scroll position when selectedValue changes
     useEffect(() => {
       const index = items.findIndex(item => 
         typeof item === 'number' ? item === selectedValue : item.value === selectedValue
       );
-      if (index !== -1) {
-        setScrollPosition(-index * itemHeight);
+      if (index !== -1 && scrollRef.current) {
+        const targetScrollTop = index * itemHeight;
+        scrollRef.current.scrollTop = targetScrollTop;
       }
-    }, [selectedValue, items]);
+    }, [selectedValue, items, itemHeight]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+      };
+    }, []);
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       setIsScrolling(true);
@@ -133,20 +150,38 @@ export default function DatePicker({ value, onChange, className = '', placeholde
         if (value !== selectedValue) {
           onValueChange(value);
         }
-      }, 150); // Wait 150ms after scrolling stops
+      }, 100); // Reduced timeout for more responsive snapping
+    };
+
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      
+      if (!scrollRef.current) return;
+      
+      const delta = e.deltaY;
+      const currentScrollTop = scrollRef.current.scrollTop;
+      const newScrollTop = currentScrollTop + delta * 0.5; // Reduce wheel sensitivity
+      
+      scrollRef.current.scrollTop = newScrollTop;
     };
 
     return (
       <div className="relative h-48 overflow-hidden">
         <div
-          className="overflow-y-auto scrollbar-hide scroll-smooth"
+          ref={scrollRef}
+          className="overflow-y-auto scrollbar-hide"
           style={{ 
             height: containerHeight,
-            scrollSnapType: 'y mandatory'
+            scrollSnapType: 'y mandatory',
+            scrollBehavior: 'smooth'
           }}
           onScroll={handleScroll}
+          onWheel={handleWheel}
         >
-          <div style={{ height: itemHeight * items.length }}>
+          {/* Top padding to center first item */}
+          <div style={{ height: centerOffset }} />
+          
+          <div>
             {items.map((item, index) => {
               const value = typeof item === 'number' ? item : item.value;
               const display = typeof item === 'number' ? item.toString().padStart(2, '0') : item.name;
@@ -155,7 +190,7 @@ export default function DatePicker({ value, onChange, className = '', placeholde
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-center h-10 text-sm transition-all duration-200 ${
+                  className={`flex items-center justify-center text-sm transition-all duration-200 ${
                     isSelected 
                       ? 'text-purple-600 dark:text-purple-400 font-semibold scale-110' 
                       : 'text-gray-500 dark:text-gray-400'
@@ -170,6 +205,9 @@ export default function DatePicker({ value, onChange, className = '', placeholde
               );
             })}
           </div>
+          
+          {/* Bottom padding to center last item */}
+          <div style={{ height: centerOffset }} />
         </div>
         
         {/* Selection indicator */}
