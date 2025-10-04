@@ -57,6 +57,8 @@ export type FamStats = {
   newMembersThisWeek: number;
   pendingRequests: number;
   sentRequests: number;
+  acceptedRequests: number;
+  declinedRequests: number;
 };
 
 // Get all fam members for a user
@@ -65,23 +67,45 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
     console.log('🔄 Loading fam members for user:', userId);
     
     // Get fam members from the unified fam collection
+    // Remove orderBy to avoid index issues, we'll sort in memory
     const famQuery = firestoreQuery(
       collection(db, 'famMembers'),
       where('userId', '==', userId),
-      where('status', '==', 'active'),
-      orderBy('joinedAt', 'desc')
+      where('status', '==', 'active')
     );
     
     const famSnapshot = await getDocs(famQuery);
     const famMembers: FamMember[] = [];
     
     for (const famDoc of famSnapshot.docs) {
-      const famData = famDoc.data() as FamMember;
-      famMembers.push({
-        ...famData,
+      const famData = famDoc.data();
+      console.log('📄 Fam doc data:', famData);
+      
+      // Handle both old and new data structures
+      const member: FamMember = {
         id: famDoc.id,
-      });
+        userId: famData.userId || userId,
+        name: famData.name || famData.famName || 'Unknown',
+        username: famData.username || famData.famUsername || 'unknown',
+        avatar: famData.avatar || famData.famAvatar || '',
+        joinedAt: famData.joinedAt || new Date(),
+        auraPoints: famData.auraPoints || 0,
+        lastActivity: famData.lastActivity || new Date(),
+        isOnline: famData.isOnline || false,
+        mutualConnections: famData.mutualConnections || 0,
+        sharedInterests: famData.sharedInterests || [],
+        status: famData.status || 'active',
+      };
+      
+      famMembers.push(member);
     }
+    
+    // Sort by joinedAt in memory
+    famMembers.sort((a, b) => {
+      const aTime = a.joinedAt?.toDate ? a.joinedAt.toDate().getTime() : 0;
+      const bTime = b.joinedAt?.toDate ? b.joinedAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
     
     console.log('✅ Fam members loaded:', famMembers.length);
     return famMembers;
@@ -114,23 +138,34 @@ export async function getFamStats(userId: string): Promise<FamStats> {
       }
     }).length;
 
-    // Get pending requests count
-    const pendingQuery = firestoreQuery(
-      collection(db, 'famRequests'),
-      where('toUserId', '==', userId),
-      where('status', '==', 'pending')
-    );
-    const pendingSnapshot = await getDocs(pendingQuery);
-    const pendingRequests = pendingSnapshot.docs.length;
+    // Get all request counts (pending, sent, received, accepted, declined)
+    const [pendingReceivedQuery, pendingSentQuery, allReceivedQuery, allSentQuery] = await Promise.all([
+      getDocs(firestoreQuery(
+        collection(db, 'famRequests'),
+        where('toUserId', '==', userId),
+        where('status', '==', 'pending')
+      )),
+      getDocs(firestoreQuery(
+        collection(db, 'famRequests'),
+        where('fromUserId', '==', userId),
+        where('status', '==', 'pending')
+      )),
+      getDocs(firestoreQuery(
+        collection(db, 'famRequests'),
+        where('toUserId', '==', userId)
+      )),
+      getDocs(firestoreQuery(
+        collection(db, 'famRequests'),
+        where('fromUserId', '==', userId)
+      ))
+    ]);
 
-    // Get sent requests count
-    const sentQuery = firestoreQuery(
-      collection(db, 'famRequests'),
-      where('fromUserId', '==', userId),
-      where('status', '==', 'pending')
-    );
-    const sentSnapshot = await getDocs(sentQuery);
-    const sentRequests = sentSnapshot.docs.length;
+    const pendingRequests = pendingReceivedQuery.docs.length;
+    const sentRequests = pendingSentQuery.docs.length;
+    
+    // Count accepted and declined requests from received requests
+    const acceptedRequests = allReceivedQuery.docs.filter(doc => doc.data().status === 'accepted').length;
+    const declinedRequests = allReceivedQuery.docs.filter(doc => doc.data().status === 'declined').length;
 
     return {
       totalMembers,
@@ -140,6 +175,8 @@ export async function getFamStats(userId: string): Promise<FamStats> {
       newMembersThisWeek,
       pendingRequests,
       sentRequests,
+      acceptedRequests,
+      declinedRequests,
     };
   } catch (error) {
     console.error('Error loading fam stats:', error);
@@ -151,6 +188,8 @@ export async function getFamStats(userId: string): Promise<FamStats> {
       newMembersThisWeek: 0,
       pendingRequests: 0,
       sentRequests: 0,
+      acceptedRequests: 0,
+      declinedRequests: 0,
     };
   }
 }
@@ -168,7 +207,12 @@ export async function sendFamRequest(params: {
   try {
     console.log('📤 Sending fam request:', { fromUserId, toUserId });
     
-    // Check if request already exists
+    // Prevent self-requests
+    if (fromUserId === toUserId) {
+      throw new Error('Cannot send fam request to yourself');
+    }
+    
+    // Check if request already exists (any status)
     const existingQuery = firestoreQuery(
       collection(db, 'famRequests'),
       where('fromUserId', '==', fromUserId),
@@ -177,7 +221,27 @@ export async function sendFamRequest(params: {
     const existingSnapshot = await getDocs(existingQuery);
     
     if (!existingSnapshot.empty) {
-      throw new Error('Fam request already exists');
+      const existingRequest = existingSnapshot.docs[0].data() as FamRequest;
+      if (existingRequest.status === 'pending') {
+        throw new Error('Fam request already sent');
+      } else if (existingRequest.status === 'accepted') {
+        throw new Error('Already fam with this user');
+      } else if (existingRequest.status === 'declined') {
+        throw new Error('Previous fam request was declined');
+      }
+    }
+    
+    // Check if already fam members
+    const famQuery = firestoreQuery(
+      collection(db, 'famMembers'),
+      where('userId', '==', fromUserId),
+      where('famUserId', '==', toUserId),
+      where('status', '==', 'active')
+    );
+    const famSnapshot = await getDocs(famQuery);
+    
+    if (!famSnapshot.empty) {
+      throw new Error('Already fam with this user');
     }
     
     // Create fam request
@@ -213,6 +277,19 @@ export async function respondToFamRequest(params: {
     const batch = writeBatch(db);
     const requestRef = doc(db, 'famRequests', requestId);
     
+    // Get request details first
+    const requestDoc = await getDoc(requestRef);
+    if (!requestDoc.exists()) {
+      throw new Error('Fam request not found');
+    }
+    
+    const requestData = requestDoc.data() as FamRequest;
+    
+    // Verify the responder is the recipient
+    if (requestData.toUserId !== responderUserId) {
+      throw new Error('Unauthorized: You can only respond to requests sent to you');
+    }
+    
     // Update request status
     batch.update(requestRef, {
       status: response,
@@ -220,24 +297,17 @@ export async function respondToFamRequest(params: {
     });
     
     if (response === 'accepted') {
-      // Get request details
-      const requestDoc = await getDoc(requestRef);
-      if (!requestDoc.exists()) {
-        throw new Error('Fam request not found');
-      }
-      
-      const requestData = requestDoc.data() as FamRequest;
-      
       // Create fam relationship for both users
       const timestamp = serverTimestamp();
       
       // Add to requester's fam list
-      batch.set(doc(collection(db, 'famMembers')), {
+      const requesterFamRef = doc(collection(db, 'famMembers'));
+      batch.set(requesterFamRef, {
         userId: requestData.fromUserId,
         famUserId: requestData.toUserId,
-        famName: requestData.toName,
-        famUsername: requestData.toName.toLowerCase().replace(/\s+/g, ''),
-        famAvatar: '',
+        name: requestData.toName,
+        username: requestData.toName.toLowerCase().replace(/\s+/g, ''),
+        avatar: '',
         joinedAt: timestamp,
         auraPoints: 0,
         lastActivity: timestamp,
@@ -248,12 +318,13 @@ export async function respondToFamRequest(params: {
       });
       
       // Add to responder's fam list
-      batch.set(doc(collection(db, 'famMembers')), {
+      const responderFamRef = doc(collection(db, 'famMembers'));
+      batch.set(responderFamRef, {
         userId: requestData.toUserId,
         famUserId: requestData.fromUserId,
-        famName: requestData.fromName,
-        famUsername: requestData.fromName.toLowerCase().replace(/\s+/g, ''),
-        famAvatar: '',
+        name: requestData.fromName,
+        username: requestData.fromName.toLowerCase().replace(/\s+/g, ''),
+        avatar: '',
         joinedAt: timestamp,
         auraPoints: 0,
         lastActivity: timestamp,
@@ -322,11 +393,10 @@ export async function getFamRequests(userId: string): Promise<{
   try {
     console.log('🔄 Loading fam requests for user:', userId);
     
-    // Get received requests
+    // Get received requests (remove orderBy to avoid index issues)
     const receivedQuery = firestoreQuery(
       collection(db, 'famRequests'),
-      where('toUserId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('toUserId', '==', userId)
     );
     const receivedSnapshot = await getDocs(receivedQuery);
     const received: FamRequest[] = receivedSnapshot.docs.map((doc: any) => ({
@@ -334,11 +404,10 @@ export async function getFamRequests(userId: string): Promise<{
       id: doc.id,
     }));
     
-    // Get sent requests
+    // Get sent requests (remove orderBy to avoid index issues)
     const sentQuery = firestoreQuery(
       collection(db, 'famRequests'),
-      where('fromUserId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('fromUserId', '==', userId)
     );
     const sentSnapshot = await getDocs(sentQuery);
     const sent: FamRequest[] = sentSnapshot.docs.map((doc: any) => ({
@@ -346,7 +415,20 @@ export async function getFamRequests(userId: string): Promise<{
       id: doc.id,
     }));
     
-    // Filter by status
+    // Sort in memory by createdAt
+    received.sort((a, b) => {
+      const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
+    
+    sent.sort((a, b) => {
+      const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
+    
+    // Filter by status for received requests
     const accepted = received.filter(req => req.status === 'accepted');
     const declined = received.filter(req => req.status === 'declined');
     
@@ -421,10 +503,33 @@ export function listenToFamChanges(
   
   return onSnapshot(famQuery, async (snapshot: any) => {
     try {
-      const members: FamMember[] = snapshot.docs.map((doc: any) => ({
-        ...doc.data() as FamMember,
-        id: doc.id,
-      }));
+      const members: FamMember[] = snapshot.docs.map((doc: any) => {
+        const famData = doc.data();
+        console.log('📄 Listener fam doc data:', famData);
+        
+        // Handle both old and new data structures
+        return {
+          id: doc.id,
+          userId: famData.userId || userId,
+          name: famData.name || famData.famName || 'Unknown',
+          username: famData.username || famData.famUsername || 'unknown',
+          avatar: famData.avatar || famData.famAvatar || '',
+          joinedAt: famData.joinedAt || new Date(),
+          auraPoints: famData.auraPoints || 0,
+          lastActivity: famData.lastActivity || new Date(),
+          isOnline: famData.isOnline || false,
+          mutualConnections: famData.mutualConnections || 0,
+          sharedInterests: famData.sharedInterests || [],
+          status: famData.status || 'active',
+        } as FamMember;
+      });
+      
+      // Sort by joinedAt in memory
+      members.sort((a, b) => {
+        const aTime = a.joinedAt?.toDate ? a.joinedAt.toDate().getTime() : 0;
+        const bTime = b.joinedAt?.toDate ? b.joinedAt.toDate().getTime() : 0;
+        return bTime - aTime;
+      });
       
       const stats = await getFamStats(userId);
       callback(members, stats);
@@ -438,6 +543,8 @@ export function listenToFamChanges(
         newMembersThisWeek: 0,
         pendingRequests: 0,
         sentRequests: 0,
+        acceptedRequests: 0,
+        declinedRequests: 0,
       });
     }
   });
