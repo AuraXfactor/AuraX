@@ -177,6 +177,24 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
               <div className="text-sm opacity-90">Pending Requests</div>
             </div>
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/20">
+            <div className="text-center">
+              <div className="text-2xl font-bold">{stats.sentRequests}</div>
+              <div className="text-sm opacity-90">Sent Requests</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-200">{stats.acceptedRequests}</div>
+              <div className="text-sm opacity-90">Accepted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-200">{stats.declinedRequests}</div>
+              <div className="text-sm opacity-90">Declined</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{stats.totalAuraPoints.toLocaleString()}</div>
+              <div className="text-sm opacity-90">Total Aura Points</div>
+            </div>
+          </div>
         </div>
       )}
 
