@@ -67,23 +67,45 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
     console.log('🔄 Loading fam members for user:', userId);
     
     // Get fam members from the unified fam collection
+    // Remove orderBy to avoid index issues, we'll sort in memory
     const famQuery = firestoreQuery(
       collection(db, 'famMembers'),
       where('userId', '==', userId),
-      where('status', '==', 'active'),
-      orderBy('joinedAt', 'desc')
+      where('status', '==', 'active')
     );
     
     const famSnapshot = await getDocs(famQuery);
     const famMembers: FamMember[] = [];
     
     for (const famDoc of famSnapshot.docs) {
-      const famData = famDoc.data() as FamMember;
-      famMembers.push({
-        ...famData,
+      const famData = famDoc.data();
+      console.log('📄 Fam doc data:', famData);
+      
+      // Handle both old and new data structures
+      const member: FamMember = {
         id: famDoc.id,
-      });
+        userId: famData.userId || userId,
+        name: famData.name || famData.famName || 'Unknown',
+        username: famData.username || famData.famUsername || 'unknown',
+        avatar: famData.avatar || famData.famAvatar || '',
+        joinedAt: famData.joinedAt || new Date(),
+        auraPoints: famData.auraPoints || 0,
+        lastActivity: famData.lastActivity || new Date(),
+        isOnline: famData.isOnline || false,
+        mutualConnections: famData.mutualConnections || 0,
+        sharedInterests: famData.sharedInterests || [],
+        status: famData.status || 'active',
+      };
+      
+      famMembers.push(member);
     }
+    
+    // Sort by joinedAt in memory
+    famMembers.sort((a, b) => {
+      const aTime = a.joinedAt?.toDate ? a.joinedAt.toDate().getTime() : 0;
+      const bTime = b.joinedAt?.toDate ? b.joinedAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
     
     console.log('✅ Fam members loaded:', famMembers.length);
     return famMembers;
@@ -371,11 +393,10 @@ export async function getFamRequests(userId: string): Promise<{
   try {
     console.log('🔄 Loading fam requests for user:', userId);
     
-    // Get received requests
+    // Get received requests (remove orderBy to avoid index issues)
     const receivedQuery = firestoreQuery(
       collection(db, 'famRequests'),
-      where('toUserId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('toUserId', '==', userId)
     );
     const receivedSnapshot = await getDocs(receivedQuery);
     const received: FamRequest[] = receivedSnapshot.docs.map((doc: any) => ({
@@ -383,17 +404,29 @@ export async function getFamRequests(userId: string): Promise<{
       id: doc.id,
     }));
     
-    // Get sent requests
+    // Get sent requests (remove orderBy to avoid index issues)
     const sentQuery = firestoreQuery(
       collection(db, 'famRequests'),
-      where('fromUserId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('fromUserId', '==', userId)
     );
     const sentSnapshot = await getDocs(sentQuery);
     const sent: FamRequest[] = sentSnapshot.docs.map((doc: any) => ({
       ...doc.data() as FamRequest,
       id: doc.id,
     }));
+    
+    // Sort in memory by createdAt
+    received.sort((a, b) => {
+      const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
+    
+    sent.sort((a, b) => {
+      const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return bTime - aTime;
+    });
     
     // Filter by status for received requests
     const accepted = received.filter(req => req.status === 'accepted');
@@ -470,10 +503,33 @@ export function listenToFamChanges(
   
   return onSnapshot(famQuery, async (snapshot: any) => {
     try {
-      const members: FamMember[] = snapshot.docs.map((doc: any) => ({
-        ...doc.data() as FamMember,
-        id: doc.id,
-      }));
+      const members: FamMember[] = snapshot.docs.map((doc: any) => {
+        const famData = doc.data();
+        console.log('📄 Listener fam doc data:', famData);
+        
+        // Handle both old and new data structures
+        return {
+          id: doc.id,
+          userId: famData.userId || userId,
+          name: famData.name || famData.famName || 'Unknown',
+          username: famData.username || famData.famUsername || 'unknown',
+          avatar: famData.avatar || famData.famAvatar || '',
+          joinedAt: famData.joinedAt || new Date(),
+          auraPoints: famData.auraPoints || 0,
+          lastActivity: famData.lastActivity || new Date(),
+          isOnline: famData.isOnline || false,
+          mutualConnections: famData.mutualConnections || 0,
+          sharedInterests: famData.sharedInterests || [],
+          status: famData.status || 'active',
+        } as FamMember;
+      });
+      
+      // Sort by joinedAt in memory
+      members.sort((a, b) => {
+        const aTime = a.joinedAt?.toDate ? a.joinedAt.toDate().getTime() : 0;
+        const bTime = b.joinedAt?.toDate ? b.joinedAt.toDate().getTime() : 0;
+        return bTime - aTime;
+      });
       
       const stats = await getFamStats(userId);
       callback(members, stats);

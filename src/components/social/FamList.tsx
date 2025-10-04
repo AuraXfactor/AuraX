@@ -40,8 +40,22 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
       setFamMembers(members);
       setStats(famStats);
       console.log('✅ Fam members loaded:', members.length);
+      console.log('✅ Fam stats loaded:', famStats);
     } catch (error) {
       console.error('Error loading fam members:', error);
+      // Set empty state on error
+      setFamMembers([]);
+      setStats({
+        totalMembers: 0,
+        activeMembers: 0,
+        totalAuraPoints: 0,
+        averageAuraPoints: 0,
+        newMembersThisWeek: 0,
+        pendingRequests: 0,
+        sentRequests: 0,
+        acceptedRequests: 0,
+        declinedRequests: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -60,8 +74,10 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
       setFamMembers(members);
       setStats(famStats);
       console.log('✅ Fam members refreshed:', members.length);
+      console.log('✅ Fam stats refreshed:', famStats);
     } catch (error) {
       console.error('Error refreshing fam members:', error);
+      // Don't reset state on refresh errors, just log them
     }
   }, [user]);
 
