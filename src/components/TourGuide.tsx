@@ -33,48 +33,42 @@ const TOUR_STEPS: TourStep[] = [
     title: '🧭 Navigation Hub',
     description: 'Your main navigation is right here! Tap any icon to explore different sections of your wellness journey.',
     target: 'nav[class*="fixed bottom-0"]',
-    position: 'top',
-    action: { type: 'click', target: 'nav[class*="fixed bottom-0"] button:first-child' }
+    position: 'top'
   },
   {
     id: 'journal',
     title: '📔 Journal Your Journey',
-    description: 'Start your day with mindful journaling. Track your thoughts, emotions, and growth.',
+    description: 'Start your day with mindful journaling. Track your thoughts, emotions, and growth. Tap the journal icon to begin writing.',
     target: 'nav[class*="fixed bottom-0"] button:first-child',
-    position: 'top',
-    action: { type: 'navigate', url: '/journal' }
+    position: 'top'
   },
   {
     id: 'aura-feed',
     title: '✨ Share Your Aura',
-    description: 'Connect with friends by sharing 24-hour glimpses of your wellness journey.',
+    description: 'Connect with friends by sharing 24-hour glimpses of your wellness journey. Tap the aura icon to explore.',
     target: 'nav[class*="fixed bottom-0"] button:nth-child(2)',
-    position: 'top',
-    action: { type: 'navigate', url: '/aura' }
+    position: 'top'
   },
   {
     id: 'points-system',
     title: '🏆 Earn Aura Points',
-    description: 'Celebrate your wellness milestones! Points reward your self-care journey.',
+    description: 'Celebrate your wellness milestones! Points reward your self-care journey. Tap the points icon to see your progress.',
     target: 'nav[class*="fixed bottom-0"] button:nth-child(3)',
-    position: 'top',
-    action: { type: 'navigate', url: '/aura-points' }
+    position: 'top'
   },
   {
     id: 'profile',
     title: '👤 Your Profile',
-    description: 'Manage your settings, view your progress, and customize your experience.',
+    description: 'Manage your settings, view your progress, and customize your experience. Tap the profile icon to access your account.',
     target: 'nav[class*="fixed bottom-0"] button:last-child',
-    position: 'top',
-    action: { type: 'navigate', url: '/profile' }
+    position: 'top'
   },
   {
     id: 'chat-ai',
     title: '🤖 AI Wellness Assistant',
-    description: 'Get instant support and guidance from your AI wellness companion.',
+    description: 'Get instant support and guidance from your AI wellness companion. Available throughout your journey.',
     target: 'nav[class*="fixed bottom-0"]',
-    position: 'top',
-    action: { type: 'navigate', url: '/chat' }
+    position: 'top'
   },
   {
     id: 'complete',
@@ -180,9 +174,8 @@ export default function TourGuide({ isActive, onComplete, onSkip }: TourGuidePro
         }
         break;
       case 'navigate':
-        if (step.action.url) {
-          window.location.href = step.action.url;
-        }
+        // Skip navigation actions to prevent authentication issues during tour
+        console.log('Tour: Skipping navigation to', step.action.url);
         break;
     }
 

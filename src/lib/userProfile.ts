@@ -177,6 +177,7 @@ export type UserSettings = {
 export type UserProfileData = {
   uid: string;
   email?: string | null;
+  phoneNumber?: string | null;
   name?: string | null;
   username?: string | null;
   avatar?: string | null;

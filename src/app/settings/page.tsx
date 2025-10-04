@@ -13,6 +13,8 @@ import { AuraTheme } from '@/lib/auraThemes';
 interface SettingsData {
   theme?: string;
   auraTheme?: string;
+  town?: string;
+  country?: string;
   notifications?: {
     journal?: boolean;
     recovery?: boolean;
@@ -95,6 +97,8 @@ export default function SettingsPage() {
         setSettings({
           theme: userData.theme || 'auto',
           auraTheme: userData.auraTheme || 'light-pastel',
+          town: userData.town || '',
+          country: userData.country || '',
           notifications: {
             journal: userData.notifications?.journal ?? true,
             recovery: userData.notifications?.recovery ?? true,
@@ -717,6 +721,39 @@ We're committed to protecting your mental health data with the highest ethical s
                   <button className="px-3 py-1 bg-amber-200 dark:bg-amber-700 text-amber-800 dark:text-amber-200 rounded-full text-sm hover:bg-amber-300 dark:hover:bg-amber-600 transition">
                     📤 Export Data
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Information */}
+          <div className="bg-white/60 dark:bg-white/5 backdrop-blur rounded-3xl border border-white/20 p-6">
+            <h2 className="text-2xl font-semibold mb-4">📍 Profile Information</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <h3 className="font-medium">Location</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {settings.town && settings.country ? 
+                      `${settings.town}, ${settings.country}` : 
+                      'Location not set during signup'
+                    }
+                  </p>
+                </div>
+                <div className="text-gray-400">
+                  📍
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <h3 className="font-medium">Account Type</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {user?.email ? 'Email Account' : 'Phone Account'}
+                  </p>
+                </div>
+                <div className="text-gray-400">
+                  {user?.email ? '📧' : '📱'}
                 </div>
               </div>
             </div>
