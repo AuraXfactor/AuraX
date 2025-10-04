@@ -16,6 +16,8 @@ export default function DatePicker({ value, onChange, className = '', placeholde
     month: 1,
     year: new Date().getFullYear() - 18 // Default to 18 years ago
   });
+  const [hasUserSelected, setHasUserSelected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Generate arrays for days, months, years
   const daysInSelectedMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
@@ -40,7 +42,7 @@ export default function DatePicker({ value, onChange, className = '', placeholde
 
   // Parse initial value
   useEffect(() => {
-    if (value) {
+    if (value && !isInitialized) {
       const date = new Date(value);
       if (!isNaN(date.getTime())) {
         setSelectedDate({
@@ -48,23 +50,33 @@ export default function DatePicker({ value, onChange, className = '', placeholde
           month: date.getMonth() + 1,
           year: date.getFullYear()
         });
+        setHasUserSelected(true); // Mark that we have a valid initial value
       }
+      setIsInitialized(true);
+    } else if (!value && !isInitialized) {
+      setIsInitialized(true);
     }
-  }, [value]);
+  }, [value, isInitialized]);
 
-  // Update parent when date changes
+  // Update parent when date changes (only if user has made a selection)
   useEffect(() => {
-    // Validate the date before creating the string
-    const daysInMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
-    const validDay = Math.min(selectedDate.day, daysInMonth);
-    
-    const dateString = `${selectedDate.year}-${selectedDate.month.toString().padStart(2, '0')}-${validDay.toString().padStart(2, '0')}`;
-    onChange(dateString);
-  }, [selectedDate, onChange]);
+    if (hasUserSelected) {
+      // Validate the date before creating the string
+      const daysInMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
+      const validDay = Math.min(selectedDate.day, daysInMonth);
+      
+      const dateString = `${selectedDate.year}-${selectedDate.month.toString().padStart(2, '0')}-${validDay.toString().padStart(2, '0')}`;
+      onChange(dateString);
+    }
+  }, [selectedDate, onChange, hasUserSelected]);
 
   const formatDisplayDate = () => {
-    if (!value) return placeholder;
-    const date = new Date(value);
+    // Show placeholder if no user selection has been made and no initial value
+    if (!hasUserSelected && !value) return placeholder;
+    
+    // Use the internal selectedDate state for display, not the value prop
+    const dateString = `${selectedDate.year}-${selectedDate.month.toString().padStart(2, '0')}-${selectedDate.day.toString().padStart(2, '0')}`;
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
@@ -73,6 +85,7 @@ export default function DatePicker({ value, onChange, className = '', placeholde
   };
 
   const handleScroll = (type: 'day' | 'month' | 'year', value: number) => {
+    setHasUserSelected(true); // Mark that user has made a selection
     setSelectedDate(prev => {
       let newDate = { ...prev, [type]: value };
       
@@ -227,7 +240,7 @@ export default function DatePicker({ value, onChange, className = '', placeholde
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition"
       >
-        <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
+        <span className={hasUserSelected || value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
           {formatDisplayDate()}
         </span>
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
