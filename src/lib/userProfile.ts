@@ -72,6 +72,8 @@ export type OnboardingProfile = {
   username: string;
   email: string | null;
   avatar: string;
+  auraAvatarId?: string;
+  bio?: string;
   dateOfBirth: string;
   gender: string;
   country: string;
@@ -89,6 +91,8 @@ export async function saveOnboardingProfile(user: User, profile: OnboardingProfi
     username: profile.username,
     email: profile.email,
     avatar: profile.avatar,
+    auraAvatarId: profile.auraAvatarId,
+    bio: profile.bio,
     dateOfBirth: profile.dateOfBirth,
     gender: profile.gender,
     country: profile.country,

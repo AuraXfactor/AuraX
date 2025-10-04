@@ -7,16 +7,21 @@ import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import QRCode from 'qrcode';
+import AuraVibeCheck from '@/components/AuraVibeCheck';
+import AuraBadgeGallery from '@/components/AuraBadgeGallery';
 
 interface UserProfile {
   name?: string;
   username?: string;
   email?: string;
   avatar?: string;
+  auraAvatarId?: string;
+  bio?: string;
   focusAreas?: string[];
   preferredTherapy?: string;
   reminderTime?: string;
   moodBaseline?: string[];
+  moodBaselineLastUpdated?: { toDate?: () => Date } | null;
   auraPoints?: number;
   auraTotal?: number;
   createdAt?: { toDate?: () => Date } | null;
@@ -100,11 +105,18 @@ export default function ProfilePage() {
       }
 
       // Update Firestore profile
-      await updateDoc(doc(db, 'users', user.uid), {
+      const updateData: any = {
         ...profile,
         avatar: avatarUrl,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // If mood baseline was updated, add timestamp
+      if (profile.moodBaseline && profile.moodBaseline.length > 0) {
+        updateData.moodBaselineLastUpdated = serverTimestamp();
+      }
+
+      await updateDoc(doc(db, 'users', user.uid), updateData);
 
       setEditing(false);
       setAvatarFile(null);
@@ -335,6 +347,42 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* Bio Section */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Bio</h3>
+              <div>
+                <label className="block text-sm font-medium mb-2">About You</label>
+                {editing ? (
+                  <div>
+                    <textarea
+                      value={profile.bio || ''}
+                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      placeholder="Tell others about yourself... (max 160 characters)"
+                      maxLength={160}
+                      rows={3}
+                    />
+                    <div className="flex justify-between items-center mt-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {(profile.bio || '').length}/160 characters
+                      </div>
+                      <div className="text-xs text-purple-600 dark:text-purple-400">
+                        {(profile.bio || '').length > 0 ? '✨ Express yourself!' : '💭 Optional but fun!'}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg min-h-[3rem]">
+                    {profile.bio ? (
+                      <p className="text-gray-900 dark:text-gray-100">{profile.bio}</p>
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400 italic">No bio added yet</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Focus Areas */}
             <div>
               <h3 className="text-xl font-semibold mb-4">Focus Areas (max 3)</h3>
@@ -402,18 +450,133 @@ export default function ProfilePage() {
             </div>
 
             {/* Mood Baseline */}
-            {profile.moodBaseline && profile.moodBaseline.length > 0 && (
-              <div>
-                <h3 className="text-xl font-semibold mb-4">Mood Baseline</h3>
-                <div className="flex gap-2">
-                  {profile.moodBaseline.map((emoji, index) => (
-                    <span key={index} className="text-2xl p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      {emoji}
-                    </span>
-                  ))}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Mood Baseline</h3>
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="font-medium text-purple-800 dark:text-purple-200">Your Current Mood Vibe</h4>
+                    <p className="text-sm text-purple-600 dark:text-purple-300">
+                      These emojis represent your baseline emotional state
+                    </p>
+                  </div>
+                  {(() => {
+                    const lastUpdated = profile.moodBaselineLastUpdated?.toDate?.();
+                    const canUpdate = !lastUpdated || (Date.now() - lastUpdated.getTime()) > (7 * 24 * 60 * 60 * 1000);
+                    const daysUntilUpdate = lastUpdated ? Math.ceil((7 * 24 * 60 * 60 * 1000 - (Date.now() - lastUpdated.getTime())) / (24 * 60 * 60 * 1000)) : 0;
+                    
+                    return (
+                      <div className="text-right">
+                        {canUpdate ? (
+                          <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                            ✨ Can update now
+                          </span>
+                        ) : (
+                          <span className="text-sm text-orange-600 dark:text-orange-400">
+                            🔒 {daysUntilUpdate} days until next update
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
+                
+                {profile.moodBaseline && profile.moodBaseline.length > 0 ? (
+                  <div className="flex gap-2 mb-3">
+                    {profile.moodBaseline.map((emoji, index) => (
+                      <span key={index} className="text-2xl p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-700">
+                        {emoji}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                    <p className="text-sm">No mood baseline set yet</p>
+                  </div>
+                )}
+
+                {(() => {
+                  const lastUpdated = profile.moodBaselineLastUpdated?.toDate?.();
+                  const canUpdate = !lastUpdated || (Date.now() - lastUpdated.getTime()) > (7 * 24 * 60 * 60 * 1000);
+                  
+                  if (editing && canUpdate) {
+                    return (
+                      <div>
+                        <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">
+                          Select 3 emojis representing your current vibe:
+                        </div>
+                        <div className="grid grid-cols-8 gap-2 text-xl mb-3">
+                          {["😊","😐","😴","😌","😤","🤗","😔","🤩","😟","😅","😇","🥱","😎","😭","🤯","🫶"].map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => {
+                                const current = profile.moodBaseline || [];
+                                if (current.includes(emoji)) {
+                                  setProfile({
+                                    ...profile,
+                                    moodBaseline: current.filter(e => e !== emoji)
+                                  });
+                                } else if (current.length < 3) {
+                                  setProfile({
+                                    ...profile,
+                                    moodBaseline: [...current, emoji]
+                                  });
+                                }
+                              }}
+                              className={`h-12 rounded-lg border transition ${
+                                (profile.moodBaseline || []).includes(emoji)
+                                  ? 'border-purple-500 ring-2 ring-purple-300 bg-purple-50 dark:bg-purple-900/20'
+                                  : 'border-gray-300 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-600'
+                              }`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="text-xs text-purple-600 dark:text-purple-400">
+                          Selected: {(profile.moodBaseline || []).join(' ')} ({(profile.moodBaseline || []).length}/3)
+                        </div>
+                      </div>
+                    );
+                  } else if (editing && !canUpdate) {
+                    return (
+                      <div className="text-center py-2">
+                        <p className="text-sm text-orange-600 dark:text-orange-400">
+                          🔒 Mood baseline can only be updated once every 7 days
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
-            )}
+            </div>
+
+            {/* Aura Vibe Check */}
+            <div>
+              <AuraVibeCheck />
+            </div>
+
+            {/* Aura Badge Gallery */}
+            <div>
+              <AuraBadgeGallery
+                userStats={{
+                  journalEntries: 0, // This would come from actual user data
+                  streakDays: 0,
+                  auraPoints: profile.auraPoints || profile.auraTotal || 0,
+                  friendsAdded: 0,
+                  vibeChecks: 0,
+                  focusGoals: 0,
+                  daysActive: profile.createdAt ? Math.floor((Date.now() - profile.createdAt.toDate().getTime()) / (1000 * 60 * 60 * 24)) : 0,
+                  isEarlyAdopter: false,
+                  unlockedAvatars: 1,
+                  completedFocusAreas: profile.focusAreas?.length || 0,
+                }}
+                showCategories={true}
+                showRarity={true}
+                showProgress={true}
+              />
+            </div>
 
             {/* Account Info */}
             <div>

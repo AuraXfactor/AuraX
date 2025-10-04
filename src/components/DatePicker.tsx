@@ -1,0 +1,256 @@
+'use client';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface DatePickerProps {
+  value: string;
+  onChange: (date: string) => void;
+  className?: string;
+  placeholder?: string;
+}
+
+export default function DatePicker({ value, onChange, className = '', placeholder = 'Select date' }: DatePickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState({
+    day: 1,
+    month: 1,
+    year: new Date().getFullYear() - 18 // Default to 18 years ago
+  });
+
+  // Generate arrays for days, months, years
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const months = [
+    { value: 1, name: 'January' },
+    { value: 2, name: 'February' },
+    { value: 3, name: 'March' },
+    { value: 4, name: 'April' },
+    { value: 5, name: 'May' },
+    { value: 6, name: 'June' },
+    { value: 7, name: 'July' },
+    { value: 8, name: 'August' },
+    { value: 9, name: 'September' },
+    { value: 10, name: 'October' },
+    { value: 11, name: 'November' },
+    { value: 12, name: 'December' }
+  ];
+  
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
+
+  // Parse initial value
+  useEffect(() => {
+    if (value) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        setSelectedDate({
+          day: date.getDate(),
+          month: date.getMonth() + 1,
+          year: date.getFullYear()
+        });
+      }
+    }
+  }, [value]);
+
+  // Update parent when date changes
+  useEffect(() => {
+    const dateString = `${selectedDate.year}-${selectedDate.month.toString().padStart(2, '0')}-${selectedDate.day.toString().padStart(2, '0')}`;
+    onChange(dateString);
+  }, [selectedDate, onChange]);
+
+  const formatDisplayDate = () => {
+    if (!value) return placeholder;
+    const date = new Date(value);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const handleScroll = (type: 'day' | 'month' | 'year', value: number) => {
+    setSelectedDate(prev => {
+      let newDate = { ...prev, [type]: value };
+      
+      // Validate day based on month and year
+      const daysInMonth = new Date(newDate.year, newDate.month, 0).getDate();
+      if (newDate.day > daysInMonth) {
+        newDate.day = daysInMonth;
+      }
+      
+      return newDate;
+    });
+  };
+
+  const WheelPicker = ({ items, selectedValue, onValueChange, type }: {
+    items: (number | { value: number; name: string })[];
+    selectedValue: number;
+    onValueChange: (value: number) => void;
+    type: 'day' | 'month' | 'year';
+  }) => {
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const itemHeight = 40;
+    const visibleItems = 5;
+    const containerHeight = itemHeight * visibleItems;
+
+    useEffect(() => {
+      const index = items.findIndex(item => 
+        typeof item === 'number' ? item === selectedValue : item.value === selectedValue
+      );
+      if (index !== -1) {
+        setScrollPosition(-index * itemHeight);
+      }
+    }, [selectedValue, items]);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const scrollTop = e.currentTarget.scrollTop;
+      const index = Math.round(scrollTop / itemHeight);
+      const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+      
+      const item = items[clampedIndex];
+      const value = typeof item === 'number' ? item : item.value;
+      
+      if (value !== selectedValue) {
+        onValueChange(value);
+      }
+    };
+
+    return (
+      <div className="relative h-48 overflow-hidden">
+        <div
+          className="overflow-y-auto scrollbar-hide"
+          style={{ height: containerHeight }}
+          onScroll={handleScroll}
+        >
+          <div style={{ height: itemHeight * items.length }}>
+            {items.map((item, index) => {
+              const value = typeof item === 'number' ? item : item.value;
+              const display = typeof item === 'number' ? item.toString().padStart(2, '0') : item.name;
+              const isSelected = value === selectedValue;
+              
+              return (
+                <div
+                  key={index}
+                  className={`flex items-center justify-center h-10 text-sm transition ${
+                    isSelected 
+                      ? 'text-purple-600 dark:text-purple-400 font-semibold' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                  style={{ height: itemHeight }}
+                >
+                  {display}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Selection indicator */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg pointer-events-none" />
+      </div>
+    );
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+      >
+        <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
+          {formatDisplayDate()}
+        </span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+          {isOpen ? '▲' : '▼'}
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg z-50 p-4"
+          >
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Select Date of Birth
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Scroll to select your birth date
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {/* Day Picker */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">
+                  Day
+                </label>
+                <WheelPicker
+                  items={days}
+                  selectedValue={selectedDate.day}
+                  onValueChange={(value) => handleScroll('day', value)}
+                  type="day"
+                />
+              </div>
+
+              {/* Month Picker */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">
+                  Month
+                </label>
+                <WheelPicker
+                  items={months}
+                  selectedValue={selectedDate.month}
+                  onValueChange={(value) => handleScroll('month', value)}
+                  type="month"
+                />
+              </div>
+
+              {/* Year Picker */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">
+                  Year
+                </label>
+                <WheelPicker
+                  items={years}
+                  selectedValue={selectedDate.year}
+                  onValueChange={(value) => handleScroll('year', value)}
+                  type="year"
+                />
+              </div>
+            </div>
+
+            {/* Selected Date Display */}
+            <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
+              <p className="text-sm text-purple-700 dark:text-purple-300">
+                Selected: {formatDisplayDate()}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 py-2 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
