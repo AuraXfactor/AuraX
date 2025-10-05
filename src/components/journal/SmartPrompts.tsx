@@ -41,6 +41,11 @@ export default function SmartPrompts({
       setLoading(true);
       setError(null);
       
+      // Get user's recent journal history for context
+      const historyResponse = await fetch(`/api/journals/history?userId=${user.uid}&limit=5`);
+      const historyData = await historyResponse.json();
+      const userHistory = historyData.entries || [];
+      
       const response = await fetch('/api/aura-ai/smart-prompts', {
         method: 'POST',
         headers: {
@@ -49,7 +54,8 @@ export default function SmartPrompts({
         body: JSON.stringify({ 
           userId: user.uid,
           currentMood,
-          recentActivities 
+          recentActivities,
+          userHistory
         }),
       });
       
