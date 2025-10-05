@@ -297,7 +297,7 @@ export async function getJournalCollections(user: User): Promise<JournalCollecti
 
 // Biometric authentication helpers
 export async function setupBiometricAuth(user: User): Promise<boolean> {
-  if (!user || !window.PublicKeyCredential) {
+  if (!user || typeof window === 'undefined' || !window.PublicKeyCredential) {
     return false;
   }
 
@@ -307,7 +307,7 @@ export async function setupBiometricAuth(user: User): Promise<boolean> {
         challenge: new Uint8Array(32),
         rp: {
           name: "AuraX",
-          id: window.location.hostname,
+          id: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
         },
         user: {
           id: new TextEncoder().encode(user.uid),
@@ -339,7 +339,7 @@ export async function setupBiometricAuth(user: User): Promise<boolean> {
 }
 
 export async function authenticateWithBiometric(user: User): Promise<boolean> {
-  if (!user || !window.PublicKeyCredential) {
+  if (!user || typeof window === 'undefined' || !window.PublicKeyCredential) {
     return false;
   }
 

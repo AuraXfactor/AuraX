@@ -346,8 +346,8 @@ export async function initializeCentralizedAuraStats(userUid: string): Promise<v
       goal_setting: 0,
       first_time_bonus: 0,
     },
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: serverTimestamp() as Timestamp,
+    updatedAt: serverTimestamp() as Timestamp,
   };
   
   await setDoc(statsRef, initialStats, { merge: true });
@@ -368,14 +368,12 @@ export async function awardCentralizedPoints(params: {
   
   try {
     // Get current stats
-    const stats = await getCentralizedAuraStats(user.uid);
-    if (!stats) {
+    let currentStats = await getCentralizedAuraStats(user.uid);
+    if (!currentStats) {
       await initializeCentralizedAuraStats(user.uid);
-      const newStats = await getCentralizedAuraStats(user.uid);
-      if (!newStats) throw new Error('Failed to initialize stats');
+      currentStats = await getCentralizedAuraStats(user.uid);
+      if (!currentStats) throw new Error('Failed to initialize stats');
     }
-    
-    const currentStats = stats || await getCentralizedAuraStats(user.uid)!;
     const today = new Date().toISOString().split('T')[0];
     
     // Check for duplicates using uniqueId
@@ -461,7 +459,7 @@ export async function awardCentralizedPoints(params: {
         uniqueId,
         ...metadata,
       },
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp() as Timestamp,
     };
     
     // Use batch operations for atomicity

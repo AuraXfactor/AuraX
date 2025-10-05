@@ -8,6 +8,9 @@ import { db } from '@/lib/firebase';
 import { awardCentralizedPoints } from '@/lib/centralizedAuraSystem';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic';
+
 const MOOD_OPTIONS = [
   { emoji: '😢', label: 'Very Sad', value: 'very_sad', color: 'from-blue-400 to-blue-600' },
   { emoji: '😐', label: 'Neutral', value: 'neutral', color: 'from-gray-400 to-gray-600' },
