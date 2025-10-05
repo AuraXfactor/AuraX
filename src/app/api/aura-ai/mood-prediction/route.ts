@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
     const prediction = await auraAI.predictMood(userHistory);
 
     return NextResponse.json({
-      success: true,
-      prediction
+      prediction,
+      suggestions: []
     });
 
   } catch (error) {

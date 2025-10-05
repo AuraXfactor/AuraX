@@ -59,21 +59,69 @@ export default function AIInsights({ onInsightsLoaded }: AIInsightsProps) {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/insights/analyze', {
+      // First get recent journal entries
+      const historyResponse = await fetch(`/api/journals/history?userId=${user.uid}&limit=10`);
+      const historyData = await historyResponse.json();
+      const recentEntries = historyData.entries || [];
+      
+      if (recentEntries.length === 0) {
+        setInsights({
+          moodPatterns: [],
+          activityCorrelations: [],
+          weeklyTrends: [],
+          personalizedInsights: ['Start journaling to get personalized insights! Your AI companion is ready to help you understand your patterns and emotions.'],
+          recommendations: ['Try logging your mood and activities daily to see patterns emerge.'],
+          riskFactors: [],
+          positivePatterns: []
+        });
+        return;
+      }
+      
+      // Analyze the most recent entry with AI
+      const latestEntry = recentEntries[0];
+      const analysisResponse = await fetch('/api/aura-ai/analyze-journal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: user.uid }),
+        body: JSON.stringify({ 
+          userId: user.uid,
+          entryText: latestEntry.entryText,
+          mood: latestEntry.moodTag,
+          activities: latestEntry.activities || []
+        }),
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to load insights');
+      if (!analysisResponse.ok) {
+        throw new Error('Failed to analyze journal entry');
       }
       
-      const data = await response.json();
-      setInsights(data.insights);
-      onInsightsLoaded?.(data.insights);
+      const analysisData = await analysisResponse.json();
+      const analysis = analysisData.analysis;
+      
+      // Generate insights based on the AI analysis
+      const insights = {
+        moodPatterns: [{
+          mood: analysis.mood || latestEntry.moodTag,
+          frequency: 1,
+          percentage: 100,
+          trend: 'stable' as const
+        }],
+        activityCorrelations: (latestEntry.activities || []).map((activity: string) => ({
+          activity,
+          moodImprovement: analysis.sentiment || 0,
+          frequency: 1,
+          correlation: analysis.sentiment > 0 ? 'positive' as const : analysis.sentiment < 0 ? 'negative' as const : 'neutral' as const
+        })),
+        weeklyTrends: [],
+        personalizedInsights: analysis.insights || ['Keep journaling to discover more about yourself!'],
+        recommendations: analysis.recommendations || ['Continue your journaling practice'],
+        riskFactors: analysis.riskFactors || [],
+        positivePatterns: analysis.positivePatterns || []
+      };
+      
+      setInsights(insights);
+      onInsightsLoaded?.(insights);
     } catch (err) {
       console.error('Error loading insights:', err);
       setError(err instanceof Error ? err.message : 'Failed to load insights');

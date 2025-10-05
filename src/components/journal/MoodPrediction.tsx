@@ -50,6 +50,19 @@ export default function MoodPrediction({ onPredictionLoaded }: MoodPredictionPro
       const historyData = await historyResponse.json();
       const userHistory = historyData.entries || [];
       
+      if (userHistory.length === 0) {
+        setPrediction({
+          predictedMood: 'neutral',
+          confidence: 0.5,
+          riskLevel: 'low',
+          factors: ['No journal entries yet'],
+          recommendations: ['Start journaling to get personalized mood predictions'],
+          proactiveActions: ['Try logging your mood daily']
+        });
+        setSuggestions([]);
+        return;
+      }
+      
       const response = await fetch('/api/aura-ai/mood-prediction', {
         method: 'POST',
         headers: {
