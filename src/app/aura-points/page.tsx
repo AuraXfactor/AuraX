@@ -4,12 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  getUserAuraStats,
+  getCentralizedAuraStats,
   getRecentTransactions,
-  listenToUserAuraStats,
-  UserAuraStats,
-  AuraPointTransaction,
-} from '@/lib/auraPoints';
+  listenToCentralizedAuraStats,
+  CentralizedAuraStats,
+  AuraTransaction,
+  AURA_BADGES,
+  restoreStreak,
+} from '@/lib/centralizedAuraSystem';
 import {
   getActiveQuests,
   getUserQuestProgress,
@@ -39,8 +41,8 @@ export default function AuraPointsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
-  const [userStats, setUserStats] = useState<UserAuraStats | null>(null);
-  const [transactions, setTransactions] = useState<AuraPointTransaction[]>([]);
+  const [userStats, setUserStats] = useState<CentralizedAuraStats | null>(null);
+  const [transactions, setTransactions] = useState<AuraTransaction[]>([]);
   const [activeQuests, setActiveQuests] = useState<WeeklyQuest[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [featuredRewards, setFeaturedRewards] = useState<{
@@ -55,6 +57,7 @@ export default function AuraPointsPage() {
   }>({});
   const [loading, setLoading] = useState(true);
   const [boostPoints, setBoostPoints] = useState(0);
+  const [restoringStreak, setRestoringStreak] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -65,7 +68,7 @@ export default function AuraPointsPage() {
     loadData();
     
     // Listen to real-time stats updates
-    const unsubscribe = listenToUserAuraStats(user.uid, (stats) => {
+    const unsubscribe = listenToCentralizedAuraStats(user.uid, (stats) => {
       setUserStats(stats);
     });
     
@@ -85,7 +88,7 @@ export default function AuraPointsPage() {
         squads,
         leaderboard,
       ] = await Promise.all([
-        getUserAuraStats(user.uid),
+        getCentralizedAuraStats(user.uid),
         getRecentTransactions(user.uid),
         getActiveQuests(),
         getAvailableRewards(1),
@@ -149,6 +152,26 @@ export default function AuraPointsPage() {
     alert(`🎉 Aura Boost Complete! You earned ${points} bonus points!`);
   };
 
+  const handleRestoreStreak = async () => {
+    if (!user) return;
+    
+    setRestoringStreak(true);
+    try {
+      const result = await restoreStreak(user);
+      if (result.success) {
+        alert(result.message);
+        await loadData(); // Refresh data
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Error restoring streak:', error);
+      alert('Failed to restore streak. Please try again.');
+    } finally {
+      setRestoringStreak(false);
+    }
+  };
+
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -156,18 +179,48 @@ export default function AuraPointsPage() {
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-3xl">
           <div className="text-3xl font-bold">{userStats?.availablePoints?.toLocaleString() || 0}</div>
           <div className="text-purple-100">Available Points</div>
+          <div className="text-purple-200 text-sm mt-1">
+            Total: {userStats?.totalPoints?.toLocaleString() || 0} • Today: {userStats?.dailyPointsEarned || 0}
+          </div>
         </div>
         <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-6 rounded-3xl">
-          <div className="text-3xl font-bold">{userStats?.currentStreak || 0}</div>
-          <div className="text-blue-100">Day Streak 🔥</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold">{userStats?.currentStreak || 0}</div>
+              <div className="text-blue-100">Day Streak 🔥</div>
+              <div className="text-blue-200 text-sm mt-1">
+                Best: {userStats?.longestStreak || 0} • Type: {userStats?.streakType || 'daily'}
+              </div>
+            </div>
+            {userStats && userStats.currentStreak === 0 && userStats.streakRestoreCount < 5 && (
+              <button
+                onClick={handleRestoreStreak}
+                disabled={restoringStreak}
+                className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {restoringStreak ? 'Restoring...' : 'Restore Streak'}
+              </button>
+            )}
+          </div>
+          {userStats && userStats.streakRestoreCount > 0 && (
+            <div className="text-blue-200 text-xs mt-2">
+              Restores used: {userStats.streakRestoreCount}/5 this month
+            </div>
+          )}
         </div>
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6 rounded-3xl">
           <div className="text-3xl font-bold">{userStats?.level || 1}</div>
           <div className="text-green-100">Level</div>
+          <div className="text-green-200 text-sm mt-1">
+            XP: {userStats?.experiencePoints || 0}/{userStats?.nextLevelXP || 1000}
+          </div>
         </div>
         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-6 rounded-3xl">
           <div className="text-3xl font-bold">{userStats?.badges?.length || 0}</div>
           <div className="text-yellow-100">Badges Earned</div>
+          <div className="text-yellow-200 text-sm mt-1">
+            Activities: {userStats?.totalActivities || 0}
+          </div>
         </div>
       </div>
 
@@ -197,16 +250,21 @@ export default function AuraPointsPage() {
           <div>
             <div className="flex justify-between text-sm mb-2">
               <span>Level {userStats?.level || 1}</span>
-              <span>{userStats?.lifetimeEarned || 0} total points earned</span>
+              <span>{userStats?.totalPoints || 0} total points earned</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
                 className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.min(((userStats?.lifetimeEarned || 0) % 1000) / 10, 100)}%` }}
+                style={{ 
+                  width: `${Math.min(
+                    ((userStats?.experiencePoints || 0) / (userStats?.nextLevelXP || 1000)) * 100, 
+                    100
+                  )}%` 
+                }}
               ></div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              {1000 - ((userStats?.lifetimeEarned || 0) % 1000)} points until level {(userStats?.level || 1) + 1}
+              {(userStats?.nextLevelXP || 1000) - (userStats?.experiencePoints || 0)} XP until level {(userStats?.level || 1) + 1}
             </p>
           </div>
         </div>
@@ -220,18 +278,19 @@ export default function AuraPointsPage() {
             <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                  +{transaction.points}
+                  +{transaction.totalPoints}
                 </div>
                 <div>
                   <p className="font-medium">{transaction.description}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {transaction.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                    {transaction.metadata?.source && ` • ${transaction.metadata.source}`}
                   </p>
                 </div>
               </div>
-              {transaction.multiplier && transaction.multiplier > 1 && (
+              {transaction.bonusPoints > 0 && (
                 <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
-                  {transaction.multiplier}x BONUS
+                  +{transaction.bonusPoints} BONUS
                 </span>
               )}
             </div>
@@ -251,11 +310,13 @@ export default function AuraPointsPage() {
           <h2 className="text-2xl font-bold mb-4">Your Badges Collection</h2>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
             {userStats.badges.map(badgeId => {
-              const badge = BADGES[badgeId as keyof typeof BADGES];
+              // Import AURA_BADGES from centralized system
+              const badge = AURA_BADGES.find(b => b.id === badgeId);
               return badge ? (
                 <div key={badgeId} className="text-center p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl text-white">
                   <div className="text-2xl mb-1">{badge.icon}</div>
                   <div className="text-xs font-bold">{badge.name}</div>
+                  <div className="text-xs opacity-80">{badge.rarity}</div>
                 </div>
               ) : null;
             })}

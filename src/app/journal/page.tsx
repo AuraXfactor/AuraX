@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { awardAuraPoints } from '@/lib/auraPoints';
+import { awardCentralizedPoints } from '@/lib/centralizedAuraSystem';
 import { updateQuestProgress } from '@/lib/weeklyQuests';
 import { updateSquadChallengeProgress } from '@/lib/auraSquads';
 import AIInsights from '@/components/journal/AIInsights';
@@ -262,21 +262,24 @@ export default function JournalPage() {
       // Award Aura Points for journal entry
       try {
         const wordCount = notes.trim().split(/\s+/).length;
-        await awardAuraPoints({
+        const quality = Math.min(100, (wordCount / 50) * 100); // Quality based on word count
+        const completion = 100; // Journal entry is always 100% complete when saved
+        
+        await awardCentralizedPoints({
           user,
           activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: wordCount,
-            metadata: { 
-              moodTag, 
-              activities: selectedActivities,
-              hasVoice: Boolean(voiceMemoUrl),
-              affirmation: Boolean(affirmation)
-            }
-          },
+          source: 'journal',
+          quality,
+          completion,
           description: `📔 Journal entry completed (${wordCount} words)`,
-          uniqueId: `journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          uniqueId: `journal-${user.uid}-${new Date().toISOString().split('T')[0]}`,
+          metadata: { 
+            moodTag, 
+            activities: selectedActivities,
+            hasVoice: Boolean(voiceMemoUrl),
+            affirmation: Boolean(affirmation),
+            wordCount
+          }
         });
         
         // Update quest progress

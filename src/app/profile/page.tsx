@@ -9,6 +9,7 @@ import { updateProfile } from 'firebase/auth';
 import QRCode from 'qrcode';
 import AuraVibeCheck from '@/components/AuraVibeCheck';
 import AuraBadgeGallery from '@/components/AuraBadgeGallery';
+import { getCentralizedAuraStats, syncLegacyAuraPoints } from '@/lib/centralizedAuraSystem';
 
 interface UserProfile {
   name?: string;
@@ -46,6 +47,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile>({});
+  const [auraStats, setAuraStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,9 +67,22 @@ export default function ProfilePage() {
   const loadProfile = async () => {
     if (!user) return;
     try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const [userDoc, centralizedStats] = await Promise.all([
+        getDoc(doc(db, 'users', user.uid)),
+        getCentralizedAuraStats(user.uid)
+      ]);
+      
       if (userDoc.exists()) {
         setProfile(userDoc.data() as UserProfile);
+      }
+      
+      if (centralizedStats) {
+        setAuraStats(centralizedStats);
+      } else {
+        // Sync legacy points if centralized stats don't exist
+        await syncLegacyAuraPoints(user.uid);
+        const newStats = await getCentralizedAuraStats(user.uid);
+        setAuraStats(newStats);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -253,8 +268,13 @@ export default function ProfilePage() {
                 <p className="text-white/60">{profile.email || user?.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="bg-white/20 px-2 py-1 rounded-full text-sm">
-                    ✨ {profile.auraTotal || profile.auraPoints || 0} Aura Points
+                    ✨ {auraStats?.availablePoints || profile.auraTotal || profile.auraPoints || 0} Aura Points
                   </span>
+                  {auraStats && (
+                    <span className="bg-white/20 px-2 py-1 rounded-full text-sm">
+                      Level {auraStats.level} • {auraStats.currentStreak}🔥
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-2">
@@ -564,12 +584,12 @@ export default function ProfilePage() {
             <div>
               <AuraBadgeGallery
                 userStats={{
-                  journalEntries: 0, // This would come from actual user data
-                  streakDays: 0,
-                  auraPoints: profile.auraPoints || profile.auraTotal || 0,
-                  friendsAdded: 0,
-                  vibeChecks: 0,
-                  focusGoals: 0,
+                  journalEntries: auraStats?.activityCounts?.journal_entry || 0,
+                  streakDays: auraStats?.currentStreak || 0,
+                  auraPoints: auraStats?.totalPoints || profile.auraPoints || profile.auraTotal || 0,
+                  friendsAdded: auraStats?.activityCounts?.friend_support || 0,
+                  vibeChecks: auraStats?.activityCounts?.mood_tracking || 0,
+                  focusGoals: auraStats?.activityCounts?.goal_setting || 0,
                   daysActive: profile.createdAt?.toDate ? Math.floor((Date.now() - profile.createdAt.toDate().getTime()) / (1000 * 60 * 60 * 24)) : 0,
                   isEarlyAdopter: false,
                   unlockedAvatars: 1,
