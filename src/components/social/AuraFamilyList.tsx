@@ -45,7 +45,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
         members = friends.map(friend => ({
           userId: friend.friendId,
           name: friend.friendProfile?.name || 'Unknown',
-          username: friend.friendProfile?.username || 'unknown',
+          username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
           avatar: friend.friendProfile?.avatar,
           joinedAt: friend.friendSince,
           auraPoints: 0, // Default aura points since it's not in PublicProfile

@@ -206,11 +206,9 @@ export default function FriendsList({ onFriendRemoved }: FriendsListProps) {
                     <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
                       {friend.friendProfile?.name || 'Unknown User'}
                     </h3>
-                    {friend.friendProfile?.username && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        @{friend.friendProfile.username}
-                      </span>
-                    )}
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      @{friend.friendProfile?.username || 'unknown'}
+                    </span>
                   </div>
                   
                   {friend.friendProfile?.bio && (

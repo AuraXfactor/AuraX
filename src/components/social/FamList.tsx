@@ -244,7 +244,7 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
                         />
                       ) : (
                         <span className="text-white font-bold text-lg">
-                          {member.name.charAt(0).toUpperCase()}
+                          {(member.name || 'U').charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
