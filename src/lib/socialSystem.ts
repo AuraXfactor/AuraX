@@ -228,10 +228,32 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
     const profileDoc = await getDoc(doc(getPublicProfilesRef(), userId));
     if (profileDoc.exists()) {
       const data = profileDoc.data();
+      console.log(`📊 Public profile for ${userId}:`, {
+        name: data.name,
+        username: data.username,
+        hasUsername: !!data.username
+      });
+      
+      // If no username exists, try to get it from the main user document
+      let username = data.username;
+      if (!username) {
+        console.log(`⚠️ No username in public profile for ${userId}, checking main user document`);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', userId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            username = userData.username || userData.name || `user${userId.slice(-4)}`;
+            console.log(`📝 Found username in main user document: ${username}`);
+          }
+        } catch (error) {
+          console.error('Error fetching main user document:', error);
+        }
+      }
+      
       return {
         userId: profileDoc.id,
         name: data.name || '',
-        username: data.username,
+        username: username || `user${userId.slice(-4)}`, // Ensure username is always a string
         bio: data.bio,
         avatar: data.avatar,
         interests: data.interests || [],
@@ -244,10 +266,64 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
         focusAreas: data.focusAreas || [],
       } as PublicProfile;
     }
+    console.log(`⚠️ No public profile found for ${userId}`);
     return null;
   } catch (error) {
     console.error('Error fetching public profile:', error);
     return null;
+  }
+}
+
+// Utility function to ensure username is set for a user
+export async function ensureUsernameSet(userId: string): Promise<string> {
+  try {
+    // First check public profile
+    const publicProfile = await getPublicProfile(userId);
+    if (publicProfile?.username) {
+      return publicProfile.username;
+    }
+    
+    // If no public profile or no username, check main user document
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const username = userData.username || userData.name || `user${userId.slice(-4)}`;
+      
+      // Update public profile with the username
+      if (publicProfile) {
+        await updateDoc(doc(getPublicProfilesRef(), userId), {
+          username: username
+        });
+      } else {
+        // Create public profile if it doesn't exist
+        const publicProfileData: Partial<PublicProfile> = {
+          userId: userId,
+          name: userData.name || 'Anonymous',
+          username: username,
+          bio: userData.bio || 'AuraX community member',
+          avatar: userData.avatar,
+          interests: userData.interests || ['wellness'],
+          location: userData.location,
+          focusAreas: userData.focusAreas || ['personal growth'],
+          isOnline: true,
+          lastSeen: serverTimestamp(),
+          friendsCount: 0,
+          postsCount: 0,
+          joinedAt: userData.createdAt || serverTimestamp(),
+        };
+        await setDoc(doc(getPublicProfilesRef(), userId), publicProfileData);
+      }
+      
+      return username;
+    }
+    
+    // Fallback to generated username
+    const fallbackUsername = `user${userId.slice(-4)}`;
+    console.log(`⚠️ No user document found for ${userId}, using fallback username: ${fallbackUsername}`);
+    return fallbackUsername;
+  } catch (error) {
+    console.error('Error ensuring username is set:', error);
+    return `user${userId.slice(-4)}`;
   }
 }
 
@@ -539,13 +615,28 @@ export async function getFriendSuggestions(params: {
 // Friends Management
 export async function getFriends(userId: string): Promise<Friendship[]> {
   try {
+    console.log('🔄 Getting friends for user:', userId);
     const friendsSnapshot = await getDocs(getFriendsCollectionRef(userId));
+    console.log('📊 Found friends documents:', friendsSnapshot.docs.length);
     
     const friends: Friendship[] = [];
     
     for (const friendDoc of friendsSnapshot.docs) {
       const friendData = friendDoc.data() as Friendship;
       const friendProfile = await getPublicProfile(friendDoc.id); // friendDoc.id is the friendId
+      
+      // Ensure username is set for this friend
+      if (friendProfile && !friendProfile.username) {
+        const username = await ensureUsernameSet(friendDoc.id);
+        friendProfile.username = username;
+      }
+      
+      console.log(`👤 Friend ${friendDoc.id}:`, {
+        hasProfile: !!friendProfile,
+        name: friendProfile?.name,
+        username: friendProfile?.username,
+        hasUsername: !!friendProfile?.username
+      });
       
       friends.push({
         ...friendData,
@@ -555,6 +646,7 @@ export async function getFriends(userId: string): Promise<Friendship[]> {
       });
     }
     
+    console.log('✅ Friends loaded:', friends.length);
     return friends;
   } catch (error) {
     console.error('Error getting friends:', error);

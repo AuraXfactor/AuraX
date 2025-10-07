@@ -59,7 +59,7 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
     const legacyMembers: UniversalAuraFamMember[] = legacyFriends.map(friend => ({
       userId: friend.friendId,
       name: friend.friendProfile?.name || friend.friendProfile?.username || 'Unknown',
-      username: friend.friendProfile?.username || 'unknown',
+      username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
       avatar: friend.friendProfile?.avatar,
       joinedAt: friend.friendSince,
       auraPoints: 0, // Default since not in PublicProfile
@@ -93,7 +93,7 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
           newMembers.push({
             userId: friendId,
             name: friendProfile?.name || friendData.name || friendProfile?.username || friendData.username || 'Unknown',
-            username: friendProfile?.username || friendData.username || 'unknown',
+            username: friendProfile?.username || friendData.username || `user${friendId.slice(-4)}`,
             avatar: friendProfile?.avatar || friendData.avatar,
             joinedAt: friendData.createdAt || friendshipData.createdAt,
             auraPoints: friendProfile?.auraPoints || friendData.auraPoints || 0,
