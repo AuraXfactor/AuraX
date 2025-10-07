@@ -130,6 +130,14 @@ export default function DirectMessageInterface({
       return;
     }
     
+    // Prevent users from messaging themselves
+    if (user.uid === otherUserId) {
+      console.error('❌ Cannot message yourself');
+      setError('You cannot message yourself');
+      setLoading(false);
+      return;
+    }
+    
     console.log('🔄 Initializing direct message chat...', { 
       currentUserId: user.uid, 
       otherUserId 

@@ -78,7 +78,7 @@ export default function MessagingHub({
           })
         );
         
-        // Filter out already selected participants
+        // Filter out already selected participants and current user
         const filteredResults = results.filter(profile => 
           !selectedParticipants.includes(profile.userId) && 
           profile.userId !== user.uid
@@ -136,6 +136,12 @@ export default function MessagingHub({
   };
 
   const handleStartDirectMessage = (userId: string) => {
+    // Prevent users from messaging themselves
+    if (userId === user?.uid) {
+      console.error('Cannot message yourself');
+      return;
+    }
+    
     setSelectedOtherUserId(userId);
     setViewMode('direct');
   };

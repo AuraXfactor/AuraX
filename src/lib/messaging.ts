@@ -150,6 +150,11 @@ export async function createSimpleChat(
 ): Promise<string> {
   console.log('🧪 Creating SIMPLE chat for testing...', { currentUserId, otherUserId });
   
+  // Prevent users from messaging themselves
+  if (currentUserId === otherUserId) {
+    throw new Error('You cannot message yourself');
+  }
+  
   try {
     // Create a consistent chat ID that both users will see
     // Sort user IDs to ensure same chat ID regardless of who initiates
@@ -202,6 +207,11 @@ export async function createDirectChat(
   otherUserId: string
 ): Promise<string> {
   console.log('🔄 Creating direct chat...', { currentUserId, otherUserId });
+  
+  // Prevent users from messaging themselves
+  if (currentUserId === otherUserId) {
+    throw new Error('You cannot message yourself');
+  }
   
   // Create a consistent chat ID that both users will see
   // Sort user IDs to ensure same chat ID regardless of who initiates
