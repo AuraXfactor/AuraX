@@ -67,10 +67,32 @@ class OfflineStorage {
       const transaction = this.db!.transaction(['offlineData'], 'readonly');
       const store = transaction.objectStore('offlineData');
       const index = store.index('synced');
-      const request = index.getAll(IDBKeyRange.only(false));
       
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      // Use a more robust approach to get unsynced data
+      const request = index.openCursor(IDBKeyRange.only(false));
+      const unsyncedData: OfflineData[] = [];
+      
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest).result;
+        if (cursor) {
+          unsyncedData.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(unsyncedData);
+        }
+      };
+      
+      request.onerror = () => {
+        console.error('Error getting unsynced data:', request.error);
+        // Fallback: get all data and filter client-side
+        const fallbackRequest = store.getAll();
+        fallbackRequest.onsuccess = () => {
+          const allData = fallbackRequest.result as OfflineData[];
+          const filtered = allData.filter(item => item.synced === false);
+          resolve(filtered);
+        };
+        fallbackRequest.onerror = () => reject(fallbackRequest.error);
+      };
     });
   }
 
@@ -225,18 +247,22 @@ class SyncManager {
     
     try {
       const unsyncedData = await this.offlineStorage.getUnsyncedData();
+      console.log('🔄 Syncing offline data:', unsyncedData.length, 'items');
       
       for (const item of unsyncedData) {
         try {
           await this.syncItem(item);
           await this.offlineStorage.markAsSynced(item.id);
+          console.log('✅ Synced item:', item.id);
         } catch (error) {
           console.error('Failed to sync item:', item.id, error);
+          // Continue with other items even if one fails
         }
       }
       
       // Clean up synced data
       await this.offlineStorage.clearSyncedData();
+      console.log('✅ Sync completed successfully');
     } catch (error) {
       console.error('Sync failed:', error);
     } finally {

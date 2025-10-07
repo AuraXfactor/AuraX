@@ -58,7 +58,7 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
     // Convert legacy friends to universal format
     const legacyMembers: UniversalAuraFamMember[] = legacyFriends.map(friend => ({
       userId: friend.friendId,
-      name: friend.friendProfile?.name || 'Unknown',
+      name: friend.friendProfile?.name || friend.friendProfile?.username || 'Unknown',
       username: friend.friendProfile?.username || 'unknown',
       avatar: friend.friendProfile?.avatar,
       joinedAt: friend.friendSince,
@@ -92,7 +92,7 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
 
           newMembers.push({
             userId: friendId,
-            name: friendProfile?.name || friendData.name || 'Unknown',
+            name: friendProfile?.name || friendData.name || friendProfile?.username || friendData.username || 'Unknown',
             username: friendProfile?.username || friendData.username || 'unknown',
             avatar: friendProfile?.avatar || friendData.avatar,
             joinedAt: friendData.createdAt || friendshipData.createdAt,
