@@ -1,15 +1,17 @@
 # Firestore Index Deployment Instructions
 
-## Required Index for Fam Loading
+## Required Indexes for Fam System
 
-The fam loading functionality requires a composite index for the `famMembers` collection. The index has been added to `firestore.indexes.json` but needs to be deployed.
+The fam loading and request functionality requires composite indexes for both `famMembers` and `famRequests` collections. The indexes have been added to `firestore.indexes.json` but need to be deployed.
 
 ### Index Details:
-- Collection: `famMembers`
-- Fields:
-  - `userId` (Ascending)
-  - `status` (Ascending) 
-  - `joinedAt` (Descending)
+
+**famMembers Collection:**
+- Fields: `userId` (Ascending), `status` (Ascending), `joinedAt` (Descending)
+
+**famRequests Collection:**
+- Index 1: `toUserId` (Ascending), `createdAt` (Descending)
+- Index 2: `fromUserId` (Ascending), `createdAt` (Descending)
 
 ### Deployment Steps:
 

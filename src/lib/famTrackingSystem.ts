@@ -371,42 +371,87 @@ export async function getFamRequests(userId: string): Promise<{
   try {
     console.log('🔄 Loading fam requests for user:', userId);
     
-    // Get received requests
-    const receivedQuery = firestoreQuery(
-      collection(db, 'famRequests'),
-      where('toUserId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const receivedSnapshot = await getDocs(receivedQuery);
-    const received: FamRequest[] = receivedSnapshot.docs.map((doc: any) => ({
-      ...doc.data() as FamRequest,
-      id: doc.id,
-    }));
-    
-    // Get sent requests
-    const sentQuery = firestoreQuery(
-      collection(db, 'famRequests'),
-      where('fromUserId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const sentSnapshot = await getDocs(sentQuery);
-    const sent: FamRequest[] = sentSnapshot.docs.map((doc: any) => ({
-      ...doc.data() as FamRequest,
-      id: doc.id,
-    }));
-    
-    // Filter by status
-    const accepted = received.filter(req => req.status === 'accepted');
-    const declined = received.filter(req => req.status === 'declined');
-    
-    console.log('✅ Fam requests loaded:', { 
-      received: received.length, 
-      sent: sent.length, 
-      accepted: accepted.length, 
-      declined: declined.length 
-    });
-    
-    return { received, sent, accepted, declined };
+    // Try with indexes first
+    try {
+      // Get received requests
+      const receivedQuery = firestoreQuery(
+        collection(db, 'famRequests'),
+        where('toUserId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const receivedSnapshot = await getDocs(receivedQuery);
+      const received: FamRequest[] = receivedSnapshot.docs.map((doc: any) => ({
+        ...doc.data() as FamRequest,
+        id: doc.id,
+      }));
+      
+      // Get sent requests
+      const sentQuery = firestoreQuery(
+        collection(db, 'famRequests'),
+        where('fromUserId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const sentSnapshot = await getDocs(sentQuery);
+      const sent: FamRequest[] = sentSnapshot.docs.map((doc: any) => ({
+        ...doc.data() as FamRequest,
+        id: doc.id,
+      }));
+      
+      // Filter by status
+      const accepted = received.filter(req => req.status === 'accepted');
+      const declined = received.filter(req => req.status === 'declined');
+      
+      console.log('✅ Fam requests loaded (with indexes):', { 
+        received: received.length, 
+        sent: sent.length, 
+        accepted: accepted.length, 
+        declined: declined.length 
+      });
+      
+      return { received, sent, accepted, declined };
+    } catch (indexError) {
+      console.warn('Indexes not available for famRequests, using fallback:', indexError);
+      
+      // Fallback: Get all requests and filter client-side
+      const allRequestsQuery = firestoreQuery(collection(db, 'famRequests'));
+      const allRequestsSnapshot = await getDocs(allRequestsQuery);
+      const allRequests: FamRequest[] = allRequestsSnapshot.docs.map((doc: any) => ({
+        ...doc.data() as FamRequest,
+        id: doc.id,
+      }));
+      
+      // Filter by user and sort client-side
+      const received = allRequests
+        .filter(req => req.toUserId === userId)
+        .sort((a, b) => {
+          if (!a.createdAt || !b.createdAt) return 0;
+          const aTime = a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+          const bTime = b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+          return bTime - aTime;
+        });
+      
+      const sent = allRequests
+        .filter(req => req.fromUserId === userId)
+        .sort((a, b) => {
+          if (!a.createdAt || !b.createdAt) return 0;
+          const aTime = a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+          const bTime = b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+          return bTime - aTime;
+        });
+      
+      // Filter by status
+      const accepted = received.filter(req => req.status === 'accepted');
+      const declined = received.filter(req => req.status === 'declined');
+      
+      console.log('✅ Fam requests loaded (fallback):', { 
+        received: received.length, 
+        sent: sent.length, 
+        accepted: accepted.length, 
+        declined: declined.length 
+      });
+      
+      return { received, sent, accepted, declined };
+    }
   } catch (error) {
     console.error('Error loading fam requests:', error);
     return { received: [], sent: [], accepted: [], declined: [] };

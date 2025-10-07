@@ -32,8 +32,14 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
     try {
       console.log('🔄 Loading fam requests...');
       const famRequests = await getFamRequests(user.uid);
+      console.log('📊 Raw fam requests data:', famRequests);
+      console.log('📊 Received requests:', famRequests.received?.length || 0);
+      console.log('📊 Sent requests:', famRequests.sent?.length || 0);
+      console.log('📊 Accepted requests:', famRequests.accepted?.length || 0);
+      console.log('📊 Declined requests:', famRequests.declined?.length || 0);
+      
       setRequests(famRequests);
-      console.log('✅ Fam requests loaded:', famRequests);
+      console.log('✅ Fam requests loaded and set in state');
     } catch (error) {
       console.error('Error loading fam requests:', error);
     } finally {
@@ -45,6 +51,19 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
     if (user) {
       loadRequests();
     }
+  }, [user]);
+
+  // Listen for fam request updates
+  useEffect(() => {
+    const handleFamRequestUpdate = () => {
+      if (user) {
+        console.log('🔄 Fam request update event received, refreshing...');
+        loadRequests();
+      }
+    };
+
+    window.addEventListener('famRequestUpdated', handleFamRequestUpdate);
+    return () => window.removeEventListener('famRequestUpdated', handleFamRequestUpdate);
   }, [user]);
 
   const handleRespondToRequest = async (requestId: string, response: 'accepted' | 'declined') => {
@@ -150,26 +169,33 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
   };
 
   const getCurrentRequests = () => {
+    // Ensure we have valid data
+    const received = requests.received || [];
+    const sent = requests.sent || [];
+    
     switch (activeTab) {
       case 'received':
-        return requests.received.filter((req: any) => req.status === 'pending');
+        return received.filter((req: any) => req && req.status === 'pending');
       case 'sent':
-        return requests.sent.filter((req: any) => req.status === 'pending');
+        return sent.filter((req: any) => req && req.status === 'pending');
       case 'accepted':
-        return requests.received.filter((req: any) => req.status === 'accepted');
+        return received.filter((req: any) => req && req.status === 'accepted');
       case 'declined':
-        return requests.received.filter((req: any) => req.status === 'declined');
+        return received.filter((req: any) => req && req.status === 'declined');
       default:
         return [];
     }
   };
 
   const getTabCounts = () => {
+    const received = requests.received || [];
+    const sent = requests.sent || [];
+    
     return {
-      received: requests.received.filter((req: any) => req.status === 'pending').length,
-      sent: requests.sent.filter((req: any) => req.status === 'pending').length,
-      accepted: requests.received.filter((req: any) => req.status === 'accepted').length,
-      declined: requests.received.filter((req: any) => req.status === 'declined').length,
+      received: received.filter((req: any) => req && req.status === 'pending').length,
+      sent: sent.filter((req: any) => req && req.status === 'pending').length,
+      accepted: received.filter((req: any) => req && req.status === 'accepted').length,
+      declined: received.filter((req: any) => req && req.status === 'declined').length,
     };
   };
 
@@ -264,7 +290,7 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center cursor-pointer" onClick={() => handleViewProfile(request.fromUserId)}>
                         <span className="text-white font-bold text-xl">
-                          {request.fromName.charAt(0).toUpperCase()}
+                          {(request.fromName || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>
                     </div>
@@ -350,7 +376,7 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-gray-500 to-blue-500 flex items-center justify-center cursor-pointer" onClick={() => handleViewProfile(request.toUserId)}>
                         <span className="text-white font-bold text-xl">
-                          {request.toName.charAt(0).toUpperCase()}
+                          {(request.toName || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>
                     </div>
@@ -428,7 +454,7 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center cursor-pointer" onClick={() => handleViewProfile(request.fromUserId)}>
                         <span className="text-white font-bold text-xl">
-                          {request.fromName.charAt(0).toUpperCase()}
+                          {(request.fromName || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>
                     </div>
@@ -501,7 +527,7 @@ export default function FamRequests({ onRequestHandled }: FamRequestsProps) {
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center cursor-pointer" onClick={() => handleViewProfile(request.fromUserId)}>
                         <span className="text-white font-bold text-xl">
-                          {request.fromName.charAt(0).toUpperCase()}
+                          {(request.fromName || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>
                     </div>
