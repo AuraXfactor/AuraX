@@ -376,9 +376,9 @@ export default function BreathingToolPage() {
       </AnimatePresence>
 
       <div className="w-full max-w-2xl">
-        <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Guided: 3-Minute Breathing Space</div>
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Guided Breathing Exercise</div>
         <div className="aspect-video w-full rounded-lg overflow-hidden">
-          <iframe className="w-full h-full" src="https://www.youtube.com/embed/SEfs5TJZ6Nk" title="3-Minute Breathing Space" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          <iframe className="w-full h-full" src="https://www.youtube.com/embed/tEmt1Znux58" title="Guided Breathing Exercise" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
         </div>
       </div>
 

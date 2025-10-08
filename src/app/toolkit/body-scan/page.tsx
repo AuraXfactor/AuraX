@@ -41,7 +41,7 @@ export default function BodyScanPage() {
       <div className="max-w-2xl mx-auto mt-6 space-y-4 text-gray-700 dark:text-gray-200">
         <p>Use this simple scan to release tension. You can also follow along with a short guided video below.</p>
         <div className="aspect-video w-full rounded-lg overflow-hidden">
-          <iframe className="w-full h-full" src="https://www.youtube.com/embed/IH7H5KtBbsg" title="5-Minute Body Scan Meditation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          <iframe className="w-full h-full" src="https://www.youtube.com/embed/6iDKF-TrAfE" title="Body Scan Meditation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
         </div>
         <div className="flex items-center justify-center">
           <button onClick={speak} className="px-4 py-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white pressable">▶ Play Voice Guidance</button>
