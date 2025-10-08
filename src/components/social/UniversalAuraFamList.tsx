@@ -242,7 +242,7 @@ export default function UniversalAuraFamList({ onMemberRemoved }: UniversalAuraF
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      @{member.username}
+                      {member.name}
                     </p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-purple-600 dark:text-purple-400">
