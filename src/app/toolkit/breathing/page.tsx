@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 type Phase = 'inhale' | 'hold' | 'exhale';
 
@@ -29,6 +31,7 @@ export default function BreathingToolPage() {
   const [currentSession, setCurrentSession] = useState<SessionData | null>(null);
   const [sessionHistory, setSessionHistory] = useState<SessionData[]>([]);
   const [showIntro, setShowIntro] = useState(true);
+  const [showGuidance, setShowGuidance] = useState(true);
   const [moodBefore, setMoodBefore] = useState(5);
   const [stressBefore, setStressBefore] = useState(5);
   const [moodAfter, setMoodAfter] = useState(5);
@@ -131,13 +134,41 @@ export default function BreathingToolPage() {
   }
 
   return (
-    <motion.div className="min-h-screen flex flex-col items-center justify-center gap-8 p-6" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-      <motion.h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.45 }}>
-        Guided Breathwork 🌬️
-      </motion.h1>
+    <WellnessSessionTracker 
+      toolType="breathing_exercises"
+      onSessionStart={() => console.log('Breathing session started')}
+      onSessionEnd={() => console.log('Breathing session ended')}
+    >
+      <motion.div className="min-h-screen flex flex-col items-center justify-center gap-8 p-6" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+        <motion.h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.45 }}>
+          Guided Breathwork 🌬️
+        </motion.h1>
 
       <AnimatePresence mode="wait">
-        {showIntro && !isSessionActive && (
+        {showGuidance && !isSessionActive && (
+          <motion.div
+            key="guidance"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-2xl w-full"
+          >
+            <GuidanceBox
+              title="Breathing Exercises"
+              emoji="🌬️"
+              when="When you feel stressed, anxious, overwhelmed, or need to center yourself. Use before important meetings, during panic attacks, or as a daily mindfulness practice."
+              why="Controlled breathing activates your parasympathetic nervous system, reducing stress hormones, lowering blood pressure, and promoting calm. It's scientifically proven to reduce anxiety and improve focus."
+              how="Follow the guided patterns (4-7-8, Box breathing, or custom). Inhale through your nose, hold, then exhale slowly. Focus on the counting and your breath rhythm."
+              importance="Breathing exercises are one of the most effective and accessible tools for managing stress and anxiety. They can be done anywhere, anytime, and provide immediate relief."
+              preparation="Find a comfortable position, close your eyes if comfortable, and ensure you won't be interrupted for the session duration."
+              onProceed={() => setShowGuidance(false)}
+              onSkip={() => setShowGuidance(false)}
+              colors="from-cyan-400 to-blue-500"
+            />
+          </motion.div>
+        )}
+
+        {!showGuidance && showIntro && !isSessionActive && (
           <motion.div
             key="intro"
             initial={{ opacity: 0, y: 20 }}
@@ -382,8 +413,9 @@ export default function BreathingToolPage() {
         </div>
       </div>
 
-      <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-    </motion.div>
+        <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+      </motion.div>
+    </WellnessSessionTracker>
   );
 }
 

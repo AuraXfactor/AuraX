@@ -1,13 +1,16 @@
 "use client";
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useCallback, useState, useEffect } from 'react';
+import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 export default function PanicButtonPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
   const [affirmation, setAffirmation] = useState('You are safe. This will pass.');
+  const [showGuidance, setShowGuidance] = useState(true);
   const affirmations = [
     'This moment will pass',
     'I am safe right now',
@@ -72,9 +75,46 @@ export default function PanicButtonPage() {
   }
 
   return (
-    <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-orange-500">Panic Button</h1>
-      <p className="text-gray-700 dark:text-gray-200 mt-2">One tap to play a calming chime, vibrate, and show an affirmation.</p>
+    <WellnessSessionTracker 
+      toolType="panic_button"
+      onSessionStart={() => console.log('Panic intervention started')}
+      onSessionEnd={() => console.log('Panic intervention completed')}
+    >
+      <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-orange-500">Panic Button</h1>
+      
+      <AnimatePresence mode="wait">
+        {showGuidance && (
+          <motion.div
+            key="guidance"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-2xl w-full mx-auto mt-8"
+          >
+            <GuidanceBox
+              title="Panic Button"
+              emoji="🆘"
+              when="During panic attacks, overwhelming anxiety, or moments of acute distress. Use when you need immediate calming intervention."
+              why="The panic button provides instant sensory grounding through sound, vibration, and visual affirmation. It interrupts the panic cycle and redirects attention to calming stimuli."
+              how="Simply tap the 'Calm Me Now' button. It will play a soothing chime, provide gentle vibration, and display a rotating affirmation to help ground you."
+              importance="Having an immediate, accessible tool during panic is crucial for safety and recovery. This tool can interrupt escalating anxiety and provide instant relief."
+              preparation="No preparation needed - this is designed for immediate use during crisis moments. Keep your device accessible and ensure notifications are enabled."
+              onProceed={() => setShowGuidance(false)}
+              onSkip={() => setShowGuidance(false)}
+              colors="from-rose-500 to-orange-500"
+            />
+          </motion.div>
+        )}
+
+        {!showGuidance && (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <p className="text-gray-700 dark:text-gray-200 mt-2">One tap to play a calming chime, vibrate, and show an affirmation.</p>
       <div className="mt-6">
         <button onClick={runSequence} className="px-6 py-3 rounded-full text-white bg-gradient-to-r from-rose-500 to-orange-500 shadow pressable">Calm Me Now</button>
       </div>
@@ -89,10 +129,14 @@ export default function PanicButtonPage() {
           <iframe className="w-full h-full" src="https://www.youtube.com/embed/UeMSvbozwFE" title="Calming Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
         </div>
       </div>
-      <div className="mt-6">
-        <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-      </div>
-    </motion.div>
+            <div className="mt-6">
+              <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </motion.div>
+    </WellnessSessionTracker>
   );
 }
 

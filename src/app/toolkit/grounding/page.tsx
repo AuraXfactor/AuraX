@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 interface GroundingSession {
   id: string;
@@ -86,6 +88,7 @@ export default function GroundingToolPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionData, setSessionData] = useState<GroundingSession | null>(null);
   const [showIntro, setShowIntro] = useState(true);
+  const [showGuidance, setShowGuidance] = useState(true);
   const [anxietyBefore, setAnxietyBefore] = useState(5);
   const [focusBefore, setFocusBefore] = useState(5);
   const [anxietyAfter, setAnxietyAfter] = useState(5);
@@ -178,17 +181,45 @@ export default function GroundingToolPage() {
   const currentTechnique = selectedTechnique ? GROUNDING_TECHNIQUES.find(t => t.id === selectedTechnique) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Grounding Techniques 🌱</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Anchor yourself in the present moment with guided grounding exercises
-          </p>
-        </div>
+    <WellnessSessionTracker 
+      toolType="grounding_techniques"
+      onSessionStart={() => console.log('Grounding session started')}
+      onSessionEnd={() => console.log('Grounding session completed')}
+    >
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-2">Grounding Techniques 🌱</h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Anchor yourself in the present moment with guided grounding exercises
+            </p>
+          </div>
 
         <AnimatePresence mode="wait">
-          {showIntro && !isSessionActive && (
+          {showGuidance && !isSessionActive && (
+            <motion.div
+              key="guidance"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-2xl w-full mx-auto"
+            >
+              <GuidanceBox
+                title="Grounding Techniques"
+                emoji="🪨"
+                when="When you feel overwhelmed, anxious, dissociated, or disconnected from reality. Use during panic attacks, flashbacks, or when feeling 'spaced out'."
+                why="Grounding techniques help anchor you in the present moment by engaging your senses. They interrupt anxious thoughts and bring your attention back to the here and now."
+                how="Choose from 5-4-3-2-1 technique, breathing grounding, body scan, or mindful walking. Follow the guided steps to systematically engage your senses and reconnect with your body."
+                importance="Grounding is essential for managing anxiety, PTSD, and dissociation. It's a first-line intervention that can be used anywhere and provides immediate relief from overwhelming emotions."
+                preparation="Find a quiet space if possible, but these techniques can be done anywhere. Remove distractions and focus on the present moment."
+                onProceed={() => setShowGuidance(false)}
+                onSkip={() => setShowGuidance(false)}
+                colors="from-amber-400 to-orange-500"
+              />
+            </motion.div>
+          )}
+
+          {!showGuidance && showIntro && !isSessionActive && (
             <motion.div
               key="intro"
               initial={{ opacity: 0, y: 20 }}
@@ -442,12 +473,13 @@ export default function GroundingToolPage() {
           </div>
         </div>
 
-        <div className="text-center mt-8">
-          <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition">
-            ← Back to Toolkit
-          </Link>
+          <div className="text-center mt-8">
+            <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition">
+              ← Back to Toolkit
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </WellnessSessionTracker>
   );
 }
