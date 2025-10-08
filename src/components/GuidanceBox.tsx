@@ -31,9 +31,9 @@ export default function GuidanceBox({
 
   return (
     <motion.div
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+      initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={prefersReducedMotion ? false : { opacity: 0, y: -20 }}
+      exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
       className="max-w-2xl w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-2xl p-6 shadow-xl border border-white/20"
     >
       <div className="text-center mb-6">

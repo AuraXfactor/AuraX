@@ -145,10 +145,9 @@ export default function MeditationsPage() {
             </div>
           </div>
         ))}
-          </div>
-          <div className="max-w-3xl mx-auto mt-6 text-center">
-            <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-          </div>
+            <div className="max-w-3xl mx-auto mt-6 text-center">
+              <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
