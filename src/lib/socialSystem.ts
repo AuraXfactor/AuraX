@@ -277,9 +277,12 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
 // Utility function to ensure username is set for a user
 export async function ensureUsernameSet(userId: string): Promise<string> {
   try {
+    console.log(`🔍 ensureUsernameSet called for ${userId}`);
+    
     // First check public profile
     const publicProfile = await getPublicProfile(userId);
     if (publicProfile?.username) {
+      console.log(`✅ Found username in public profile: ${publicProfile.username}`);
       return publicProfile.username;
     }
     
@@ -288,12 +291,14 @@ export async function ensureUsernameSet(userId: string): Promise<string> {
     if (userDoc.exists()) {
       const userData = userDoc.data();
       const username = userData.username || userData.name || `user${userId.slice(-4)}`;
+      console.log(`📝 Found username in main user document: ${username}`);
       
       // Update public profile with the username
       if (publicProfile) {
         await updateDoc(doc(getPublicProfilesRef(), userId), {
           username: username
         });
+        console.log(`📝 Updated existing public profile with username: ${username}`);
       } else {
         // Create public profile if it doesn't exist
         const publicProfileData: Partial<PublicProfile> = {
@@ -312,6 +317,7 @@ export async function ensureUsernameSet(userId: string): Promise<string> {
           joinedAt: userData.createdAt || serverTimestamp(),
         };
         await setDoc(doc(getPublicProfilesRef(), userId), publicProfileData);
+        console.log(`📝 Created new public profile with username: ${username}`);
       }
       
       return username;
