@@ -258,7 +258,7 @@ export default function FamList({ onMemberRemoved }: FamListProps) {
                       {member.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      @{member.username}
+                      @{member.username || `user${member.userId.slice(-4)}`}
                     </p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-purple-600 dark:text-purple-400">

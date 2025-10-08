@@ -56,20 +56,27 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
     console.log('📊 Legacy friends found:', legacyFriends.length);
     
     // Convert legacy friends to universal format
-    const legacyMembers: UniversalAuraFamMember[] = legacyFriends.map(friend => ({
-      userId: friend.friendId,
-      name: friend.friendProfile?.name || friend.friendProfile?.username || 'Unknown',
-      username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
-      avatar: friend.friendProfile?.avatar,
-      joinedAt: friend.friendSince,
-      auraPoints: 0, // Default since not in PublicProfile
-      lastActivity: friend.friendProfile?.lastSeen,
-      isOnline: friend.friendProfile?.isOnline || false,
-      mutualConnections: friend.mutualFriends || 0,
-      sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
-      source: 'legacy',
-      friendshipId: friend.id,
-    }));
+    const legacyMembers: UniversalAuraFamMember[] = legacyFriends.map(friend => {
+      // Ensure username is never empty or undefined
+      const username = friend.friendProfile?.username && friend.friendProfile.username.trim() 
+        ? friend.friendProfile.username 
+        : `user${friend.friendId.slice(-4)}`;
+      
+      return {
+        userId: friend.friendId,
+        name: friend.friendProfile?.name || friend.friendProfile?.username || 'Unknown',
+        username: username,
+        avatar: friend.friendProfile?.avatar,
+        joinedAt: friend.friendSince,
+        auraPoints: 0, // Default since not in PublicProfile
+        lastActivity: friend.friendProfile?.lastSeen,
+        isOnline: friend.friendProfile?.isOnline || false,
+        mutualConnections: friend.mutualFriends || 0,
+        sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+        source: 'legacy',
+        friendshipId: friend.id,
+      };
+    });
 
     // Get friends from the new system (subcollection)
     let newMembers: UniversalAuraFamMember[] = [];
@@ -90,10 +97,15 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
           const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
           const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
+          // Ensure username is never empty or undefined
+          const username = (friendProfile?.username && friendProfile.username.trim()) || 
+                          (friendData.username && friendData.username.trim()) || 
+                          `user${friendId.slice(-4)}`;
+
           newMembers.push({
             userId: friendId,
             name: friendProfile?.name || friendData.name || friendProfile?.username || friendData.username || 'Unknown',
-            username: friendProfile?.username || friendData.username || `user${friendId.slice(-4)}`,
+            username: username,
             avatar: friendProfile?.avatar || friendData.avatar,
             joinedAt: friendData.createdAt || friendshipData.createdAt,
             auraPoints: friendProfile?.auraPoints || friendData.auraPoints || 0,

@@ -61,10 +61,15 @@ export async function getAuraFamilyMembers(currentUserId: string): Promise<AuraF
         const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
         const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
+        // Ensure username is never empty or undefined
+        const username = (friendProfile?.username && friendProfile.username.trim()) || 
+                        (friendData.username && friendData.username.trim()) || 
+                        `user${friendId.slice(-4)}`;
+
         familyMembers.push({
           userId: friendId,
           name: friendProfile?.name || friendData.name || 'Unknown',
-          username: friendProfile?.username || friendData.username || 'unknown',
+          username: username,
           avatar: friendProfile?.avatar || friendData.avatar,
           joinedAt: friendData.createdAt || friendshipData.createdAt,
           auraPoints: friendProfile?.auraPoints || friendData.auraPoints || 0,

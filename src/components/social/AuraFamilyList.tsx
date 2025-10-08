@@ -42,18 +42,25 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
         const friends = await getFriends(user.uid);
         
         // Convert friends to AuraFamilyMember format
-        members = friends.map(friend => ({
-          userId: friend.friendId,
-          name: friend.friendProfile?.name || 'Unknown',
-          username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
-          avatar: friend.friendProfile?.avatar,
-          joinedAt: friend.friendSince,
-          auraPoints: 0, // Default aura points since it's not in PublicProfile
-          lastActivity: friend.friendProfile?.lastSeen,
-          isOnline: friend.friendProfile?.isOnline || false,
-          mutualConnections: friend.mutualFriends || 0,
-          sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
-        }));
+        members = friends.map(friend => {
+          // Ensure username is never empty or undefined
+          const username = friend.friendProfile?.username && friend.friendProfile.username.trim() 
+            ? friend.friendProfile.username 
+            : `user${friend.friendId.slice(-4)}`;
+          
+          return {
+            userId: friend.friendId,
+            name: friend.friendProfile?.name || 'Unknown',
+            username: username,
+            avatar: friend.friendProfile?.avatar,
+            joinedAt: friend.friendSince,
+            auraPoints: 0, // Default aura points since it's not in PublicProfile
+            lastActivity: friend.friendProfile?.lastSeen,
+            isOnline: friend.friendProfile?.isOnline || false,
+            mutualConnections: friend.mutualFriends || 0,
+            sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+          };
+        });
       }
       
       const familyStats = await getAuraFamilyStats(user.uid);
@@ -250,7 +257,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
                       {member.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      @{member.username}
+                      @{member.username || `user${member.userId.slice(-4)}`}
                     </p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-purple-600 dark:text-purple-400">

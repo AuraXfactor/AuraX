@@ -78,12 +78,15 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of famSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
+        // Ensure username is never empty or undefined
+        const username = (famData.username && famData.username.trim()) || `user${famData.userId.slice(-4)}`;
+        
         // Ensure required fields have default values
         famMembers.push({
           ...famData,
           id: famDoc.id,
           name: famData.name || 'Unknown',
-          username: famData.username || 'unknown',
+          username: username,
           auraPoints: famData.auraPoints || 0,
           isOnline: famData.isOnline || false,
           mutualConnections: famData.mutualConnections || 0,
@@ -109,12 +112,15 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of fallbackSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
+        // Ensure username is never empty or undefined
+        const username = (famData.username && famData.username.trim()) || `user${famData.userId.slice(-4)}`;
+        
         // Ensure required fields have default values
         famMembers.push({
           ...famData,
           id: famDoc.id,
           name: famData.name || 'Unknown',
-          username: famData.username || 'unknown',
+          username: username,
           auraPoints: famData.auraPoints || 0,
           isOnline: famData.isOnline || false,
           mutualConnections: famData.mutualConnections || 0,
