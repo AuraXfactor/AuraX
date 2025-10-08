@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 interface GroundingSession {
   id: string;
@@ -180,14 +181,19 @@ export default function GroundingToolPage() {
   const currentTechnique = selectedTechnique ? GROUNDING_TECHNIQUES.find(t => t.id === selectedTechnique) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Grounding Techniques 🌱</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Anchor yourself in the present moment with guided grounding exercises
-          </p>
-        </div>
+    <WellnessSessionTracker 
+      toolType="grounding_techniques"
+      onSessionStart={() => console.log('Grounding session started')}
+      onSessionEnd={() => console.log('Grounding session completed')}
+    >
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-2">Grounding Techniques 🌱</h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Anchor yourself in the present moment with guided grounding exercises
+            </p>
+          </div>
 
         <AnimatePresence mode="wait">
           {showGuidance && !isSessionActive && (
@@ -467,12 +473,13 @@ export default function GroundingToolPage() {
           </div>
         </div>
 
-        <div className="text-center mt-8">
-          <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition">
-            ← Back to Toolkit
-          </Link>
+          <div className="text-center mt-8">
+            <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition">
+              ← Back to Toolkit
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </WellnessSessionTracker>
   );
 }

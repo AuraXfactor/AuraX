@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useCallback, useState, useEffect } from 'react';
 import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 export default function PanicButtonPage() {
   const { user } = useAuth();
@@ -74,8 +75,13 @@ export default function PanicButtonPage() {
   }
 
   return (
-    <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-orange-500">Panic Button</h1>
+    <WellnessSessionTracker 
+      toolType="panic_button"
+      onSessionStart={() => console.log('Panic intervention started')}
+      onSessionEnd={() => console.log('Panic intervention completed')}
+    >
+      <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-orange-500">Panic Button</h1>
       
       <AnimatePresence mode="wait">
         {showGuidance && (
@@ -129,7 +135,8 @@ export default function PanicButtonPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </WellnessSessionTracker>
   );
 }
 

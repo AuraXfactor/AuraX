@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 import { useState } from 'react';
 
 export default function VisualizationPage() {
@@ -26,8 +27,13 @@ export default function VisualizationPage() {
   }
 
   return (
-    <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-cyan-500">Visualization Exercises</h1>
+    <WellnessSessionTracker 
+      toolType="visualization_exercises"
+      onSessionStart={() => console.log('Visualization session started')}
+      onSessionEnd={() => console.log('Visualization session completed')}
+    >
+      <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-cyan-500">Visualization Exercises</h1>
       
       <AnimatePresence mode="wait">
         {showGuidance && (
@@ -80,7 +86,8 @@ export default function VisualizationPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </WellnessSessionTracker>
   );
 }
 

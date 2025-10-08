@@ -38,11 +38,14 @@ export default function WellnessSessionTracker({
 }: WellnessSessionTrackerProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [sessionDuration, setSessionDuration] = useState<number>(0);
   const [isTrackingEnabled, setIsTrackingEnabled] = useState(false);
   const [showPreAssessment, setShowPreAssessment] = useState(false);
   const [showPostAssessment, setShowPostAssessment] = useState(false);
   const [preSessionMetrics, setPreSessionMetrics] = useState<Partial<SessionMetrics>>({});
   const [postSessionMetrics, setPostSessionMetrics] = useState<Partial<SessionMetrics>>({});
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Check if tracking is enabled for this user
   useEffect(() => {
@@ -67,6 +70,8 @@ export default function WellnessSessionTracker({
   const startSession = useCallback(async () => {
     if (!isTrackingEnabled) {
       console.log('Session tracking disabled due to privacy settings');
+      setIsSessionActive(true);
+      setSessionStartTime(new Date());
       onSessionStart?.();
       return;
     }
@@ -81,38 +86,66 @@ export default function WellnessSessionTracker({
       if (newSessionId) {
         setSessionId(newSessionId);
         setSessionStartTime(new Date());
+        setIsSessionActive(true);
         console.log(`Research session started: ${newSessionId}`);
       }
 
       onSessionStart?.();
     } catch (error) {
       console.error('Failed to start session tracking:', error);
+      setIsSessionActive(true);
+      setSessionStartTime(new Date());
       onSessionStart?.();
     }
   }, [isTrackingEnabled, toolType, preSessionMetrics, onSessionStart]);
 
+  // Start automatic timer
+  useEffect(() => {
+    if (isSessionActive && sessionStartTime) {
+      const interval = setInterval(() => {
+        const now = new Date();
+        const duration = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
+        setSessionDuration(duration);
+      }, 1000); // Update every second
+
+      setTimerInterval(interval);
+      return () => clearInterval(interval);
+    }
+  }, [isSessionActive, sessionStartTime]);
+
   // End session tracking
   const endSession = useCallback(async () => {
+    // Clear timer
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+
     if (!sessionId || !sessionStartTime) {
+      setIsSessionActive(false);
+      setSessionStartTime(null);
+      setSessionDuration(0);
       onSessionEnd?.();
       return;
     }
 
     try {
-      const sessionDuration = Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000);
+      const finalDuration = sessionDuration;
       
       await completeSession(
         sessionId,
         postSessionMetrics,
-        sessionDuration,
+        finalDuration,
         100 // Assume full completion for now
       );
 
-      console.log(`Research session completed: ${sessionId}, Duration: ${sessionDuration}s`);
+      console.log(`Research session completed: ${sessionId}, Duration: ${finalDuration}s`);
       
       // Reset session state
       setSessionId(null);
       setSessionStartTime(null);
+      setSessionDuration(0);
+      setIsSessionActive(false);
       setPreSessionMetrics({});
       setPostSessionMetrics({});
       
@@ -121,7 +154,7 @@ export default function WellnessSessionTracker({
     }
 
     onSessionEnd?.();
-  }, [sessionId, sessionStartTime, postSessionMetrics, onSessionEnd]);
+  }, [sessionId, sessionStartTime, sessionDuration, postSessionMetrics, timerInterval, onSessionEnd]);
 
   // Pre-session assessment component
   const PreSessionAssessment = () => (
@@ -308,13 +341,13 @@ export default function WellnessSessionTracker({
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => {
+                onClick={async () => {
                   setShowPostAssessment(false);
-                  endSession();
+                  await endSession();
                 }}
                 className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
               >
-                Complete Session
+                Save & Complete Session
               </button>
             </div>
           </motion.div>
@@ -332,9 +365,15 @@ export default function WellnessSessionTracker({
       <div className="relative">
         {children}
         
-        {/* Session control buttons */}
-        {sessionId && (
-          <div className="fixed bottom-4 right-4 z-40">
+        {/* Session timer and controls */}
+        {isSessionActive && (
+          <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
+            {/* Session timer */}
+            <div className="bg-black/80 text-white px-3 py-2 rounded-lg text-sm font-mono">
+              {Math.floor(sessionDuration / 60)}:{(sessionDuration % 60).toString().padStart(2, '0')}
+            </div>
+            
+            {/* End session button */}
             <button
               onClick={() => setShowPostAssessment(true)}
               className="px-4 py-2 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition"

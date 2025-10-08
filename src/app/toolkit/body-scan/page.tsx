@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useCallback, useState } from 'react';
 import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 export default function BodyScanPage() {
   const { user } = useAuth();
@@ -38,8 +39,13 @@ export default function BodyScanPage() {
   }
 
   return (
-    <motion.div className="min-h-screen p-6 md:p-10" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <h1 className="text-3xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-pink-500">Body Scan</h1>
+    <WellnessSessionTracker 
+      toolType="body_scan"
+      onSessionStart={() => console.log('Body scan session started')}
+      onSessionEnd={() => console.log('Body scan session completed')}
+    >
+      <motion.div className="min-h-screen p-6 md:p-10" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <h1 className="text-3xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-pink-500">Body Scan</h1>
       
       <AnimatePresence mode="wait">
         {showGuidance && (
@@ -94,7 +100,8 @@ export default function BodyScanPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </WellnessSessionTracker>
   );
 }
 
