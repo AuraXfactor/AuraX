@@ -17,7 +17,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getFriends } from './socialSystem';
+import { getFriends, getPublicProfile, ensureUsernameSet } from './socialSystem';
 import { PublicProfile } from './socialSystem';
 
 export type UniversalAuraFamMember = {
@@ -55,21 +55,37 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
     const legacyFriends = await getFriends(currentUserId);
     console.log('📊 Legacy friends found:', legacyFriends.length);
     
-    // Convert legacy friends to universal format
-    const legacyMembers: UniversalAuraFamMember[] = legacyFriends.map(friend => ({
-      userId: friend.friendId,
-      name: friend.friendProfile?.name || friend.friendProfile?.username || 'Unknown',
-      username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
-      avatar: friend.friendProfile?.avatar,
-      joinedAt: friend.friendSince,
-      auraPoints: 0, // Default since not in PublicProfile
-      lastActivity: friend.friendProfile?.lastSeen,
-      isOnline: friend.friendProfile?.isOnline || false,
-      mutualConnections: friend.mutualFriends || 0,
-      sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
-      source: 'legacy',
-      friendshipId: friend.id,
-    }));
+    // Convert legacy friends to universal format with enhanced username resolution
+    const legacyMembers: UniversalAuraFamMember[] = await Promise.all(
+      legacyFriends.map(async (friend) => {
+        // Get proper username using enhanced resolution
+        let username = friend.friendProfile?.username;
+        if (!username || username === 'unknown') {
+          try {
+            const publicProfile = await getPublicProfile(friend.friendId);
+            username = publicProfile?.username || `user${friend.friendId.slice(-4)}`;
+          } catch (error) {
+            console.warn(`Error getting username for ${friend.friendId}:`, error);
+            username = `user${friend.friendId.slice(-4)}`;
+          }
+        }
+        
+        return {
+          userId: friend.friendId,
+          name: friend.friendProfile?.name || friend.friendProfile?.username || 'Unknown',
+          username: username,
+          avatar: friend.friendProfile?.avatar,
+          joinedAt: friend.friendSince,
+          auraPoints: 0, // Default since not in PublicProfile
+          lastActivity: friend.friendProfile?.lastSeen,
+          isOnline: friend.friendProfile?.isOnline || false,
+          mutualConnections: friend.mutualFriends || 0,
+          sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+          source: 'legacy',
+          friendshipId: friend.id,
+        };
+      })
+    );
 
     // Get friends from the new system (subcollection)
     let newMembers: UniversalAuraFamMember[] = [];
@@ -90,10 +106,22 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
           const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
           const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
+          // Get proper username using enhanced resolution
+          let username = friendProfile?.username || friendData.username;
+          if (!username || username === 'unknown') {
+            try {
+              const enhancedProfile = await getPublicProfile(friendId);
+              username = enhancedProfile?.username || `user${friendId.slice(-4)}`;
+            } catch (error) {
+              console.warn(`Error getting username for ${friendId}:`, error);
+              username = `user${friendId.slice(-4)}`;
+            }
+          }
+
           newMembers.push({
             userId: friendId,
             name: friendProfile?.name || friendData.name || friendProfile?.username || friendData.username || 'Unknown',
-            username: friendProfile?.username || friendData.username || `user${friendId.slice(-4)}`,
+            username: username,
             avatar: friendProfile?.avatar || friendData.avatar,
             joinedAt: friendData.createdAt || friendshipData.createdAt,
             auraPoints: friendProfile?.auraPoints || friendData.auraPoints || 0,
