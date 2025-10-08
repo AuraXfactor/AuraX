@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import GuidanceBox from '@/components/GuidanceBox';
+import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 type Phase = 'inhale' | 'hold' | 'exhale';
 
@@ -133,10 +134,15 @@ export default function BreathingToolPage() {
   }
 
   return (
-    <motion.div className="min-h-screen flex flex-col items-center justify-center gap-8 p-6" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-      <motion.h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.45 }}>
-        Guided Breathwork 🌬️
-      </motion.h1>
+    <WellnessSessionTracker 
+      toolType="breathing_exercises"
+      onSessionStart={() => console.log('Breathing session started')}
+      onSessionEnd={() => console.log('Breathing session ended')}
+    >
+      <motion.div className="min-h-screen flex flex-col items-center justify-center gap-8 p-6" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+        <motion.h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.45 }}>
+          Guided Breathwork 🌬️
+        </motion.h1>
 
       <AnimatePresence mode="wait">
         {showGuidance && !isSessionActive && (
@@ -407,8 +413,9 @@ export default function BreathingToolPage() {
         </div>
       </div>
 
-      <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-    </motion.div>
+        <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+      </motion.div>
+    </WellnessSessionTracker>
   );
 }
 
