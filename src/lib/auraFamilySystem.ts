@@ -16,7 +16,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { PublicProfile } from './socialSystem';
+import { PublicProfile, ensureUsernameSet } from './socialSystem';
 
 export type AuraFamilyMember = {
   userId: string;
@@ -61,10 +61,8 @@ export async function getAuraFamilyMembers(currentUserId: string): Promise<AuraF
         const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
         const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
-        // Ensure username is never empty or undefined
-        const username = (friendProfile?.username && friendProfile.username.trim()) || 
-                        (friendData.username && friendData.username.trim()) || 
-                        `user${friendId.slice(-4)}`;
+        // Get proper username using ensureUsernameSet
+        const username = await ensureUsernameSet(friendId);
 
         familyMembers.push({
           userId: friendId,

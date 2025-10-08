@@ -12,7 +12,7 @@ import {
   AuraFamilyMember,
   AuraFamilyStats
 } from '@/lib/auraFamilySystem';
-import { getFriends } from '@/lib/socialSystem';
+import { getFriends, ensureUsernameSet } from '@/lib/socialSystem';
 
 interface AuraFamilyListProps {
   onMemberRemoved?: () => void;
@@ -42,11 +42,9 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
         const friends = await getFriends(user.uid);
         
         // Convert friends to AuraFamilyMember format
-        members = friends.map(friend => {
-          // Ensure username is never empty or undefined
-          const username = friend.friendProfile?.username && friend.friendProfile.username.trim() 
-            ? friend.friendProfile.username 
-            : `user${friend.friendId.slice(-4)}`;
+        members = await Promise.all(friends.map(async friend => {
+          // Get proper username using ensureUsernameSet
+          const username = await ensureUsernameSet(friend.friendId);
           
           return {
             userId: friend.friendId,
@@ -60,7 +58,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
             mutualConnections: friend.mutualFriends || 0,
             sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
           };
-        });
+        }));
       }
       
       const familyStats = await getAuraFamilyStats(user.uid);

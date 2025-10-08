@@ -17,7 +17,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getFriends } from './socialSystem';
+import { getFriends, ensureUsernameSet } from './socialSystem';
 import { PublicProfile } from './socialSystem';
 
 export type UniversalAuraFamMember = {
@@ -56,11 +56,9 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
     console.log('📊 Legacy friends found:', legacyFriends.length);
     
     // Convert legacy friends to universal format
-    const legacyMembers: UniversalAuraFamMember[] = legacyFriends.map(friend => {
-      // Ensure username is never empty or undefined
-      const username = friend.friendProfile?.username && friend.friendProfile.username.trim() 
-        ? friend.friendProfile.username 
-        : `user${friend.friendId.slice(-4)}`;
+    const legacyMembers: UniversalAuraFamMember[] = await Promise.all(legacyFriends.map(async friend => {
+      // Get proper username using ensureUsernameSet
+      const username = await ensureUsernameSet(friend.friendId);
       
       return {
         userId: friend.friendId,
@@ -76,7 +74,7 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
         source: 'legacy',
         friendshipId: friend.id,
       };
-    });
+    }));
 
     // Get friends from the new system (subcollection)
     let newMembers: UniversalAuraFamMember[] = [];
@@ -97,10 +95,8 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
           const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
           const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
-          // Ensure username is never empty or undefined
-          const username = (friendProfile?.username && friendProfile.username.trim()) || 
-                          (friendData.username && friendData.username.trim()) || 
-                          `user${friendId.slice(-4)}`;
+          // Get proper username using ensureUsernameSet
+          const username = await ensureUsernameSet(friendId);
 
           newMembers.push({
             userId: friendId,

@@ -20,7 +20,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getPublicProfile } from './socialSystem';
+import { getPublicProfile, ensureUsernameSet } from './socialSystem';
 
 export type FamMember = {
   id: string;
@@ -78,8 +78,8 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of famSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
-        // Ensure username is never empty or undefined
-        const username = (famData.username && famData.username.trim()) || `user${famData.userId.slice(-4)}`;
+        // Get proper username using ensureUsernameSet
+        const username = await ensureUsernameSet(famData.userId);
         
         // Ensure required fields have default values
         famMembers.push({
@@ -112,8 +112,8 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of fallbackSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
-        // Ensure username is never empty or undefined
-        const username = (famData.username && famData.username.trim()) || `user${famData.userId.slice(-4)}`;
+        // Get proper username using ensureUsernameSet
+        const username = await ensureUsernameSet(famData.userId);
         
         // Ensure required fields have default values
         famMembers.push({
