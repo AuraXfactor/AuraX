@@ -20,7 +20,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getPublicProfile } from './socialSystem';
+import { getPublicProfile, ensureUsernameSet } from './socialSystem';
 
 export type FamMember = {
   id: string;
@@ -78,12 +78,15 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of famSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
+        // Get proper username using ensureUsernameSet
+        const username = await ensureUsernameSet(famData.userId);
+        
         // Ensure required fields have default values
         famMembers.push({
           ...famData,
           id: famDoc.id,
           name: famData.name || 'Unknown',
-          username: famData.username || 'unknown',
+          username: username,
           auraPoints: famData.auraPoints || 0,
           isOnline: famData.isOnline || false,
           mutualConnections: famData.mutualConnections || 0,
@@ -109,12 +112,15 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of fallbackSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
+        // Get proper username using ensureUsernameSet
+        const username = await ensureUsernameSet(famData.userId);
+        
         // Ensure required fields have default values
         famMembers.push({
           ...famData,
           id: famDoc.id,
           name: famData.name || 'Unknown',
-          username: famData.username || 'unknown',
+          username: username,
           auraPoints: famData.auraPoints || 0,
           isOnline: famData.isOnline || false,
           mutualConnections: famData.mutualConnections || 0,

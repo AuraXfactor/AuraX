@@ -16,7 +16,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { PublicProfile } from './socialSystem';
+import { PublicProfile, ensureUsernameSet } from './socialSystem';
 
 export type AuraFamilyMember = {
   userId: string;
@@ -61,10 +61,13 @@ export async function getAuraFamilyMembers(currentUserId: string): Promise<AuraF
         const friendshipDoc = await getDoc(doc(db, 'friendships', `${currentUserId}_${friendId}`));
         const friendshipData = friendshipDoc.exists() ? friendshipDoc.data() : {};
 
+        // Get proper username using ensureUsernameSet
+        const username = await ensureUsernameSet(friendId);
+
         familyMembers.push({
           userId: friendId,
           name: friendProfile?.name || friendData.name || 'Unknown',
-          username: friendProfile?.username || friendData.username || 'unknown',
+          username: username,
           avatar: friendProfile?.avatar || friendData.avatar,
           joinedAt: friendData.createdAt || friendshipData.createdAt,
           auraPoints: friendProfile?.auraPoints || friendData.auraPoints || 0,

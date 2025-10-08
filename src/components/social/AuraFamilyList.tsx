@@ -12,7 +12,7 @@ import {
   AuraFamilyMember,
   AuraFamilyStats
 } from '@/lib/auraFamilySystem';
-import { getFriends } from '@/lib/socialSystem';
+import { getFriends, ensureUsernameSet } from '@/lib/socialSystem';
 
 interface AuraFamilyListProps {
   onMemberRemoved?: () => void;
@@ -42,17 +42,22 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
         const friends = await getFriends(user.uid);
         
         // Convert friends to AuraFamilyMember format
-        members = friends.map(friend => ({
-          userId: friend.friendId,
-          name: friend.friendProfile?.name || 'Unknown',
-          username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
-          avatar: friend.friendProfile?.avatar,
-          joinedAt: friend.friendSince,
-          auraPoints: 0, // Default aura points since it's not in PublicProfile
-          lastActivity: friend.friendProfile?.lastSeen,
-          isOnline: friend.friendProfile?.isOnline || false,
-          mutualConnections: friend.mutualFriends || 0,
-          sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+        members = await Promise.all(friends.map(async friend => {
+          // Get proper username using ensureUsernameSet
+          const username = await ensureUsernameSet(friend.friendId);
+          
+          return {
+            userId: friend.friendId,
+            name: friend.friendProfile?.name || 'Unknown',
+            username: username,
+            avatar: friend.friendProfile?.avatar,
+            joinedAt: friend.friendSince,
+            auraPoints: 0, // Default aura points since it's not in PublicProfile
+            lastActivity: friend.friendProfile?.lastSeen,
+            isOnline: friend.friendProfile?.isOnline || false,
+            mutualConnections: friend.mutualFriends || 0,
+            sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+          };
         }));
       }
       
@@ -250,7 +255,7 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
                       {member.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      @{member.username}
+                      @{member.username || member.name || 'user'}
                     </p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-purple-600 dark:text-purple-400">

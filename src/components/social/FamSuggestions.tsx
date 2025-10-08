@@ -151,11 +151,9 @@ export default function FamSuggestions({ onRequestSent }: FamSuggestionsProps) {
                       <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
                         {suggestion.name}
                       </h3>
-                      {suggestion.username && (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          @{suggestion.username}
-                        </span>
-                      )}
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        @{suggestion.username || suggestion.name || 'user'}
+                      </span>
                     </div>
                     
                     {suggestion.bio && (
