@@ -60,6 +60,7 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
       // Get proper username using ensureUsernameSet
       const username = await ensureUsernameSet(friend.friendId);
       console.log(`👤 Legacy friend ${friend.friendId}: username = ${username}`);
+      console.log(`👤 Legacy friend ${friend.friendId}: friendProfile =`, friend.friendProfile);
       
       return {
         userId: friend.friendId,
@@ -99,6 +100,8 @@ export async function getUniversalAuraFamMembers(currentUserId: string): Promise
           // Get proper username using ensureUsernameSet
           const username = await ensureUsernameSet(friendId);
           console.log(`👤 New friend ${friendId}: username = ${username}`);
+          console.log(`👤 New friend ${friendId}: friendProfile =`, friendProfile);
+          console.log(`👤 New friend ${friendId}: friendData =`, friendData);
 
           newMembers.push({
             userId: friendId,

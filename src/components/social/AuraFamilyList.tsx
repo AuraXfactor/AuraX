@@ -254,6 +254,9 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                       {member.name}
                     </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      @{member.username || member.name || 'user'}
+                    </p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-purple-600 dark:text-purple-400">
                         {member.auraPoints.toLocaleString()} aura points

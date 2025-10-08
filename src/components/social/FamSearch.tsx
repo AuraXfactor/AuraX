@@ -247,7 +247,7 @@ export default function FamSearch({ onRequestSent }: FamSearchProps) {
                           })()}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {profile.name}
+                          @{profile.username || profile.name || 'user'}
                         </p>
                         {profile.bio && (
                           <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
