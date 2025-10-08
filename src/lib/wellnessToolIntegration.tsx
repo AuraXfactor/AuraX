@@ -12,6 +12,7 @@
  * 4. Test session tracking functionality
  */
 
+import React from 'react';
 import WellnessSessionTracker from '@/components/WellnessSessionTracker';
 
 // Tool type constants for research categorization
