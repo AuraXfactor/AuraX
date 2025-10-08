@@ -2,16 +2,18 @@
 import Link from 'next/link';
 import VoiceInput from '@/components/VoiceInput';
 import { useAuth } from '@/contexts/AuthContext';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import { updateQuestProgress } from '@/lib/weeklyQuests';
 import { updateSquadChallengeProgress } from '@/lib/auraSquads';
 import { useState } from 'react';
+import GuidanceBox from '@/components/GuidanceBox';
 
 export default function MeditationsPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
   const [completedSessions, setCompletedSessions] = useState<Set<string>>(new Set());
+  const [showGuidance, setShowGuidance] = useState(true);
 
   if (!user) {
     return (
@@ -84,7 +86,39 @@ export default function MeditationsPage() {
   return (
     <motion.div className="min-h-screen p-6 md:p-10" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <h1 className="text-3xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-500">Guided Meditations</h1>
-      <div className="max-w-3xl mx-auto mt-8 space-y-4">
+      
+      <AnimatePresence mode="wait">
+        {showGuidance && (
+          <motion.div
+            key="guidance"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-2xl w-full mx-auto mt-8"
+          >
+            <GuidanceBox
+              title="Guided Meditations"
+              emoji="🧘"
+              when="When you need to relax, focus, or prepare for sleep. Use during stress, before important events, or as a daily mindfulness practice."
+              why="Meditation reduces stress, improves focus, enhances emotional regulation, and promotes better sleep. It trains your mind to be present and calm."
+              how="Choose a session that matches your needs (sleep, anxiety relief, focus). Find a comfortable position, close your eyes, and follow the guided audio."
+              importance="Regular meditation practice builds resilience, improves mental clarity, and provides a foundation for emotional well-being. Even short sessions have lasting benefits."
+              preparation="Find a quiet, comfortable space. Use headphones for better audio quality. Set aside time without interruptions. You can sit or lie down."
+              onProceed={() => setShowGuidance(false)}
+              onSkip={() => setShowGuidance(false)}
+              colors="from-emerald-400 to-teal-500"
+            />
+          </motion.div>
+        )}
+
+        {!showGuidance && (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-3xl mx-auto mt-8 space-y-4"
+          >
         <div className="flex items-center justify-end">
           <VoiceInput onResult={handleVoice} />
         </div>
@@ -111,10 +145,13 @@ export default function MeditationsPage() {
             </div>
           </div>
         ))}
-      </div>
-      <div className="max-w-3xl mx-auto mt-6 text-center">
-        <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-      </div>
+          </div>
+          <div className="max-w-3xl mx-auto mt-6 text-center">
+            <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

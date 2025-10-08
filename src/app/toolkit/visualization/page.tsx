@@ -1,11 +1,14 @@
 "use client";
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import GuidanceBox from '@/components/GuidanceBox';
+import { useState } from 'react';
 
 export default function VisualizationPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
+  const [showGuidance, setShowGuidance] = useState(true);
 
   if (!user) {
     return (
@@ -25,6 +28,38 @@ export default function VisualizationPage() {
   return (
     <motion.div className="min-h-screen p-6 md:p-10 text-center" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-cyan-500">Visualization Exercises</h1>
+      
+      <AnimatePresence mode="wait">
+        {showGuidance && (
+          <motion.div
+            key="guidance"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-2xl w-full mx-auto mt-8"
+          >
+            <GuidanceBox
+              title="Visualization Exercises"
+              emoji="🌄"
+              when="When you need to build confidence, reduce anxiety, or prepare for challenging situations. Use before presentations, interviews, or stressful events."
+              why="Visualization activates the same brain regions as actual experiences, building neural pathways for success. It reduces anxiety by mentally rehearsing positive outcomes."
+              how="Choose a visualization exercise (Safe Place or Success Visualization). Close your eyes, engage all your senses, and create vivid mental imagery."
+              importance="Visualization is a powerful mental training tool that builds confidence, reduces performance anxiety, and creates positive mental models for success."
+              preparation="Find a quiet, comfortable space where you won't be interrupted. Allow 10-15 minutes for the exercise. Close your eyes and focus on creating vivid imagery."
+              onProceed={() => setShowGuidance(false)}
+              onSkip={() => setShowGuidance(false)}
+              colors="from-sky-500 to-cyan-500"
+            />
+          </motion.div>
+        )}
+
+        {!showGuidance && (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
       <div className="max-w-2xl mx-auto mt-8 p-6 rounded-2xl border border-white/20 bg-white/60 dark:bg-white/5 text-left space-y-3">
         <div className="font-semibold">Safe Place</div>
         <p>Close your eyes. Imagine a place where you feel completely safe and calm. Engage all senses: what do you see, hear, smell, touch?</p>
@@ -39,9 +74,12 @@ export default function VisualizationPage() {
         </div>
       </div>
       
-      <div className="mt-6">
-        <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-      </div>
+            <div className="mt-6">
+              <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

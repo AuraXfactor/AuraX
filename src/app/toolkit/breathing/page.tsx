@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import GuidanceBox from '@/components/GuidanceBox';
 
 type Phase = 'inhale' | 'hold' | 'exhale';
 
@@ -29,6 +30,7 @@ export default function BreathingToolPage() {
   const [currentSession, setCurrentSession] = useState<SessionData | null>(null);
   const [sessionHistory, setSessionHistory] = useState<SessionData[]>([]);
   const [showIntro, setShowIntro] = useState(true);
+  const [showGuidance, setShowGuidance] = useState(true);
   const [moodBefore, setMoodBefore] = useState(5);
   const [stressBefore, setStressBefore] = useState(5);
   const [moodAfter, setMoodAfter] = useState(5);
@@ -137,7 +139,30 @@ export default function BreathingToolPage() {
       </motion.h1>
 
       <AnimatePresence mode="wait">
-        {showIntro && !isSessionActive && (
+        {showGuidance && !isSessionActive && (
+          <motion.div
+            key="guidance"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-2xl w-full"
+          >
+            <GuidanceBox
+              title="Breathing Exercises"
+              emoji="🌬️"
+              when="When you feel stressed, anxious, overwhelmed, or need to center yourself. Use before important meetings, during panic attacks, or as a daily mindfulness practice."
+              why="Controlled breathing activates your parasympathetic nervous system, reducing stress hormones, lowering blood pressure, and promoting calm. It's scientifically proven to reduce anxiety and improve focus."
+              how="Follow the guided patterns (4-7-8, Box breathing, or custom). Inhale through your nose, hold, then exhale slowly. Focus on the counting and your breath rhythm."
+              importance="Breathing exercises are one of the most effective and accessible tools for managing stress and anxiety. They can be done anywhere, anytime, and provide immediate relief."
+              preparation="Find a comfortable position, close your eyes if comfortable, and ensure you won't be interrupted for the session duration."
+              onProceed={() => setShowGuidance(false)}
+              onSkip={() => setShowGuidance(false)}
+              colors="from-cyan-400 to-blue-500"
+            />
+          </motion.div>
+        )}
+
+        {!showGuidance && showIntro && !isSessionActive && (
           <motion.div
             key="intro"
             initial={{ opacity: 0, y: 20 }}

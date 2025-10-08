@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import GuidanceBox from '@/components/GuidanceBox';
 
 interface GroundingSession {
   id: string;
@@ -86,6 +87,7 @@ export default function GroundingToolPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionData, setSessionData] = useState<GroundingSession | null>(null);
   const [showIntro, setShowIntro] = useState(true);
+  const [showGuidance, setShowGuidance] = useState(true);
   const [anxietyBefore, setAnxietyBefore] = useState(5);
   const [focusBefore, setFocusBefore] = useState(5);
   const [anxietyAfter, setAnxietyAfter] = useState(5);
@@ -188,7 +190,30 @@ export default function GroundingToolPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {showIntro && !isSessionActive && (
+          {showGuidance && !isSessionActive && (
+            <motion.div
+              key="guidance"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-2xl w-full mx-auto"
+            >
+              <GuidanceBox
+                title="Grounding Techniques"
+                emoji="🪨"
+                when="When you feel overwhelmed, anxious, dissociated, or disconnected from reality. Use during panic attacks, flashbacks, or when feeling 'spaced out'."
+                why="Grounding techniques help anchor you in the present moment by engaging your senses. They interrupt anxious thoughts and bring your attention back to the here and now."
+                how="Choose from 5-4-3-2-1 technique, breathing grounding, body scan, or mindful walking. Follow the guided steps to systematically engage your senses and reconnect with your body."
+                importance="Grounding is essential for managing anxiety, PTSD, and dissociation. It's a first-line intervention that can be used anywhere and provides immediate relief from overwhelming emotions."
+                preparation="Find a quiet space if possible, but these techniques can be done anywhere. Remove distractions and focus on the present moment."
+                onProceed={() => setShowGuidance(false)}
+                onSkip={() => setShowGuidance(false)}
+                colors="from-amber-400 to-orange-500"
+              />
+            </motion.div>
+          )}
+
+          {!showGuidance && showIntro && !isSessionActive && (
             <motion.div
               key="intro"
               initial={{ opacity: 0, y: 20 }}

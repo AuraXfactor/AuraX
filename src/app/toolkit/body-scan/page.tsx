@@ -1,12 +1,14 @@
 "use client";
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { motion, useReducedMotion } from 'framer-motion';
-import { useCallback } from 'react';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { useCallback, useState } from 'react';
+import GuidanceBox from '@/components/GuidanceBox';
 
 export default function BodyScanPage() {
   const { user } = useAuth();
   const prefersReducedMotion = useReducedMotion();
+  const [showGuidance, setShowGuidance] = useState(true);
 
   const speak = useCallback(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -38,6 +40,38 @@ export default function BodyScanPage() {
   return (
     <motion.div className="min-h-screen p-6 md:p-10" initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <h1 className="text-3xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-pink-500">Body Scan</h1>
+      
+      <AnimatePresence mode="wait">
+        {showGuidance && (
+          <motion.div
+            key="guidance"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-2xl w-full mx-auto mt-8"
+          >
+            <GuidanceBox
+              title="Body Scan"
+              emoji="🪷"
+              when="When you feel tense, stressed, or disconnected from your body. Use for relaxation, before sleep, or to release physical tension."
+              why="Body scan meditation increases body awareness, reduces muscle tension, and promotes deep relaxation. It helps you reconnect with physical sensations and release stored stress."
+              how="Follow the guided audio or written instructions. Systematically focus on each body part, noticing sensations without judgment, and consciously releasing tension."
+              importance="Regular body scans improve interoception (internal body awareness), reduce chronic tension, and provide a foundation for better stress management and sleep."
+              preparation="Find a comfortable position lying down or sitting. Ensure you won't be interrupted for 10-15 minutes. Use headphones for the guided audio."
+              onProceed={() => setShowGuidance(false)}
+              onSkip={() => setShowGuidance(false)}
+              colors="from-fuchsia-400 to-pink-500"
+            />
+          </motion.div>
+        )}
+
+        {!showGuidance && (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
       <div className="max-w-2xl mx-auto mt-6 space-y-4 text-gray-700 dark:text-gray-200">
         <p>Use this simple scan to release tension. You can also follow along with a short guided video below.</p>
         <div className="aspect-video w-full rounded-lg overflow-hidden">
@@ -54,9 +88,12 @@ export default function BodyScanPage() {
           <li>Finish at feet. Feel grounded and supported.</li>
         </ol>
       </div>
-      <div className="max-w-2xl mx-auto mt-6 text-center">
-        <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
-      </div>
+            <div className="max-w-2xl mx-auto mt-6 text-center">
+              <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
