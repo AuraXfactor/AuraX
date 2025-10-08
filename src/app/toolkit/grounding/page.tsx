@@ -426,6 +426,22 @@ export default function GroundingToolPage() {
           )}
         </AnimatePresence>
 
+        <div className="mt-8 space-y-6">
+          <div className="w-full max-w-2xl mx-auto">
+            <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Guided Grounding Exercise 1</div>
+            <div className="aspect-video w-full rounded-lg overflow-hidden">
+              <iframe className="w-full h-full" src="https://www.youtube.com/embed/FAllRKocaJ8" title="Guided Grounding Exercise 1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            </div>
+          </div>
+          
+          <div className="w-full max-w-2xl mx-auto">
+            <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Guided Grounding Exercise 2</div>
+            <div className="aspect-video w-full rounded-lg overflow-hidden">
+              <iframe className="w-full h-full" src="https://www.youtube.com/embed/pjRMg6KALiw" title="Guided Grounding Exercise 2" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            </div>
+          </div>
+        </div>
+
         <div className="text-center mt-8">
           <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition">
             ← Back to Toolkit

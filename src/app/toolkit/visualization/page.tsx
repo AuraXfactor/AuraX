@@ -31,6 +31,14 @@ export default function VisualizationPage() {
         <div className="font-semibold pt-2">Success Visualization</div>
         <p>Picture yourself completing a task with confidence. Note your posture, breath, and emotion as you succeed.</p>
       </div>
+      
+      <div className="max-w-2xl mx-auto mt-6">
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Guided Visualization Exercise</div>
+        <div className="aspect-video w-full rounded-lg overflow-hidden">
+          <iframe className="w-full h-full" src="https://www.youtube.com/embed/uWEvseYTpVs" title="Guided Visualization Exercise" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+        </div>
+      </div>
+      
       <div className="mt-6">
         <Link href="/toolkit" className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition pressable">← Back to Toolkit</Link>
       </div>

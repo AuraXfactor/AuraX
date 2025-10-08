@@ -84,9 +84,9 @@ export default function PanicButtonPage() {
         <div className="mt-2 text-lg">{affirmation}</div>
       </div>
       <div className="mt-6 max-w-md mx-auto p-4 rounded-xl border border-white/20 bg-white/60 dark:bg-white/5">
-        <div className="text-sm mb-2">Calming Chime (30s)</div>
+        <div className="text-sm mb-2">Calming Video</div>
         <div className="aspect-video w-full rounded-lg overflow-hidden">
-          <iframe className="w-full h-full" src="https://www.youtube.com/embed/7iCZj69V4w8?start=0&end=30&modestbranding=1&rel=0&playsinline=1" title="Calming Chime" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          <iframe className="w-full h-full" src="https://www.youtube.com/embed/UeMSvbozwFE" title="Calming Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
         </div>
       </div>
       <div className="mt-6">
