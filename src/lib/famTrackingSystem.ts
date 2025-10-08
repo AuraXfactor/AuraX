@@ -20,7 +20,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { getPublicProfile } from './socialSystem';
+import { getPublicProfile, ensureUsernameSet } from './socialSystem';
 
 export type FamMember = {
   id: string;
@@ -78,12 +78,25 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of famSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
+        
+        // Get proper username using enhanced resolution
+        let username = famData.username;
+        if (!username || username === 'unknown') {
+          try {
+            const publicProfile = await getPublicProfile(famData.userId);
+            username = publicProfile?.username || `user${famData.userId.slice(-4)}`;
+          } catch (error) {
+            console.warn(`Error getting username for ${famData.userId}:`, error);
+            username = `user${famData.userId.slice(-4)}`;
+          }
+        }
+        
         // Ensure required fields have default values
         famMembers.push({
           ...famData,
           id: famDoc.id,
           name: famData.name || 'Unknown',
-          username: famData.username || 'unknown',
+          username: username,
           auraPoints: famData.auraPoints || 0,
           isOnline: famData.isOnline || false,
           mutualConnections: famData.mutualConnections || 0,
@@ -109,12 +122,25 @@ export async function getFamMembers(userId: string): Promise<FamMember[]> {
       
       for (const famDoc of fallbackSnapshot.docs) {
         const famData = famDoc.data() as FamMember;
+        
+        // Get proper username using enhanced resolution
+        let username = famData.username;
+        if (!username || username === 'unknown') {
+          try {
+            const publicProfile = await getPublicProfile(famData.userId);
+            username = publicProfile?.username || `user${famData.userId.slice(-4)}`;
+          } catch (error) {
+            console.warn(`Error getting username for ${famData.userId}:`, error);
+            username = `user${famData.userId.slice(-4)}`;
+          }
+        }
+        
         // Ensure required fields have default values
         famMembers.push({
           ...famData,
           id: famDoc.id,
           name: famData.name || 'Unknown',
-          username: famData.username || 'unknown',
+          username: username,
           auraPoints: famData.auraPoints || 0,
           isOnline: famData.isOnline || false,
           mutualConnections: famData.mutualConnections || 0,
@@ -592,10 +618,29 @@ export async function searchPublicProfiles(query: string): Promise<any[]> {
     );
     
     const snapshot = await getDocs(profilesQuery);
-    const profiles = snapshot.docs.map((doc: any) => ({
-      ...doc.data(),
-      uid: doc.id,
-    })) as any[];
+    const profiles = await Promise.all(
+      snapshot.docs.map(async (doc: any) => {
+        const data = doc.data();
+        
+        // Get proper username using enhanced resolution
+        let username = data.username;
+        if (!username || username === 'unknown') {
+          try {
+            const publicProfile = await getPublicProfile(doc.id);
+            username = publicProfile?.username || `user${doc.id.slice(-4)}`;
+          } catch (error) {
+            console.warn(`Error getting username for ${doc.id}:`, error);
+            username = `user${doc.id.slice(-4)}`;
+          }
+        }
+        
+        return {
+          ...data,
+          uid: doc.id,
+          username: username,
+        };
+      })
+    );
     
     // Filter by search query
     const lowercaseQuery = query.toLowerCase();

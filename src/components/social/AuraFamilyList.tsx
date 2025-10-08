@@ -41,19 +41,36 @@ export default function AuraFamilyList({ onMemberRemoved }: AuraFamilyListProps)
         console.log('No Aura Family members found, trying fallback to friends system...');
         const friends = await getFriends(user.uid);
         
-        // Convert friends to AuraFamilyMember format
-        members = friends.map(friend => ({
-          userId: friend.friendId,
-          name: friend.friendProfile?.name || 'Unknown',
-          username: friend.friendProfile?.username || `user${friend.friendId.slice(-4)}`,
-          avatar: friend.friendProfile?.avatar,
-          joinedAt: friend.friendSince,
-          auraPoints: 0, // Default aura points since it's not in PublicProfile
-          lastActivity: friend.friendProfile?.lastSeen,
-          isOnline: friend.friendProfile?.isOnline || false,
-          mutualConnections: friend.mutualFriends || 0,
-          sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
-        }));
+        // Convert friends to AuraFamilyMember format with enhanced username resolution
+        members = await Promise.all(
+          friends.map(async (friend) => {
+            // Get proper username using enhanced resolution
+            let username = friend.friendProfile?.username;
+            if (!username || username === 'unknown') {
+              try {
+                const { getPublicProfile } = await import('@/lib/socialSystem');
+                const publicProfile = await getPublicProfile(friend.friendId);
+                username = publicProfile?.username || `user${friend.friendId.slice(-4)}`;
+              } catch (error) {
+                console.warn(`Error getting username for ${friend.friendId}:`, error);
+                username = `user${friend.friendId.slice(-4)}`;
+              }
+            }
+            
+            return {
+              userId: friend.friendId,
+              name: friend.friendProfile?.name || 'Unknown',
+              username: username,
+              avatar: friend.friendProfile?.avatar,
+              joinedAt: friend.friendSince,
+              auraPoints: 0, // Default aura points since it's not in PublicProfile
+              lastActivity: friend.friendProfile?.lastSeen,
+              isOnline: friend.friendProfile?.isOnline || false,
+              mutualConnections: friend.mutualFriends || 0,
+              sharedInterests: friend.sharedInterests || friend.friendProfile?.interests || [],
+            };
+          })
+        );
       }
       
       const familyStats = await getAuraFamilyStats(user.uid);
