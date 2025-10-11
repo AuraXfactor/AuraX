@@ -8,6 +8,9 @@ import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic';
+
 interface Goal {
   id?: string;
   title: string;

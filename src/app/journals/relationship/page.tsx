@@ -8,6 +8,9 @@ import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic';
+
 const RELATIONSHIP_TYPES = [
   { label: 'Partner/Spouse', value: 'partner', icon: '💕' },
   { label: 'Family Member', value: 'family', icon: '👨‍👩‍👧‍👦' },

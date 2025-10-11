@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { awardAuraPoints } from '@/lib/auraPoints';
+import { awardCentralizedPoints } from '@/lib/centralizedAuraSystem';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
+
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic';
 
 const EMOTIONS = [
   { label: 'Angry', value: 'angry', color: 'bg-red-500' },
@@ -91,22 +94,22 @@ export default function CBTTherapyJournal() {
       // Award points based on progress and completion
       try {
         const progressBonus = Math.max(0, entryData.cognitiveProgress * 2); // Bonus for emotional improvement
+        const quality = entryData.completionScore + (entryData.cognitiveProgress * 5); // Quality includes emotional progress
         
-        await awardAuraPoints({
+        await awardCentralizedPoints({
           user,
-          activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: entryData.wordCount,
-            metadata: {
-              journalType: 'cbt-therapy',
-              completionScore: entryData.completionScore,
-              emotionalImprovement: entryData.cognitiveProgress,
-              progressBonus
-            }
-          },
+          activity: 'specialized_journal',
+          source: 'cbt-therapy',
+          quality: Math.min(150, quality), // Cap at 150% for exceptional progress
+          completion: entryData.completionScore,
           description: `🧠 CBT Thought Reframe completed (+${progressBonus} progress bonus)`,
-          uniqueId: `cbt-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          uniqueId: `cbt-journal-${user.uid}-${new Date().toISOString().split('T')[0]}`,
+          metadata: {
+            journalType: 'cbt-therapy',
+            emotionalImprovement: entryData.cognitiveProgress,
+            progressBonus,
+            wordCount: entryData.wordCount
+          }
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);

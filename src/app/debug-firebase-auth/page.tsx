@@ -9,14 +9,14 @@ export default function DebugFirebaseAuth() {
 
   useEffect(() => {
     // Get current domain information
-    const currentDomain = window.location.hostname;
-    const currentOrigin = window.location.origin;
+    const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
     const userAgent = navigator.userAgent;
     
     setDomainInfo({
       hostname: currentDomain,
       origin: currentOrigin,
-      protocol: window.location.protocol,
+      protocol: typeof window !== 'undefined' ? window.location.protocol : 'http:',
       userAgent: userAgent,
       timestamp: new Date().toISOString()
     });

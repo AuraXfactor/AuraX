@@ -7,6 +7,9 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { awardAuraPoints } from '@/lib/auraPoints';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic';
 import AuraAIChat from '@/components/aura-ai/AuraAIChat';
 
 const ABUNDANCE_CATEGORIES = ['Physical', 'Emotional', 'Relational'];

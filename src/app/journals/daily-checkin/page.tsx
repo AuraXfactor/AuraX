@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { awardAuraPoints } from '@/lib/auraPoints';
+import { awardCentralizedPoints } from '@/lib/centralizedAuraSystem';
 import SpecializedJournalHistory from '@/components/journal/SpecializedJournalHistory';
+
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic';
 
 const MOOD_OPTIONS = [
   { emoji: '😢', label: 'Very Sad', value: 'very_sad', color: 'from-blue-400 to-blue-600' },
@@ -114,20 +117,19 @@ export default function DailyCheckInJournal() {
 
       // Award points
       try {
-        await awardAuraPoints({
+        await awardCentralizedPoints({
           user,
-          activity: 'journal_entry',
-          proof: {
-            type: 'journal_length',
-            value: entryData.wordCount,
-            metadata: {
-              journalType: 'daily-checkin',
-              completionScore: entryData.completionScore,
-              activitiesCount: selectedActivities.length
-            }
-          },
+          activity: 'specialized_journal',
+          source: 'daily-checkin',
+          quality: entryData.completionScore,
+          completion: entryData.completionScore,
           description: `📔 Daily Check-In completed (${entryData.completionScore}% complete)`,
-          uniqueId: `daily-checkin-${user.uid}-${new Date().toISOString().split('T')[0]}`
+          uniqueId: `daily-checkin-${user.uid}-${new Date().toISOString().split('T')[0]}`,
+          metadata: {
+            journalType: 'daily-checkin',
+            activitiesCount: selectedActivities.length,
+            wordCount: entryData.wordCount
+          }
         });
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);
