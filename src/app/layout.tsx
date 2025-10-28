@@ -27,11 +27,13 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: '#0ea5e9',
+  themeColor: '#ffffff',
   width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  initialScale: 0.6,
+  maximumScale: 1.0,
+  minimumScale: 0.5,
+  userScalable: true,
+  viewportFit: 'cover',
 };
 
 function AppContent({ children }: { children: ReactNode }) {
@@ -82,8 +84,19 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#0ea5e9" />
         <meta name="msapplication-tap-highlight" content="no" />
         
-        {/* Viewport for iOS */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        {/* Force Light Mode - Override system dark mode */}
+        <meta name="color-scheme" content="light" />
+        
+        {/* Additional meta tags for light mode enforcement */}
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="msapplication-navbutton-color" content="#ffffff" />
+        
+        {/* Optimized viewport for feature grid display */}
+        <meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=1.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover" />
+        
+        {/* Additional viewport meta for Android */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-fun">
         <AuthProvider>
